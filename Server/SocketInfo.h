@@ -13,7 +13,7 @@ public:
 		, wsabuf()
 		, sock()
 		, buf()
-		, userData(std::make_unique<UserData>(0, 0))
+		, userData(new UserData(0, 0)/*std::make_unique<UserData>(0, 0)*/)
 	{
 	}
 	~SocketInfo() = default;
@@ -25,6 +25,6 @@ public:
 
 	char buf[BUFFER_MAX_SIZE];
 
-	std::unique_ptr<UserData> userData;
-	//std::shared_ptr<UserData> userData;
+	UserData* userData;
+	//std::unique_ptr<UserData> userData;
 };

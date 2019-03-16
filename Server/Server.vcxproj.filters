@@ -21,7 +21,7 @@
     <Filter Include="UserData">
       <UniqueIdentifier>{233cb163-fdac-4d99-9ace-81319f84441b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="UserData\MoveComponent">
+    <Filter Include="GameServer\MoveManager">
       <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -36,8 +36,8 @@
     <ClCompile Include="UserData.cpp">
       <Filter>UserData</Filter>
     </ClCompile>
-    <ClCompile Include="MoveComponent.cpp">
-      <Filter>UserData\MoveComponent</Filter>
+    <ClCompile Include="MoveManager.cpp">
+      <Filter>GameServer\MoveManager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -56,8 +56,8 @@
     <ClInclude Include="UserData.h">
       <Filter>UserData</Filter>
     </ClInclude>
-    <ClInclude Include="MoveComponent.h">
-      <Filter>UserData\MoveComponent</Filter>
+    <ClInclude Include="MoveManager.h">
+      <Filter>GameServer\MoveManager</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -3,6 +3,8 @@
 #include "SocketInfo.h"
 #include "PacketType.h"
 
+#include "MoveManager.h"
+
 #include "GameServer.h"
 
 GameServer::GameServer()
@@ -10,14 +12,85 @@ GameServer::GameServer()
 	, hIOCP()
 	, listenSocket()
 	, serverAddr()
-	, functionArr()
+	, recvOrSend()
+	, recvFunctionArr()
+	, moveManager()
 {
-	InitForGameData();
-	InitForNetwork();
+	InitManagers();
+	InitFunctions();
+	InitNetwork();
 };
 
 GameServer::~GameServer()
 {
+}
+
+/*
+	GameServer::InitManagers()
+		- GamsServer의 생성자에서 호출되며, 각 매니저들의 초기화를 담당합니다.
+*/
+void GameServer::InitManagers()
+{
+	moveManager = std::make_unique<MoveManager>();
+}
+
+/*
+	GameServer::InitFunctions()
+		- GamsServer의 생성자에서 호출되며, 게임과 관련된 데이터들의 초기화를 담당합니다.
+*/
+void GameServer::InitFunctions()
+{
+	recvOrSend[0] = &GameServer::AfterRecv;
+	recvOrSend[1] = &GameServer::AfterSend;
+
+	recvFunctionArr[0] = &GameServer::RecvCharacterMove;
+}
+
+/*
+	GameServer::InitNetwork()
+		- GamsServer의 생성자에서 호출되며, 네트워크 통신과 관련된 초기화를 담당합니다.
+*/
+void GameServer::InitNetwork()
+{
+	using namespace NETWORK_UTIL::ERROR_HANDLING;
+
+	//윈속 초기화
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) ERROR_QUIT(TEXT("WSAStartup()"));
+
+	// 입출력 완료 포트 생성
+	if (hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)
+		; hIOCP == NULL) ERROR_QUIT(TEXT("Make_WorkerThread()"));
+
+	// CPU 개수 확인할 필요 없음.
+	//SYSTEM_INFO si;
+	//GetSystemInfo(&si);
+
+	// 쓰레드 수 제어.
+	HANDLE hThread;
+	for (int i = 0; i < /* (int)si.dwNumberOfProcessors * 2 */ 2; ++i)
+	{
+		if (hThread = CreateThread(NULL, 0, StartWorkerThread, (LPVOID)this, 0, NULL)
+			; hThread == NULL) ERROR_QUIT(TEXT("Make_WorkerThread()"));
+		
+		CloseHandle(hThread);
+	}
+
+	//Socket()
+	if (listenSocket = socket(AF_INET, SOCK_STREAM, 0)
+		; listenSocket == INVALID_SOCKET) ERROR_QUIT(TEXT("socket()"));
+
+	//bind()
+	ZeroMemory(&serverAddr, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	serverAddr.sin_port = htons(SERVER_PORT);
+
+	if (int bindResult = ::bind(listenSocket, (SOCKADDR *)&serverAddr, sizeof(serverAddr))
+		; bindResult == SOCKET_ERROR) ERROR_QUIT(TEXT("bind()"));
+
+	// Listen()!
+	if (int listenResult = listen(listenSocket, SOMAXCONN)
+		; listenResult == SOCKET_ERROR) ERROR_QUIT(TEXT("listen()"));
 }
 
 /*
@@ -89,64 +162,7 @@ void GameServer::Run()
 	}
 }
 
-/*
-	GameServer::InitForGameData()
-		- GamsServer의 생성자에서 호출되며, 게임과 관련된 데이터들의 초기화를 담당합니다.
-*/
-void GameServer::InitForGameData()
-{
-	functionArr[0][0] = &GameServer::RecvCharacterMove;
-	functionArr[1][0] = &GameServer::SendCharacterMove;
-}
-
-/*
-	GameServer::InitForNetwork()
-		- GamsServer의 생성자에서 호출되며, 네트워크 통신과 관련된 초기화를 담당합니다.
-*/
-void GameServer::InitForNetwork()
-{
-	using namespace NETWORK_UTIL::ERROR_HANDLING;
-
-	//윈속 초기화
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) ERROR_QUIT(TEXT("WSAStartup()"));
-
-	// 입출력 완료 포트 생성
-	if (hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)
-		; hIOCP == NULL) ERROR_QUIT(TEXT("Make_WorkerThread()"));
-
-	// CPU 개수 확인할 필요 없음.
-	//SYSTEM_INFO si;
-	//GetSystemInfo(&si);
-
-	// 쓰레드 수 제어.
-	HANDLE hThread;
-	for (int i = 0; i < /* (int)si.dwNumberOfProcessors * 2 */ 2; ++i)
-	{
-		if (hThread = CreateThread(NULL, 0, WorkerThread, (LPVOID)this, 0, NULL)
-			; hThread == NULL) ERROR_QUIT(TEXT("Make_WorkerThread()"));
-		
-		CloseHandle(hThread);
-	}
-
-	//Socket()
-	if (listenSocket = socket(AF_INET, SOCK_STREAM, 0)
-		; listenSocket == INVALID_SOCKET) ERROR_QUIT(TEXT("socket()"));
-
-	//bind()
-	ZeroMemory(&serverAddr, sizeof(serverAddr));
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serverAddr.sin_port = htons(SERVER_PORT);
-
-	if (int bindResult = ::bind(listenSocket, (SOCKADDR *)&serverAddr, sizeof(serverAddr))
-		; bindResult == SOCKET_ERROR) ERROR_QUIT(TEXT("bind()"));
-
-	// Listen()!
-	if (int listenResult = listen(listenSocket, SOMAXCONN)
-		; listenResult == SOCKET_ERROR) ERROR_QUIT(TEXT("listen()"));
-}
-
-DWORD WINAPI GameServer::WorkerThread(LPVOID arg)
+DWORD WINAPI GameServer::StartWorkerThread(LPVOID arg)
 {
 	GameServer* pServer = static_cast<GameServer*>(arg);
 	pServer->WorkerThreadFunction();
@@ -158,15 +174,12 @@ void GameServer::WorkerThreadFunction()
 {
 	// 한 번만 선언해서 여러번 씁시다. 아껴써야지...
 	int retVal{};
-	DWORD flags = 0;
-	DWORD recvBytes{};
-	DWORD sendBytes{};
+	DWORD cbTransferred;
 
 	while (7)
 	{
 #pragma region [ Wait For Thread ]
 		//비동기 입출력 기다리기
-		DWORD cbTransferred;
 		SOCKET clientSocket;
 		SocketInfo *pClient;
 
@@ -180,11 +193,12 @@ void GameServer::WorkerThreadFunction()
 		);
 #pragma endregion
 
-#pragma region [ Get Socket and error Exception ]
+#pragma region [ Error Exception ]
 		// 할당받은 소켓 즉! 클라이언트 정보 얻기
-		SOCKADDR_IN clientAddr;
-		int addrLength = sizeof(clientAddr);
-		getpeername(pClient->sock, (SOCKADDR *)&clientAddr, &addrLength);
+		
+		//SOCKADDR_IN clientAddr;
+		//int addrLength = sizeof(clientAddr);
+		//getpeername(pClient->sock, (SOCKADDR *)&clientAddr, &addrLength);
 
 	//ERROR_CLIENT_DISCONNECT:
 		if (retVal == 0 || cbTransferred == 0)
@@ -195,16 +209,48 @@ void GameServer::WorkerThreadFunction()
 			break;
 		}
 #pragma endregion
+		
+		std::cout << "받은 버퍼는" << int(pClient->buf[0]) << "\n";
+		std::cout << "GetRecvOrSend는 " << GetRecvOrSend(pClient->buf[0]) << "\n";
 
-		functionArr[0][pClient->buf[0] & 0x7f](*this, pClient);
+		recvOrSend[GetRecvOrSend(pClient->buf[0])](*this, pClient);
 	}
+}
+
+void GameServer::AfterRecv(SocketInfo* pClient)
+{
+	// 받은 데이터 처리 및 보낼 데이터 준비
+	recvFunctionArr[pClient->buf[0]](*this, pClient);
+
+	// 데이터 전송 요청
+
+	// 오버랩 갱신.
+	ZeroMemory(&pClient->overlapped, sizeof(pClient->overlapped));
+	
+	// 데이터 바인드
+	pClient->wsabuf.buf = pClient->buf;
+	pClient->wsabuf.len = 2;
+
+	// 데이터 전송
+	WSASend(pClient->sock, &pClient->wsabuf, 1, NULL, 0, &pClient->overlapped, NULL);
+}
+
+void GameServer::AfterSend(SocketInfo* pClient)
+{
+	// 데이터 전송 완료됨을 확인함.
+
+	pClient->wsabuf.buf = pClient->buf;
+	pClient->wsabuf.len = 2;
+
+	// 데이터 수신상태로 변경
+	WSARecv(pClient->sock, &pClient->wsabuf, 1, /*&recvBytes*/ NULL, /*&flags*/ NULL, &pClient->overlapped, NULL);
 }
 
 void GameServer::RecvCharacterMove(SocketInfo* pClient)
 {
-}
+	moveManager->MoveCharacter(pClient);
+	moveManager->SendMoveCharacter(pClient);
+	pClient->buf[0] = MakeSendPacket(PACKET_TYPE::MOVE);
 
-void GameServer::SendCharacterMove(SocketInfo* pClient)
-{
-
+	std::cout << "보내는 버퍼는"<< int(BYTE(PACKET_TYPE::MOVE)) << " " << int(pClient->buf[0]) << "\n";
 }

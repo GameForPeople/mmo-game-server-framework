@@ -6,8 +6,3 @@ UserData::UserData(const UINT8 inPositionX = 0, const UINT8 inPositionY = 0) noe
 	: position(inPositionX, inPositionY)
 {
 }
-
-void UserData::MoveCharacter(const DIRECTION inDirection)
-{
-
-}

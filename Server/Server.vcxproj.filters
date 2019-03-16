@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="PCH">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="GameServer">
+      <UniqueIdentifier>{a3f66a2f-a6cf-486b-9548-c83197974030}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SocketInfo">
+      <UniqueIdentifier>{61436111-4ecf-411d-9180-0c18c6947a1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Packet">
+      <UniqueIdentifier>{3ecd20a7-108e-4965-a3b7-63c9035bf90c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UserData">
+      <UniqueIdentifier>{233cb163-fdac-4d99-9ace-81319f84441b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UserData\MoveComponent">
+      <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>PCH</Filter>
+    </ClCompile>
+    <ClCompile Include="Server.cpp" />
+    <ClCompile Include="GameServer.cpp">
+      <Filter>GameServer</Filter>
+    </ClCompile>
+    <ClCompile Include="UserData.cpp">
+      <Filter>UserData</Filter>
+    </ClCompile>
+    <ClCompile Include="MoveComponent.cpp">
+      <Filter>UserData\MoveComponent</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h">
+      <Filter>PCH</Filter>
+    </ClInclude>
+    <ClInclude Include="GameServer.h">
+      <Filter>GameServer</Filter>
+    </ClInclude>
+    <ClInclude Include="SocketInfo.h">
+      <Filter>SocketInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="PacketType.h">
+      <Filter>Packet</Filter>
+    </ClInclude>
+    <ClInclude Include="UserData.h">
+      <Filter>UserData</Filter>
+    </ClInclude>
+    <ClInclude Include="MoveComponent.h">
+      <Filter>UserData\MoveComponent</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

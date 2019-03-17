@@ -1,13 +1,11 @@
 #pragma once
 #include "pch.h"
 
-enum class PACKET_TYPE : BYTE
+namespace PACKET_TYPE
 {
-	MOVE /* = 0*/,
-	PacketTypeCount
-};
-
-constexpr int GetPacketTypeCount() noexcept 
-{
-	return static_cast<int>(PACKET_TYPE::PacketTypeCount);
+	enum PACKET_TYPE/*class PACKET_TYPE : BYTE */
+	{
+		MOVE /* = 0*/,
+		ENUM_SIZE
+	};
 }

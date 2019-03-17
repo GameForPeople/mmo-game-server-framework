@@ -1,22 +1,21 @@
 #pragma once
 
+#include "NetworkType.h"	// only Enum
+#include "PacketType.h"		// only Enum
+
 struct SocketInfo;
 class MoveManager;
-
-enum class PACKET_TYPE : BYTE;
 
 class GameServer
 {
 public:
 	static constexpr USHORT	SERVER_PORT = 9000;
-	//constexpr inline USHORT GetServerPortNumber() { return SERVER_PORT; }
-
 	static constexpr BYTE SEND_BYTE = 1 << 7;
 
 	void Run();
 
 public:
-	GameServer();
+	GameServer(bool);
 	~GameServer();
 
 	GameServer(const GameServer& ) = delete;
@@ -33,8 +32,8 @@ private:	// for Thread
 	void WorkerThreadFunction();
 
 private:	// about Function
-	std::array <std::function <void(GameServer&, SocketInfo*)>, 2 /* 0.Recv, 1.Send */> recvOrSend; 
-	std::array <std::function <void(GameServer&, SocketInfo*)>, 1 /* == GetPacketTypeCount() */> recvFunctionArr;
+	std::function <void(GameServer&, SocketInfo*)> recvOrSendArr[NETWORK_TYPE::ENUM_SIZE];
+	std::function <void(GameServer&, SocketInfo*)> recvFunctionArr[PACKET_TYPE::ENUM_SIZE];
 
 	void AfterRecv(SocketInfo* pClient);
 	void AfterSend(SocketInfo* pClient);
@@ -50,10 +49,12 @@ private:
 
 	std::unique_ptr<MoveManager>		moveManager;
 
-private:
+private:	// Bit Converter
 	inline /*int*/ bool GetRecvOrSend(const char inChar) noexcept { return (inChar >> 7) & (0x01); }
 	//inline int GetPacketType(const char inChar) noexcept { return (inChar >> 7) & (0xfe); }
-	inline char MakeSendPacket(const PACKET_TYPE inPacketType) noexcept { return static_cast<BYTE>(inPacketType) | SEND_BYTE; }
+
+	inline char MakeSendPacket(const BYTE inPacketType) noexcept { return inPacketType | SEND_BYTE; }
+	//inline char MakeSendPacket(const PACKET_TYPE inPacketType) noexcept { return static_cast<BYTE>(inPacketType) | SEND_BYTE; }
 };
 
 #pragma region [Legacy Code]

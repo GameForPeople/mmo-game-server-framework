@@ -15,12 +15,16 @@ MoveManager::MoveManager() noexcept
 
 void MoveManager::MoveCharacter(SocketInfo* pClient)
 {
+#ifdef _DEBUG_MODE_
 	std::cout << "움직이는 방향은 : " << int(static_cast<int>(pClient->buf[1])) << "\n";
+#endif
 	moveFunctions[static_cast<int>(pClient->buf[1])](*this, pClient->userData);
 }
 
 void MoveManager::SendMoveCharacter(SocketInfo* pClient)
 {
+#ifdef _DEBUG_MODE_
 	std::cout << "보낼 방향은" << int(pClient->userData->GetPosition().x) << " " << int(pClient->userData->GetPosition().y) << "\n";
+#endif
 	pClient->buf[1] = GLOBAL_UTIL::BIT_CONVERTER::MakeByteFromLeftAndRightByte(pClient->userData->GetPosition().x, pClient->userData->GetPosition().y);
 }

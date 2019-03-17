@@ -26,9 +26,10 @@ public:
 
 public:
 	std::function<void(MoveManager&, UserData* )> moveFunctions[static_cast<int>(DIRECTION::DIRECTION_END)];
+
 	void MoveCharacter(SocketInfo* pClient);
 	void SendMoveCharacter(SocketInfo* pClient);
-	
+
 private:
 	inline void MoveLeft(UserData* inUserData) noexcept
 	{

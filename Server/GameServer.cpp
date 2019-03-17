@@ -1,18 +1,17 @@
 ﻿#include "pch.h"
 
 #include "SocketInfo.h"
-#include "PacketType.h"
 
 #include "MoveManager.h"
 
 #include "GameServer.h"
 
-GameServer::GameServer()
+GameServer::GameServer(bool inNotUse)
 	: wsa()
 	, hIOCP()
 	, listenSocket()
 	, serverAddr()
-	, recvOrSend()
+	, recvOrSendArr()
 	, recvFunctionArr()
 	, moveManager()
 {
@@ -57,10 +56,10 @@ void GameServer::InitManagers()
 */
 void GameServer::InitFunctions()
 {
-	recvOrSend[0] = &GameServer::AfterRecv;
-	recvOrSend[1] = &GameServer::AfterSend;
+	recvOrSendArr[NETWORK_TYPE::RECV] = &GameServer::AfterRecv;
+	recvOrSendArr[NETWORK_TYPE::SEND] = &GameServer::AfterSend;
 
-	recvFunctionArr[0] = &GameServer::RecvCharacterMove;
+	recvFunctionArr[PACKET_TYPE::MOVE] = &GameServer::RecvCharacterMove;
 }
 
 /*
@@ -179,6 +178,10 @@ void GameServer::Run()
 	}
 }
 
+/*
+	GameServer::StartWorkerThread(LPVOID arg)
+		- 쓰레드에서 멤버 변수를 사용하기 위해, 클래스 내부에서 워커쓰레드에 필요한 함수를 호출.
+*/
 DWORD WINAPI GameServer::StartWorkerThread(LPVOID arg)
 {
 	GameServer* pServer = static_cast<GameServer*>(arg);
@@ -187,6 +190,10 @@ DWORD WINAPI GameServer::StartWorkerThread(LPVOID arg)
 	return 0;
 };
 
+/*
+	GameServer::WorkerThreadFunction()
+		- 워커 쓰레드 함수.
+*/
 void GameServer::WorkerThreadFunction()
 {
 	// 한 번만 선언해서 여러번 씁시다. 아껴써야지...
@@ -209,11 +216,6 @@ void GameServer::WorkerThreadFunction()
 #pragma endregion
 
 #pragma region [ Error Exception ]
-		// 할당받은 소켓 즉! 클라이언트 정보 얻기
-		//SOCKADDR_IN clientAddr;
-		//int addrLength = sizeof(clientAddr);
-		//getpeername(pClient->sock, (SOCKADDR *)&clientAddr, &addrLength);
-
 	//ERROR_CLIENT_DISCONNECT:
 		if (retVal == 0 || cbTransferred == 0)
 		{
@@ -226,27 +228,33 @@ void GameServer::WorkerThreadFunction()
 		}
 #pragma endregion
 		
-		std::cout << " [RecvOrSend] GetRecvOrSend는 " << GetRecvOrSend(pClient->buf[0]) << "\n";
-		recvOrSend[GetRecvOrSend(pClient->buf[0])](*this, pClient);
+		//std::cout << " [RecvOrSend] GetRecvOrSend는 " << GetRecvOrSend(pClient->buf[0]) << "\n";
+		recvOrSendArr[GetRecvOrSend(pClient->buf[0])](*this, pClient);
 	}
 }
 
+/*
+	GameServer::AfterRecv(SocketInfo* pClient)
+		- 리시브 함수 호출 후, 클라이언트의 데이터를 실제로 받았을 때, 호출되는 함수.
+*/
 void GameServer::AfterRecv(SocketInfo* pClient)
 {
 	// 받은 데이터 처리 및 보낼 데이터 준비
 	recvFunctionArr[pClient->buf[0]](*this, pClient);
 
 	// 데이터 전송 요청
+#ifdef _DEBUG_MODE_
 	std::cout << "[Send]보낼 준비된 버퍼는" << int(pClient->buf[0]) << "희망하는 방향은 : " << int(pClient->buf[1]) << "\n";
+#endif
 
 	// 오버랩 갱신.
 	ZeroMemory(&pClient->overlapped, sizeof(pClient->overlapped));
 	
 	// 버퍼 바인드 및 사이즈 설정.
-	pClient->wsabuf.buf = pClient->buf; // 이걸 굳이 계속 해야하는가?
-	pClient->wsabuf.len = 2;
+	//pClient->wsabuf.len = 2; // 현재 고정
 
 	// 데이터 전송
+	// Socket Error일때 반환값이 -1이기 때문에, 1을 더해서 0일때 SocketError관련 함수, 이외는 아무것도 안함.
 	GLOBAL_UTIL::ERROR_HANDLING::errorRecvOrSendArr[
 		static_cast<bool>(
 			1 + WSASend(pClient->sock, &pClient->wsabuf, 1, NULL, 0, &pClient->overlapped, NULL)
@@ -254,17 +262,19 @@ void GameServer::AfterRecv(SocketInfo* pClient)
 	]();
 }
 
+/*
+	GameServer::AfterSend(SocketInfo* pClient)
+		- WSASend 함수 호출 후, 데이터 전송이 끝났을 때, 호출되는 함수.
+*/
 void GameServer::AfterSend(SocketInfo* pClient)
 {
-	// 데이터 전송 완료됨을 확인함.
-
 	// 버퍼 바인드 및 사이즈 설정.
-	pClient->wsabuf.buf = pClient->buf; // 이걸 굳이 계속 해야하는가?
-	pClient->wsabuf.len = 2;
+	//pClient->wsabuf.len = 2;	// 현재 고정
 
 	DWORD flag{};
-	// 데이터 수신상태로 변경
 
+	// 데이터 수신상태로 변경
+	// Socket Error일때 반환값이 -1이기 때문에, 1을 더해서 0일때 SocketError관련 함수, 이외는 아무것도 안함.
 	GLOBAL_UTIL::ERROR_HANDLING::errorRecvOrSendArr[
 		static_cast<bool>(
 			1 + WSARecv(pClient->sock, &pClient->wsabuf, 1, NULL, &flag /* NULL*/, &pClient->overlapped, NULL)
@@ -272,9 +282,15 @@ void GameServer::AfterSend(SocketInfo* pClient)
 	]();
 }
 
+/*
+	GameServer::RecvCharacterMove(SocketInfo* pClient)
+		- 클라이언트로부터 CharacterMove를 받았을 경우, 호출되는 함수.
+*/
 void GameServer::RecvCharacterMove(SocketInfo* pClient)
 {
+#ifdef _DEBUG_MODE_
 	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->buf[0]) << "희망하는 방향은 : " << int(pClient->buf[1]) << "\n";
+#endif
 
 	moveManager->MoveCharacter(pClient);
 	moveManager->SendMoveCharacter(pClient);

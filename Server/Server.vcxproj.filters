@@ -15,14 +15,14 @@
     <Filter Include="SocketInfo">
       <UniqueIdentifier>{61436111-4ecf-411d-9180-0c18c6947a1c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Packet">
-      <UniqueIdentifier>{3ecd20a7-108e-4965-a3b7-63c9035bf90c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="UserData">
       <UniqueIdentifier>{233cb163-fdac-4d99-9ace-81319f84441b}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameServer\MoveManager">
       <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Define">
+      <UniqueIdentifier>{3ecd20a7-108e-4965-a3b7-63c9035bf90c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -51,13 +51,16 @@
       <Filter>SocketInfo</Filter>
     </ClInclude>
     <ClInclude Include="PacketType.h">
-      <Filter>Packet</Filter>
+      <Filter>Define</Filter>
     </ClInclude>
     <ClInclude Include="UserData.h">
       <Filter>UserData</Filter>
     </ClInclude>
     <ClInclude Include="MoveManager.h">
       <Filter>GameServer\MoveManager</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkType.h">
+      <Filter>Define</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

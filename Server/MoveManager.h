@@ -3,7 +3,7 @@
 class UserData;
 struct SocketInfo;
 
-enum class DIRECTION /*: BYTE*/
+enum class DIRECTION : BYTE
 {
 	LEFT /*= 0*/,
 	UP /*= 1*/,
@@ -32,29 +32,45 @@ public:
 private:
 	inline void MoveLeft(UserData* inUserData) noexcept
 	{
-		if (Position2D refPosition = inUserData->RefPosition()
-			; refPosition.x == BLOCK_MIN_POSITION) return;
-		else --(refPosition.x);
+		if (Position2D newPosition = inUserData->GetPosition()
+			; newPosition.x == BLOCK_MIN_POSITION) return;
+		else 
+		{
+			--newPosition.x;
+			inUserData->SetPosition(newPosition);
+		}
 	};
 
 	inline void MoveUp(UserData* inUserData) noexcept
 	{
-		if (Position2D refPosition = inUserData->RefPosition()
-			; refPosition.y == BLOCK_MIN_POSITION) return;
-		else --(refPosition.y);
+		if (Position2D newPosition = inUserData->GetPosition()
+			; newPosition.y == BLOCK_MIN_POSITION) return;
+		else
+		{
+			--newPosition.y;
+			inUserData->SetPosition(newPosition);
+		}
 	};
 
 	inline void MoveRight(UserData* inUserData) noexcept
 	{
-		if (Position2D refPosition = inUserData->RefPosition()
-			; refPosition.x == BLOCK_MAX_POSITION) return;
-		else ++(refPosition.x);
+		if (Position2D newPosition = inUserData->GetPosition()
+			; newPosition.x == BLOCK_MAX_POSITION) return;
+		else
+		{
+			++newPosition.x;
+			inUserData->SetPosition(newPosition);
+		}
 	};
 
 	inline void MoveDown(UserData* inUserData) noexcept
 	{
-		if (Position2D refPosition = inUserData->RefPosition()
-			; refPosition.y == BLOCK_MAX_POSITION) return;
-		else ++(refPosition.y);
+		if (Position2D newPosition = inUserData->GetPosition()
+			; newPosition.y == BLOCK_MAX_POSITION) return;
+		else
+		{
+			++newPosition.y;
+			inUserData->SetPosition(newPosition);
+		}
 	};
 };

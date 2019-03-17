@@ -2,7 +2,8 @@
 
 struct SocketInfo;
 class MoveManager;
-enum class PACKET_TYPE;
+
+enum class PACKET_TYPE : BYTE;
 
 class GameServer
 {
@@ -22,6 +23,7 @@ public:
 	GameServer& operator=(const GameServer&) = delete;
 
 private:	// for Init
+	void PrintServerInfoUI();
 	void InitManagers();
 	void InitFunctions();
 	void InitNetwork();
@@ -31,8 +33,8 @@ private:	// for Thread
 	void WorkerThreadFunction();
 
 private:	// about Function
-	std::array <std::function <void(GameServer&, SocketInfo*)>, 2> recvOrSend; 
-	std::array <std::function <void(GameServer&, SocketInfo*)>, 1> recvFunctionArr;
+	std::array <std::function <void(GameServer&, SocketInfo*)>, 2 /* 0.Recv, 1.Send */> recvOrSend; 
+	std::array <std::function <void(GameServer&, SocketInfo*)>, 1 /* == GetPacketTypeCount() */> recvFunctionArr;
 
 	void AfterRecv(SocketInfo* pClient);
 	void AfterSend(SocketInfo* pClient);
@@ -49,7 +51,7 @@ private:
 	std::unique_ptr<MoveManager>		moveManager;
 
 private:
-	inline int GetRecvOrSend(const char inChar) noexcept { return (inChar >> 7) & (0x01); }
+	inline /*int*/ bool GetRecvOrSend(const char inChar) noexcept { return (inChar >> 7) & (0x01); }
 	//inline int GetPacketType(const char inChar) noexcept { return (inChar >> 7) & (0xfe); }
 	inline char MakeSendPacket(const PACKET_TYPE inPacketType) noexcept { return static_cast<BYTE>(inPacketType) | SEND_BYTE; }
 };

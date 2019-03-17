@@ -22,6 +22,6 @@ public:
 	//void MoveCharacter(const DIRECTION);
 	
 public:
-	inline Position2D GetPosition() const noexcept { return position; }
-	/*Not Safe*/ inline Position2D& RefPosition() noexcept { return position; }
+	_NODISCARD inline Position2D GetPosition() const noexcept { return position; }
+	inline void SetPosition(const Position2D& inNewPosition) noexcept { position = inNewPosition; }
 };

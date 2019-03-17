@@ -16,13 +16,30 @@ GameServer::GameServer()
 	, recvFunctionArr()
 	, moveManager()
 {
+	PrintServerInfoUI();
 	InitManagers();
 	InitFunctions();
 	InitNetwork();
+
+	GLOBAL_UTIL::ERROR_HANDLING::errorRecvOrSendArr[0] = GLOBAL_UTIL::ERROR_HANDLING::HandleRecvOrSendError;
+	GLOBAL_UTIL::ERROR_HANDLING::errorRecvOrSendArr[1] = GLOBAL_UTIL::ERROR_HANDLING::NotError;
 };
 
 GameServer::~GameServer()
 {
+}
+
+void GameServer::PrintServerInfoUI()
+{
+	printf("\n■■■■■■■■■■■■■■■■■■■■■■■■■\n");
+	printf("■ 게임서버프로그래밍 숙제 2번   \n");
+	printf("■                   게임공학과 원성연 2013182027\n");
+	printf("■\n");
+	
+	// 추후 퍼블릭 IP로 변경.
+	printf("■ IP : LocalHost(127.0.0.1)\n");
+	printf("■ Listen Port : 9000\n");
+	printf("■■■■■■■■■■■■■■■■■■■■■■■■■\n");
 }
 
 /*
@@ -52,7 +69,7 @@ void GameServer::InitFunctions()
 */
 void GameServer::InitNetwork()
 {
-	using namespace NETWORK_UTIL::ERROR_HANDLING;
+	using namespace GLOBAL_UTIL::ERROR_HANDLING;
 
 	//윈속 초기화
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) ERROR_QUIT(TEXT("WSAStartup()"));
@@ -114,7 +131,7 @@ void GameServer::Run()
 		if (clientSocket = WSAAccept(listenSocket, (SOCKADDR *)&clientAddr, &addrLength, NULL, NULL); 
 			clientSocket == INVALID_SOCKET)
 		{
-			NETWORK_UTIL::ERROR_HANDLING::ERROR_QUIT(TEXT("accept()"));
+			GLOBAL_UTIL::ERROR_HANDLING::ERROR_QUIT(TEXT("accept()"));
 			break;
 		}
 
@@ -128,7 +145,7 @@ void GameServer::Run()
 		SocketInfo *pClient = new SocketInfo;
 		if (pClient == nullptr)
 		{
-			NETWORK_UTIL::ERROR_HANDLING::ERROR_QUIT(TEXT("Make_SocketInfo()"));
+			GLOBAL_UTIL::ERROR_HANDLING::ERROR_QUIT(TEXT("Make_SocketInfo()"));
 			break;
 		}
 
@@ -155,7 +172,7 @@ void GameServer::Run()
 		{
 			if (WSAGetLastError() != ERROR_IO_PENDING)
 			{
-				NETWORK_UTIL::ERROR_HANDLING::ERROR_DISPLAY(("WSARecv()"));
+				GLOBAL_UTIL::ERROR_HANDLING::ERROR_DISPLAY(("WSARecv()"));
 			}
 			continue;
 		}
@@ -175,14 +192,12 @@ void GameServer::WorkerThreadFunction()
 	// 한 번만 선언해서 여러번 씁시다. 아껴써야지...
 	int retVal{};
 	DWORD cbTransferred;
+	SOCKET clientSocket;
+	SocketInfo *pClient;
 
 	while (7)
 	{
-#pragma region [ Wait For Thread ]
-		//비동기 입출력 기다리기
-		SOCKET clientSocket;
-		SocketInfo *pClient;
-
+#pragma region [ Wait For Event ]
 		// 입출력 완료 포트에 저장된 결과를 처리하기 위한 함수 // 대기 상태가 됨
 		retVal = GetQueuedCompletionStatus(
 			hIOCP, //입출력 완료 포트 핸들
@@ -195,7 +210,6 @@ void GameServer::WorkerThreadFunction()
 
 #pragma region [ Error Exception ]
 		// 할당받은 소켓 즉! 클라이언트 정보 얻기
-		
 		//SOCKADDR_IN clientAddr;
 		//int addrLength = sizeof(clientAddr);
 		//getpeername(pClient->sock, (SOCKADDR *)&clientAddr, &addrLength);
@@ -203,6 +217,8 @@ void GameServer::WorkerThreadFunction()
 	//ERROR_CLIENT_DISCONNECT:
 		if (retVal == 0 || cbTransferred == 0)
 		{
+			std::cout << " [GoodBye] 클라이언트님 잘가시게나 \n";
+
 			closesocket(pClient->sock);
 
 			delete pClient;
@@ -210,9 +226,7 @@ void GameServer::WorkerThreadFunction()
 		}
 #pragma endregion
 		
-		std::cout << "받은 버퍼는" << int(pClient->buf[0]) << "\n";
-		std::cout << "GetRecvOrSend는 " << GetRecvOrSend(pClient->buf[0]) << "\n";
-
+		std::cout << " [RecvOrSend] GetRecvOrSend는 " << GetRecvOrSend(pClient->buf[0]) << "\n";
 		recvOrSend[GetRecvOrSend(pClient->buf[0])](*this, pClient);
 	}
 }
@@ -223,34 +237,46 @@ void GameServer::AfterRecv(SocketInfo* pClient)
 	recvFunctionArr[pClient->buf[0]](*this, pClient);
 
 	// 데이터 전송 요청
+	std::cout << "[Send]보낼 준비된 버퍼는" << int(pClient->buf[0]) << "희망하는 방향은 : " << int(pClient->buf[1]) << "\n";
 
 	// 오버랩 갱신.
 	ZeroMemory(&pClient->overlapped, sizeof(pClient->overlapped));
 	
-	// 데이터 바인드
-	pClient->wsabuf.buf = pClient->buf;
+	// 버퍼 바인드 및 사이즈 설정.
+	pClient->wsabuf.buf = pClient->buf; // 이걸 굳이 계속 해야하는가?
 	pClient->wsabuf.len = 2;
 
 	// 데이터 전송
-	WSASend(pClient->sock, &pClient->wsabuf, 1, NULL, 0, &pClient->overlapped, NULL);
+	GLOBAL_UTIL::ERROR_HANDLING::errorRecvOrSendArr[
+		static_cast<bool>(
+			1 + WSASend(pClient->sock, &pClient->wsabuf, 1, NULL, 0, &pClient->overlapped, NULL)
+			)
+	]();
 }
 
 void GameServer::AfterSend(SocketInfo* pClient)
 {
 	// 데이터 전송 완료됨을 확인함.
 
-	pClient->wsabuf.buf = pClient->buf;
+	// 버퍼 바인드 및 사이즈 설정.
+	pClient->wsabuf.buf = pClient->buf; // 이걸 굳이 계속 해야하는가?
 	pClient->wsabuf.len = 2;
 
+	DWORD flag{};
 	// 데이터 수신상태로 변경
-	WSARecv(pClient->sock, &pClient->wsabuf, 1, /*&recvBytes*/ NULL, /*&flags*/ NULL, &pClient->overlapped, NULL);
+
+	GLOBAL_UTIL::ERROR_HANDLING::errorRecvOrSendArr[
+		static_cast<bool>(
+			1 + WSARecv(pClient->sock, &pClient->wsabuf, 1, NULL, &flag /* NULL*/, &pClient->overlapped, NULL)
+			)
+	]();
 }
 
 void GameServer::RecvCharacterMove(SocketInfo* pClient)
 {
+	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->buf[0]) << "희망하는 방향은 : " << int(pClient->buf[1]) << "\n";
+
 	moveManager->MoveCharacter(pClient);
 	moveManager->SendMoveCharacter(pClient);
 	pClient->buf[0] = MakeSendPacket(PACKET_TYPE::MOVE);
-
-	std::cout << "보내는 버퍼는"<< int(BYTE(PACKET_TYPE::MOVE)) << " " << int(pClient->buf[0]) << "\n";
 }

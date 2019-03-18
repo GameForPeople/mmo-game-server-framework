@@ -243,7 +243,7 @@ void GameServer::AfterRecv(SocketInfo* pClient)
 	recvFunctionArr[pClient->buf[0]](*this, pClient);
 
 	// 데이터 전송 요청
-#ifdef _DEBUG_MODE_
+#ifdef _DEV_MODE_
 	std::cout << "[Send]보낼 준비된 버퍼는" << int(pClient->buf[0]) << "희망하는 방향은 : " << int(pClient->buf[1]) << "\n";
 #endif
 
@@ -288,7 +288,7 @@ void GameServer::AfterSend(SocketInfo* pClient)
 */
 void GameServer::RecvCharacterMove(SocketInfo* pClient)
 {
-#ifdef _DEBUG_MODE_
+#ifdef _DEV_MODE_
 	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->buf[0]) << "희망하는 방향은 : " << int(pClient->buf[1]) << "\n";
 #endif
 

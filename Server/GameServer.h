@@ -10,7 +10,7 @@ class GameServer
 {
 public:
 	static constexpr USHORT	SERVER_PORT = 9000;
-	static constexpr BYTE SEND_BYTE = 1 << 7;
+	static constexpr BYTE SEND_BYTE = ( 1 << 7 );
 
 	void Run();
 
@@ -18,7 +18,7 @@ public:
 	GameServer(bool);
 	~GameServer();
 
-	GameServer(const GameServer& ) = delete;
+	GameServer(const GameServer&) = delete;
 	GameServer& operator=(const GameServer&) = delete;
 
 private:	// for Init
@@ -31,7 +31,7 @@ private:	// for Thread
 	static DWORD WINAPI StartWorkerThread(LPVOID arg);
 	void WorkerThreadFunction();
 
-private:	// about Function
+private:	// about Hash-Function
 	std::function <void(GameServer&, SocketInfo*)> recvOrSendArr[NETWORK_TYPE::ENUM_SIZE];
 	std::function <void(GameServer&, SocketInfo*)> recvFunctionArr[PACKET_TYPE::ENUM_SIZE];
 

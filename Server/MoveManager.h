@@ -1,10 +1,7 @@
 #pragma once
 
-#define _NOT_IF_MOVE_	// if가 아닌, 함수 포인터 배열을 활용해, Move.
-
-#ifdef _NOT_IF_MOVE_
-#define _USE_LAMBDA_
-#endif
+#define _USE_STD_FUNCTION_	true
+//#define _USE_LAMBDA_ true
 
 class UserData;
 struct SocketInfo;
@@ -34,20 +31,18 @@ public:
 	MoveManager& operator=(const MoveManager&) = delete;
 
 public:
-#ifdef _NOT_IF_MOVE_
+#if _USE_STD_FUNCTION_
 	std::function<void(MoveManager&, UserData*)> whatIsYourDirection[static_cast<int>(DIRECTION::DIRECTION_END)];
 	std::function<void(MoveManager&, UserData*)> moveFunctionArr[static_cast<int>(DIRECTION::DIRECTION_END)][2 /* Fail or Success */];	
 #else
-	std::function<void(MoveManager&, UserData* )> moveFunctions[static_cast<int>(DIRECTION::DIRECTION_END)];
+	std::function<void(MoveManager&, UserData* )> moveFunctionArr[static_cast<int>(DIRECTION::DIRECTION_END)];
 #endif
 
 	void MoveCharacter(SocketInfo* pClient);
 	void SendMoveCharacter(SocketInfo* pClient);
 
 private:
-#ifdef _NOT_IF_MOVE_
-#ifdef _USE_LAMBDA_
-#else
+#if _USE_STD_FUNCTION_
 	inline void LeftMoveTest(UserData* inUserData)
 	{
 		moveFunctionArr[DIRECTION::LEFT][static_cast<bool>(inUserData->GetPosition().x)](*this, inUserData);
@@ -102,7 +97,6 @@ private:
 		//inUserData->SetPosition(newPosition);
 		inUserData->SetPosition(inUserData->GetPosition().x, inUserData->GetPosition().y + 1);
 	}
-#endif
 #else
 	inline void MoveLeft(UserData* inUserData) noexcept
 	{

@@ -157,24 +157,13 @@ void GameServer::Run()
 
 		// 비동기 입출력의 시작
 		flags = 0;
-		retValBuffer = WSARecv(
-			clientSocket, 
-			&pClient->wsabuf,
-			1,			 
-			NULL,		//NULL안하면 골치아파짐...!
-			&flags,		 
-			&pClient->overlapped, 
-			NULL			// 능력부족으로 이벤트 방식 사용...
-		);
 
-		if (retValBuffer == SOCKET_ERROR)
-		{
-			if (WSAGetLastError() != ERROR_IO_PENDING)
-			{
-				GLOBAL_UTIL::ERROR_HANDLING::ERROR_DISPLAY(("WSARecv()"));
-			}
-			continue;
-		}
+		std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
+
+		GLOBAL_UTIL::ERROR_HANDLING::errorRecvOrSendArr[
+			static_cast<bool>(1 + WSARecv(clientSocket, &pClient->wsabuf, 1, NULL /*NULL안하면 골치아파짐...!*/,
+				&flags,	&pClient->overlapped, NULL /* 능력부족으로 이벤트 방식 사용...*/))
+		]();
 	}
 }
 
@@ -219,7 +208,11 @@ void GameServer::WorkerThreadFunction()
 	//ERROR_CLIENT_DISCONNECT:
 		if (retVal == 0 || cbTransferred == 0)
 		{
-			std::cout << " [GoodBye] 클라이언트님 잘가시게나 \n";
+			SOCKADDR_IN clientAddr;
+			int addrLength = sizeof(clientAddr);
+			getpeername(pClient->sock, (SOCKADDR *)&clientAddr, &addrLength);
+
+			std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) <<") 가 종료했습니다. \n";
 
 			closesocket(pClient->sock);
 
@@ -240,7 +233,7 @@ void GameServer::WorkerThreadFunction()
 void GameServer::AfterRecv(SocketInfo* pClient)
 {
 	// 받은 데이터 처리 및 보낼 데이터 준비
-	recvFunctionArr[pClient->buf[0]](*this, pClient);
+	recvFunctionArr[(pClient->buf[0]) % (PACKET_TYPE::ENUM_SIZE)](*this, pClient);
 
 	// 데이터 전송 요청
 #ifdef _DEV_MODE_

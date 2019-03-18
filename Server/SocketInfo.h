@@ -14,9 +14,12 @@ public:
 		, sock()
 		, buf()
 		, userData(new UserData(0, 0)/*std::make_unique<UserData>(0, 0)*/)
+	{}
+
+	~SocketInfo()
 	{
+		delete userData;
 	}
-	~SocketInfo() = default;
 
 public:
 	OVERLAPPED overlapped;	// OVERLAPPED ±¸Á¶Ã¼

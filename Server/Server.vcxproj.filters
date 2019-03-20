@@ -36,7 +36,7 @@
     <ClCompile Include="UserData.cpp">
       <Filter>UserData</Filter>
     </ClCompile>
-    <ClCompile Include="MoveManager.cpp">
+    <ClCompile Include="WorldManager.cpp">
       <Filter>GameServer\MoveManager</Filter>
     </ClCompile>
   </ItemGroup>
@@ -56,11 +56,11 @@
     <ClInclude Include="UserData.h">
       <Filter>UserData</Filter>
     </ClInclude>
-    <ClInclude Include="MoveManager.h">
-      <Filter>GameServer\MoveManager</Filter>
-    </ClInclude>
     <ClInclude Include="NetworkType.h">
       <Filter>Define</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldManager.h">
+      <Filter>GameServer\MoveManager</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

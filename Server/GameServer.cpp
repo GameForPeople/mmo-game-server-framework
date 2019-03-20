@@ -2,7 +2,7 @@
 
 #include "SocketInfo.h"
 
-#include "MoveManager.h"
+#include "WorldManager.h"
 
 #include "GameServer.h"
 
@@ -13,7 +13,7 @@ GameServer::GameServer(bool inNotUse)
 	, serverAddr()
 	, recvOrSendArr()
 	, recvFunctionArr()
-	, moveManager()
+	, worldManager()
 {
 	PrintServerInfoUI();
 	InitManagers();
@@ -47,7 +47,7 @@ void GameServer::PrintServerInfoUI()
 */
 void GameServer::InitManagers()
 {
-	moveManager = std::make_unique<MoveManager>();
+	worldManager = std::make_unique<WorldManager>();
 }
 
 /*
@@ -285,7 +285,7 @@ void GameServer::RecvCharacterMove(SocketInfo* pClient)
 	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->buf[0]) << "희망하는 방향은 : " << int(pClient->buf[1]) << "\n";
 #endif
 
-	moveManager->MoveCharacter(pClient);
-	moveManager->SendMoveCharacter(pClient);
+	worldManager->MoveCharacter(pClient);
+	worldManager->SendMoveCharacter(pClient);
 	pClient->buf[0] = MakeSendPacket(PACKET_TYPE::MOVE);
 }

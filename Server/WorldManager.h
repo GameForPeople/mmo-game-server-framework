@@ -18,24 +18,24 @@ namespace DIRECTION
 	};
 }
 
-class MoveManager
+class WorldManager
 {
 	static constexpr UINT8 BLOCK_MIN_POSITION = 0;
 	static constexpr UINT8 BLOCK_MAX_POSITION = 7;
 
 public:
-	MoveManager() noexcept;
-	~MoveManager() = default;
+	WorldManager() noexcept;
+	~WorldManager() = default;
 
-	MoveManager(const MoveManager&) = delete;
-	MoveManager& operator=(const MoveManager&) = delete;
+	WorldManager(const WorldManager&) = delete;
+	WorldManager& operator=(const WorldManager&) = delete;
 
 public:
 #if _USE_STD_FUNCTION_
-	std::function<void(MoveManager&, UserData*)> whatIsYourDirection[static_cast<int>(DIRECTION::DIRECTION_END)];
-	std::function<void(MoveManager&, UserData*)> moveFunctionArr[static_cast<int>(DIRECTION::DIRECTION_END)][2 /* Fail or Success */];	
+	std::function<void(WorldManager&, UserData*)> whatIsYourDirection[static_cast<int>(DIRECTION::DIRECTION_END)];
+	std::function<void(WorldManager&, UserData*)> moveFunctionArr[static_cast<int>(DIRECTION::DIRECTION_END)][2 /* Fail or Success */];
 #else
-	std::function<void(MoveManager&, UserData* )> moveFunctionArr[static_cast<int>(DIRECTION::DIRECTION_END)];
+	std::function<void(WorldManager&, UserData* )> moveFunctionArr[static_cast<int>(DIRECTION::DIRECTION_END)];
 #endif
 
 	void MoveCharacter(SocketInfo* pClient);

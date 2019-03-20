@@ -4,7 +4,7 @@
 #include "PacketType.h"		// only Enum
 
 struct SocketInfo;
-class MoveManager;
+class WorldManager;
 
 class GameServer
 {
@@ -47,7 +47,7 @@ private:
 
 	SOCKADDR_IN							serverAddr;
 
-	std::unique_ptr<MoveManager>		moveManager;
+	std::unique_ptr<WorldManager>		worldManager;
 
 private:	// Bit Converter
 	inline /*int*/ bool GetRecvOrSend(const char inChar) noexcept { return (inChar >> 7) & (0x01); }

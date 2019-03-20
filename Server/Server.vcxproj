@@ -154,7 +154,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="GameServer.h" />
-    <ClInclude Include="MoveManager.h" />
+    <ClInclude Include="WorldManager.h" />
     <ClInclude Include="NetworkType.h" />
     <ClInclude Include="PacketType.h" />
     <ClInclude Include="pch.h" />
@@ -163,7 +163,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GameServer.cpp" />
-    <ClCompile Include="MoveManager.cpp" />
+    <ClCompile Include="WorldManager.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

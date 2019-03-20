@@ -6,79 +6,57 @@
 struct SocketInfo;
 class WorldManager;
 
+// ½Ì±ÛÅÏ Àû¿ë.
 class GameServer
 {
 public:
 	static constexpr USHORT	SERVER_PORT = 9000;
 	static constexpr BYTE SEND_BYTE = ( 1 << 7 );
+	static constexpr USHORT	MAX_CLIENT_COUNT = 10;
+	
+public:
+	static GameServer* instance;
+	_NODISCARD static GameServer* GetInstance() noexcept { return GameServer::instance; } ;
+	_NODISCARD static GameServer* MakeInstance() { GameServer::instance = new GameServer(); return GameServer::instance; };
+	static void DestroyInstance() { delete GameServer::instance; };
 
+	~GameServer();
+	
 	void Run();
 
-public:
-	GameServer(bool);
-	~GameServer();
+private:
+	GameServer();
+	//GameServer(const GameServer&) = delete;
+	//GameServer& operator=(const GameServer&) = delete;
 
-	GameServer(const GameServer&) = delete;
-	GameServer& operator=(const GameServer&) = delete;
-
-private:	// for Init
-	void PrintServerInfoUI();
+	void PrintServerInfoUI() const;
 	void InitManagers();
 	void InitFunctions();
 	void InitNetwork();
 
-private:	// for Thread
-	static DWORD WINAPI StartWorkerThread(LPVOID arg);
-	void WorkerThreadFunction();
+	static void CALLBACK CallBackRecv(DWORD Error, DWORD dataBytes, LPWSAOVERLAPPED overlapped, DWORD lnFlags);
+	static void CALLBACK CallBackSend(DWORD Error, DWORD dataBytes, LPWSAOVERLAPPED overlapped, DWORD lnFlags);
 
-private:	// about Hash-Function
-	std::function <void(GameServer&, SocketInfo*)> recvOrSendArr[NETWORK_TYPE::ENUM_SIZE];
+	void CallBackRecvProcess(DWORD dataBytes, LPWSAOVERLAPPED overlapped);
+	void CallBackSendProcess(DWORD dataBytes, LPWSAOVERLAPPED overlapped);
+
 	std::function <void(GameServer&, SocketInfo*)> recvFunctionArr[PACKET_TYPE::ENUM_SIZE];
 
-	void AfterRecv(SocketInfo* pClient);
-	void AfterSend(SocketInfo* pClient);
-	
+	void RecvVoidUpdate(SocketInfo* pClient);
 	void RecvCharacterMove(SocketInfo* pClient);
+
+	inline /*int*/ bool GetRecvOrSend(const char inChar) noexcept { return (inChar >> 7) & (0x01); }
+	inline char MakeSendPacket(const BYTE inPacketType) noexcept { return inPacketType | SEND_BYTE; }
+
+	void LoadOtherPlayerPositionToSendBuffer(SocketInfo* pClient, const int inStartIndex);
 
 private:
 	WSADATA								wsa;
-	HANDLE								hIOCP;
 	SOCKET								listenSocket;
 
 	SOCKADDR_IN							serverAddr;
 
 	std::unique_ptr<WorldManager>		worldManager;
 
-private:	// Bit Converter
-	inline /*int*/ bool GetRecvOrSend(const char inChar) noexcept { return (inChar >> 7) & (0x01); }
-	//inline int GetPacketType(const char inChar) noexcept { return (inChar >> 7) & (0xfe); }
-
-	inline char MakeSendPacket(const BYTE inPacketType) noexcept { return inPacketType | SEND_BYTE; }
-	//inline char MakeSendPacket(const PACKET_TYPE inPacketType) noexcept { return static_cast<BYTE>(inPacketType) | SEND_BYTE; }
+	std::map <SOCKET, SocketInfo*>		clientCont;
 };
-
-#pragma region [Legacy Code]
-/*
-
-struct ServerInitInfomation 
-{
-	enum class SERVER_IP_TYPE : BYTE
-	{
-		LOCAL_HOST = 1
-		, INPUTTED_IP = 2
-		//,	AWS_PUBLIC = 3
-	};
-
-	SERVER_IP_TYPE serverIPType;
-	std::string IPAddress;
-
-public:
-	ServerInitInfomation(const SERVER_IP_TYPE inServerIpType, const std::string_view& inIPAddress) noexcept
-		: serverIPType(inServerIpType)
-		, IPAddress(inIPAddress)
-	{};
-
-	~ServerInitInfomation() = default;
-};
-*/
-#pragma endregion

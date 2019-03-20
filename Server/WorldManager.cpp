@@ -6,6 +6,8 @@
 #include "WorldManager.h"
 
 WorldManager::WorldManager() noexcept
+	: moveFunctionArr()
+	, whatIsYourDirection()
 {
 #if _USE_STD_FUNCTION_
 	whatIsYourDirection[DIRECTION::LEFT] = &WorldManager::LeftMoveTest;
@@ -32,7 +34,14 @@ WorldManager::WorldManager() noexcept
 void WorldManager::MoveCharacter(SocketInfo* pClient)
 {
 #ifdef _DEV_MODE_
-	std::cout << "움직이는 방향은 : " << int(static_cast<int>(pClient->buf[1])) << "\n";
+	std::cout << (int)pClient->socket << " : [Recv-MoveManager] 전송받은 클라이언트 입력 방향은 : " << [/*void*/](const BYTE dir) noexcept -> std::string
+	{
+		if (dir == DIRECTION::LEFT) return "LEFT";
+		if (dir == DIRECTION::RIGHT) return "RIGHT";
+		if (dir == DIRECTION::UP) return "UP";
+		if (dir == DIRECTION::DOWN) return "DOWN";
+
+	}(int(pClient->buf[1])) << "\n";
 #endif
 
 #if _USE_STD_FUNCTION_
@@ -45,7 +54,7 @@ void WorldManager::MoveCharacter(SocketInfo* pClient)
 void WorldManager::SendMoveCharacter(SocketInfo* pClient)
 {
 #ifdef _DEV_MODE_
-	std::cout << "보낼 방향은" << int(pClient->userData->GetPosition().x) << " " << int(pClient->userData->GetPosition().y) << "\n";
+	std::cout << (int)pClient->socket << " : [Send-MoveManager] 전송할 좌표는 x: " << int(pClient->userData->GetPosition().x) << " y : " << int(pClient->userData->GetPosition().y) << "\n";
 #endif
 
 	pClient->buf[1] = GLOBAL_UTIL::BIT_CONVERTER::MakeByteFromLeftAndRightByte(pClient->userData->GetPosition().x, pClient->userData->GetPosition().y);

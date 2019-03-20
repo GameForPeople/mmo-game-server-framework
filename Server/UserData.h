@@ -12,20 +12,17 @@ struct Position2D
 
 class UserData 
 {
-	Position2D position;
-
 public:
 	UserData(const UINT8 inPositionX, const UINT8 inPositionY) noexcept;
 	~UserData() = default;
 
-public:
-	//void MoveCharacter(const DIRECTION);
-	
-public:
 	_NODISCARD inline Position2D GetPosition() const noexcept { return position; }
 	inline void SetPosition(const Position2D& inNewPosition) noexcept { position = inNewPosition; }
 	inline void SetPosition(const UINT8 inNewPositionX, const UINT8 inNewPositionY) noexcept 
 	{
 		position.x = inNewPositionX; position.y = inNewPositionY;
 	}
+
+private:
+	Position2D position;
 };

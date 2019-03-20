@@ -5,13 +5,16 @@
 
 struct SocketInfo
 {
-	static constexpr int BUFFER_MAX_SIZE = 2;
+	static constexpr int BUFFER_MAX_SIZE = 13;
+
+	// Protocol[1Byte] + MyPos[1Byte] + connectedClientCount[1Byte] + (connectedClientCount * Pos)Byte..!
+	// 1 + 1 + 1 + 10..! 13.
 
 public:
 	SocketInfo() noexcept
 		: overlapped()
 		, wsabuf()
-		, sock()
+		, socket()
 		, buf()
 		, userData(new UserData(0, 0)/*std::make_unique<UserData>(0, 0)*/)
 	{}
@@ -24,8 +27,8 @@ public:
 public:
 	OVERLAPPED overlapped;	// OVERLAPPED ±¸Á¶Ã¼
 	WSABUF wsabuf;
-	SOCKET sock;
-
+	SOCKET socket;
+	
 	char buf[BUFFER_MAX_SIZE];
 
 	UserData* userData;

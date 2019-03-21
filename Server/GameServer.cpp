@@ -70,10 +70,10 @@ void GameServer::InitNetwork()
 {
 	using namespace GLOBAL_UTIL::ERROR_HANDLING;
 
-	//윈속 초기화
+	// 1. 윈속 초기화
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) ERROR_QUIT(TEXT("WSAStartup()"));
 
-	// 입출력 완료 포트 생성
+	// 2. 입출력 완료 포트 생성
 	if (hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)
 		; hIOCP == NULL) ERROR_QUIT(TEXT("Make_WorkerThread()"));
 
@@ -81,7 +81,7 @@ void GameServer::InitNetwork()
 	//SYSTEM_INFO si;
 	//GetSystemInfo(&si);
 
-	// 쓰레드 수 제어.
+	// 3. 워커 쓰레드 생성 및 IOCP 등록.
 	HANDLE hThread;
 	for (int i = 0; i < /* (int)si.dwNumberOfProcessors * 2 */ 2; ++i)
 	{
@@ -91,22 +91,21 @@ void GameServer::InitNetwork()
 		CloseHandle(hThread);
 	}
 
-	//Socket()
-	if (listenSocket = socket(AF_INET, SOCK_STREAM, 0)
+	// 4. 소켓 생성
+	if (listenSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED)
 		; listenSocket == INVALID_SOCKET) ERROR_QUIT(TEXT("socket()"));
 
-	//bind()
+	// 5. 서버 정보 객체 설정
 	ZeroMemory(&serverAddr, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	serverAddr.sin_port = htons(SERVER_PORT);
 
-	if (int bindResult = ::bind(listenSocket, (SOCKADDR *)&serverAddr, sizeof(serverAddr))
-		; bindResult == SOCKET_ERROR) ERROR_QUIT(TEXT("bind()"));
+	// 6. 소켓 설정
+	if (::bind(listenSocket, (SOCKADDR *)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) ERROR_QUIT(TEXT("bind()"));
 
-	// Listen()!
-	if (int listenResult = listen(listenSocket, SOMAXCONN)
-		; listenResult == SOCKET_ERROR) ERROR_QUIT(TEXT("listen()"));
+	// 7. Listen()!
+	if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR) ERROR_QUIT(TEXT("listen()"));
 }
 
 /*

@@ -1,9 +1,7 @@
 #pragma once
 
-#include "Define.h"
-
 struct SocketInfo;
-class MoveManager;
+class Scene;
 
 class GameServer
 {
@@ -21,7 +19,7 @@ public:
 
 private:	// for Init
 	void PrintServerInfoUI();
-	void InitManagers();
+	void InitScenes();
 	void InitFunctions();
 	void InitNetwork();
 
@@ -31,12 +29,9 @@ private:	// for Thread
 
 private:	// about Hash-Function
 	std::function <void(GameServer&, SocketInfo*)> recvOrSendArr[NETWORK_TYPE::ENUM_SIZE];
-	std::function <void(GameServer&, SocketInfo*)> recvFunctionArr[PACKET_TYPE::ENUM_SIZE];
 
 	void AfterRecv(SocketInfo* pClient);
 	void AfterSend(SocketInfo* pClient);
-	
-	void RecvCharacterMove(SocketInfo* pClient);
 
 private:
 	WSADATA								wsa;
@@ -45,9 +40,8 @@ private:
 
 	SOCKADDR_IN							serverAddr;
 
-	std::unique_ptr<MoveManager>		moveManager;
-
 	std::vector<std::thread>			workerThreadCont;
+	std::vector<std::unique_ptr<Scene>>	sceneCont;
 
 private:	// Bit Converter
 	inline /*int*/ bool GetRecvOrSend(const char inChar) noexcept { return (inChar >> 7) & (0x01); }

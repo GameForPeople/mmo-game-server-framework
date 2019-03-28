@@ -24,6 +24,9 @@
     <Filter Include="Define">
       <UniqueIdentifier>{3ecd20a7-108e-4965-a3b7-63c9035bf90c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Scene">
+      <UniqueIdentifier>{561e16c5-d6a2-4aad-ad3f-b7ed162a14b2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -38,6 +41,9 @@
     </ClCompile>
     <ClCompile Include="MoveManager.cpp">
       <Filter>GameServer\MoveManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>Scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -57,6 +63,12 @@
       <Filter>GameServer\MoveManager</Filter>
     </ClInclude>
     <ClInclude Include="Define.h">
+      <Filter>Define</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerDefine.h">
       <Filter>Define</Filter>
     </ClInclude>
   </ItemGroup>

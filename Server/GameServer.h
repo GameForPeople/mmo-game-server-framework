@@ -1,7 +1,6 @@
 #pragma once
 
-#include "NetworkType.h"	// only Enum
-#include "PacketType.h"		// only Enum
+#include "Define.h"
 
 struct SocketInfo;
 class MoveManager;
@@ -9,7 +8,6 @@ class MoveManager;
 class GameServer
 {
 public:
-	static constexpr USHORT	SERVER_PORT = 9000;
 	static constexpr BYTE SEND_BYTE = ( 1 << 7 );
 
 	void Run();
@@ -49,6 +47,8 @@ private:
 
 	std::unique_ptr<MoveManager>		moveManager;
 
+	std::vector<std::thread>			workerThreadCont;
+
 private:	// Bit Converter
 	inline /*int*/ bool GetRecvOrSend(const char inChar) noexcept { return (inChar >> 7) & (0x01); }
 	//inline int GetPacketType(const char inChar) noexcept { return (inChar >> 7) & (0xfe); }
@@ -57,7 +57,7 @@ private:	// Bit Converter
 	//inline char MakeSendPacket(const PACKET_TYPE inPacketType) noexcept { return static_cast<BYTE>(inPacketType) | SEND_BYTE; }
 };
 
-#pragma region [Legacy Code]
+#pragma region [Legacy]
 /*
 
 struct ServerInitInfomation 

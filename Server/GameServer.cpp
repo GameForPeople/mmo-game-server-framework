@@ -82,13 +82,14 @@ void GameServer::InitNetwork()
 	//GetSystemInfo(&si);
 
 	// 3. 워커 쓰레드 생성 및 IOCP 등록.
-	HANDLE hThread;
+	workerThreadCont.reserve(2);
 	for (int i = 0; i < /* (int)si.dwNumberOfProcessors * 2 */ 2; ++i)
 	{
-		if (hThread = CreateThread(NULL, 0, StartWorkerThread, (LPVOID)this, 0, NULL)
-			; hThread == NULL) ERROR_QUIT(TEXT("Make_WorkerThread()"));
-		
-		CloseHandle(hThread);
+		workerThreadCont.emplace_back(std::thread{ StartWorkerThread, (LPVOID)this });
+		//if (hThread = CreateThread(NULL, 0, StartWorkerThread, (LPVOID)this, 0, NULL)
+		//	; hThread == NULL) ERROR_QUIT(TEXT("Make_WorkerThread()"));
+		//
+		//CloseHandle(hThread);
 	}
 
 	// 4. 소켓 생성
@@ -99,7 +100,7 @@ void GameServer::InitNetwork()
 	ZeroMemory(&serverAddr, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serverAddr.sin_port = htons(SERVER_PORT);
+	serverAddr.sin_port = htons(GLOBAL_DEFINE::SERVER_PORT);
 
 	// 6. 소켓 설정
 	if (::bind(listenSocket, (SOCKADDR *)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) ERROR_QUIT(TEXT("bind()"));
@@ -161,7 +162,7 @@ void GameServer::Run()
 
 		GLOBAL_UTIL::ERROR_HANDLING::errorRecvOrSendArr[
 			static_cast<bool>(1 + WSARecv(clientSocket, &pClient->wsabuf, 1, NULL /*NULL안하면 골치아파짐...!*/,
-				&flags,	&pClient->overlapped, NULL /* 능력부족으로 이벤트 방식 사용...*/))
+				&flags,	&pClient->overlapped, NULL ))
 		]();
 	}
 }
@@ -283,7 +284,6 @@ void GameServer::RecvCharacterMove(SocketInfo* pClient)
 #ifdef _DEV_MODE_
 	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->buf[0]) << "희망하는 방향은 : " << int(pClient->buf[1]) << "\n";
 #endif
-
 	moveManager->MoveCharacter(pClient);
 	moveManager->SendMoveCharacter(pClient);
 	pClient->buf[0] = MakeSendPacket(PACKET_TYPE::MOVE);

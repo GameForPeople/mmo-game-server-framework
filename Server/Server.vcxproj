@@ -153,10 +153,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Define.h" />
     <ClInclude Include="GameServer.h" />
     <ClInclude Include="MoveManager.h" />
-    <ClInclude Include="NetworkType.h" />
-    <ClInclude Include="PacketType.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="SocketInfo.h" />
     <ClInclude Include="UserData.h" />

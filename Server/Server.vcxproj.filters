@@ -50,16 +50,13 @@
     <ClInclude Include="SocketInfo.h">
       <Filter>SocketInfo</Filter>
     </ClInclude>
-    <ClInclude Include="PacketType.h">
-      <Filter>Define</Filter>
-    </ClInclude>
     <ClInclude Include="UserData.h">
       <Filter>UserData</Filter>
     </ClInclude>
     <ClInclude Include="MoveManager.h">
       <Filter>GameServer\MoveManager</Filter>
     </ClInclude>
-    <ClInclude Include="NetworkType.h">
+    <ClInclude Include="Define.h">
       <Filter>Define</Filter>
     </ClInclude>
   </ItemGroup>

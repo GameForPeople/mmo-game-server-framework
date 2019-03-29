@@ -1,19 +1,24 @@
 #pragma once
 
+#define DISABLED_FUNCTION_POINTER
+
 struct SocketInfo;
 class Scene;
 
+/*
+	GameServer
+		- 게임서버입니다.
+*/
 class GameServer
 {
 public:
-	static constexpr BYTE SEND_BYTE = ( 1 << 7 );
-
 	void Run();
 
 public:
 	GameServer(bool);
 	~GameServer();
 
+	// 마 서버가 어딜 복사하누!
 	GameServer(const GameServer&) = delete;
 	GameServer& operator=(const GameServer&) = delete;
 
@@ -23,15 +28,24 @@ private:	// for Init
 	void InitFunctions();
 	void InitNetwork();
 
-private:	// for Thread
+private:	// for Worker Thread
 	static DWORD WINAPI StartWorkerThread(LPVOID arg);
 	void WorkerThreadFunction();
 
-private:	// about Hash-Function
-	std::function <void(GameServer&, SocketInfo*)> recvOrSendArr[NETWORK_TYPE::ENUM_SIZE];
+private:	// for Aceept Thread
+	static DWORD WINAPI StartAcceptThread(LPVOID arg);
+	void AcceptThreadFunction();
 
-	void AfterRecv(SocketInfo* pClient);
-	void AfterSend(SocketInfo* pClient);
+private:
+#ifdef DISABLED_FUNCTION_POINTER
+	void AfterRecv(LPVOID pClient, int cbTransferred);
+	void AfterSend(LPVOID pClient);
+#else
+	std::function <void(GameServer&, LPVOID)>* recvOrSendArr;
+	void AfterRecv(LPVOID pClient);
+	void AfterSend(LPVOID pClient);
+#endif
+	void ProcessRecvData(SocketInfo* pClient, int restSize);
 
 private:
 	WSADATA								wsa;
@@ -42,13 +56,6 @@ private:
 
 	std::vector<std::thread>			workerThreadCont;
 	std::vector<std::unique_ptr<Scene>>	sceneCont;
-
-private:	// Bit Converter
-	inline /*int*/ bool GetRecvOrSend(const char inChar) noexcept { return (inChar >> 7) & (0x01); }
-	//inline int GetPacketType(const char inChar) noexcept { return (inChar >> 7) & (0xfe); }
-
-	inline char MakeSendPacket(const BYTE inPacketType) noexcept { return inPacketType | SEND_BYTE; }
-	//inline char MakeSendPacket(const PACKET_TYPE inPacketType) noexcept { return static_cast<BYTE>(inPacketType) | SEND_BYTE; }
 };
 
 #pragma region [Legacy]

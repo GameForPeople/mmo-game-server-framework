@@ -6,25 +6,14 @@
 struct SocketInfo;
 class UserData;
 
-namespace DIRECTION
-{
-	enum /* class DIRECTION */ : BYTE
-	{
-		LEFT /*= 0*/,
-		UP /*= 1*/,
-		RIGHT /*= 2*/,
-		DOWN /*= 3*/,
-		DIRECTION_END
-	};
-}
-
+/*
+	MoveManager
+		- Scene 내부에서, 이동과 관련된 패킷을 처리하는 객체입니다.
+*/
 class MoveManager
 {
-	static constexpr UINT8 BLOCK_MIN_POSITION = 0;
-	static constexpr UINT8 BLOCK_MAX_POSITION = 7;
-
 public:
-	MoveManager();
+	MoveManager() noexcept;
 
 	MoveManager(const MoveManager&) = delete;
 	MoveManager& operator=(const MoveManager&) = delete;

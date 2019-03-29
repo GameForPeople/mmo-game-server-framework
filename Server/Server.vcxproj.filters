@@ -5,10 +5,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="PCH">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
     <Filter Include="GameServer">
       <UniqueIdentifier>{a3f66a2f-a6cf-486b-9548-c83197974030}</UniqueIdentifier>
     </Filter>
@@ -18,22 +14,26 @@
     <Filter Include="UserData">
       <UniqueIdentifier>{233cb163-fdac-4d99-9ace-81319f84441b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameServer\MoveManager">
-      <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Define">
       <UniqueIdentifier>{3ecd20a7-108e-4965-a3b7-63c9035bf90c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Scene">
+    <Filter Include="GameServer\SendMemoryPool">
+      <UniqueIdentifier>{f052244d-703e-432b-855a-280ee59a2e7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameServer\Scene">
       <UniqueIdentifier>{561e16c5-d6a2-4aad-ad3f-b7ed162a14b2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="DataStruct">
-      <UniqueIdentifier>{f052244d-703e-432b-855a-280ee59a2e7a}</UniqueIdentifier>
+    <Filter Include="GameServer\Scene\MoveManager">
+      <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Define\PCH">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
-      <Filter>PCH</Filter>
+      <Filter>Define\PCH</Filter>
     </ClCompile>
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="GameServer.cpp">
@@ -43,24 +43,27 @@
       <Filter>UserData</Filter>
     </ClCompile>
     <ClCompile Include="MoveManager.cpp">
-      <Filter>GameServer\MoveManager</Filter>
+      <Filter>GameServer\Scene\MoveManager</Filter>
     </ClCompile>
     <ClCompile Include="Scene.cpp">
-      <Filter>Scene</Filter>
+      <Filter>GameServer\Scene</Filter>
     </ClCompile>
     <ClCompile Include="ServerDefine.cpp">
       <Filter>Define</Filter>
     </ClCompile>
     <ClCompile Include="SendMemoryPool.cpp">
-      <Filter>DataStruct</Filter>
+      <Filter>GameServer\SendMemoryPool</Filter>
     </ClCompile>
     <ClCompile Include="Define.cpp">
       <Filter>Define</Filter>
     </ClCompile>
+    <ClCompile Include="SocketInfo.cpp">
+      <Filter>SocketInfo</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
-      <Filter>PCH</Filter>
+      <Filter>Define\PCH</Filter>
     </ClInclude>
     <ClInclude Include="GameServer.h">
       <Filter>GameServer</Filter>
@@ -72,19 +75,19 @@
       <Filter>UserData</Filter>
     </ClInclude>
     <ClInclude Include="MoveManager.h">
-      <Filter>GameServer\MoveManager</Filter>
+      <Filter>GameServer\Scene\MoveManager</Filter>
     </ClInclude>
     <ClInclude Include="Define.h">
       <Filter>Define</Filter>
     </ClInclude>
     <ClInclude Include="Scene.h">
-      <Filter>Scene</Filter>
+      <Filter>GameServer\Scene</Filter>
     </ClInclude>
     <ClInclude Include="ServerDefine.h">
       <Filter>Define</Filter>
     </ClInclude>
     <ClInclude Include="SendMemoryPool.h">
-      <Filter>DataStruct</Filter>
+      <Filter>GameServer\SendMemoryPool</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

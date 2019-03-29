@@ -177,6 +177,7 @@
     <ClCompile Include="SendMemoryPool.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="ServerDefine.cpp" />
+    <ClCompile Include="SocketInfo.cpp" />
     <ClCompile Include="UserData.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -10,6 +10,13 @@ struct Position2D
 	{}
 };
 
+/*
+	UserData
+	 - 유저 데이터를 정의합니다.
+
+	 #0. Position2D
+		- 해당 객체의 위치값을 정의합니다.
+*/
 class UserData 
 {
 	Position2D position;
@@ -19,7 +26,6 @@ public:
 	~UserData() = default;
 
 public:
-	//void MoveCharacter(const DIRECTION);
 	
 public:
 	_NODISCARD inline Position2D GetPosition() const noexcept { return position; }

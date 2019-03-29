@@ -11,7 +11,9 @@ namespace NETWORK_UTIL
 			- WSASend!는 여기에서만 존재할 수 있습니다.
 
 		!0. 단순히 WSA Send만 있는 함수입니다. 데이터는 준비해주세요.
-		!1. wsaBuf의 len, wsaBuf의 buf는 지정해주셔야합니다.
+		!1. 이 함수를 호출하기 전에, wsaBuf의 len을 설정해주세요.
+
+		?0. wsaBuf의 buf는 보낼때마다 바꿔줘야 할까요?
 	*/
 	void SendPacket(SocketInfo* pClient, SendMemoryUnit* pSendMemoryUnit)
 	{
@@ -50,7 +52,15 @@ namespace NETWORK_UTIL
 
 	/*
 		LogOutProcess()
-			- 나갑니다~~~
+			- 클라이언트의 로그아웃 처리를 합니다.
+
+			#0. OutClient 함수에서, pScene의 nullptr와 clientContIndex의 -1을 보장합니다.
+
+			!0. 다만, Socket이 없는 경우 해당 함수 호출 시, 문제가 될 수 있습니다. (Accept 실패 시 
+			!1. 또, nullptr가 인자로 들어올 경우, nullptr 참조 오류가 발생합니다.
+			!2. pClient의 pScene이 nullptr일 경우, nullptr 참조 오류가 발생합니다. 
+
+			#0. 성능상의 이슈로, !0, !1, !2의 nullptr여부를 보장하지 않습니다. ( 적합한 구조일 경우, nullptr참조가 발생하기 어려움 )
 	*/
 	void LogOutProcess(SocketInfo* pClient)
 	{
@@ -60,7 +70,7 @@ namespace NETWORK_UTIL
 
 		getpeername(pClient->sock, (SOCKADDR *)&clientAddr, &addrLength);
 		std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
-		if (pClient->clientContIndex != -1) pClient->pScene->ExitClient(pClient->clientContIndex);
+		if (pClient->clientContIndex != -1) pClient->pScene->OutClient(pClient);
 
 		closesocket(pClient->sock);
 		delete pClient;
@@ -69,10 +79,24 @@ namespace NETWORK_UTIL
 
 namespace BIT_CONVERTER
 {
+	/*
+		MakeByteFromLeftAndRightByte()
+			- 인자로 들어온 패킷 타입(바이트)의 최상위 비트를 1로 바꾼후 반환합니다.
+
+		!0. 패킷 타입 개수가, ox7f보다 클 경우, 해당 함수 및 현재 서버 로직은 오류가 발생합니다.
+	*/
 	_NODISCARD BYTE MakeSendPacket(const BYTE inPacketType) noexcept { return inPacketType | SEND_BYTE; }
 
-	_NODISCARD bool GetRecvOrSend(const char inChar) noexcept { return (inChar >> 7) & (0x01); }
+	/*
+		MakeByteFromLeftAndRightByte()
+			- 인자로 들어온 패킷 타입(바이트)의 최상위 비트를 검사합니다.
 
+		#0. 최상위 비트가 1일 경우, true를, 0일 경우 false를 반환합니다. (형변환을 통한 Array Overflow 방지 )
+
+		!0. 패킷 타입 개수가, ox7f보다 클 경우, 해당 함수 및 현재 서버 로직은 오류가 발생합니다.
+	*/
+	_NODISCARD bool GetRecvOrSend(const char inChar) noexcept { return (inChar >> 7) & (0x01); }
+	
 	/*
 		MakeByteFromLeftAndRightByte
 			- 0x10보다 작은 바이트 두개를 인자로 받아(Left, Right) 상위 4개비트는 Left, 하위 4개 비트는 Right를 담아반환합니다.
@@ -109,7 +133,7 @@ namespace ERROR_HANDLING
 {
 	/*
 		ERROR_QUIT
-			- 서버에 심각한 오류가 발생할 경우, 메세지 박스를 활용해 에러를 출력하고, 서버를 종류합니다.
+			- 서버에 심각한 오류가 발생할 경우, 메세지 박스를 활용해 에러를 출력하고, 서버를 종료합니다.
 	*/
 	_NORETURN void ERROR_QUIT(const WCHAR *msg)
 	{
@@ -147,6 +171,7 @@ namespace ERROR_HANDLING
 			NULL
 		);
 
+		//C603 형식 문자열이 일치하지 않습니다. 와이드 문자열이 _Param_(3)으로 전달되었습니다.
 		printf(" [%s]  %s", msg, (LPTSTR)&lpMsgBuf);
 		LocalFree(lpMsgBuf);
 	};

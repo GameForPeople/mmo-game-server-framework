@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Define.h"
 #include "ServerDefine.h"
 
 #include "SocketInfo.h"
@@ -6,7 +7,7 @@
 
 #include "MoveManager.h"
 
-MoveManager::MoveManager()
+MoveManager::MoveManager() noexcept
 {
 #if _USE_STD_FUNCTION_
 	whatIsYourDirection[DIRECTION::LEFT] = &MoveManager::LeftMoveTest;
@@ -30,25 +31,32 @@ MoveManager::MoveManager()
 #endif
 }
 
+/*
+	MoveCharacter()
+		- pClient가 입력한 방향에 따라 처리해줍니다.
+
+	!0. 해당 버퍼값이 Direction의 사이즈 보다 큰 값일 경우, Overflow가 발생합니다. 
+*/
 void MoveManager::MoveCharacter(SocketInfo* pClient)
 {
 #ifdef _DEV_MODE_
-	std::cout << "움직이는 방향은 : " << int(static_cast<int>(pClient->buf[1])) << "\n";
+	std::cout << "움직이는 방향은 : " << int(static_cast<int>(pClient->loadedBuf[2])) << "\n";
 #endif
 
 #if _USE_STD_FUNCTION_
-	whatIsYourDirection[static_cast<int>(pClient->buf[1])](*this, pClient->userData);
+	whatIsYourDirection[static_cast<int>(pClient->loadedBuf[2])](*this, pClient->userData);
 #else
 	moveFunctionArr[static_cast<int>(pClient->buf[1])](*this, pClient->userData);
 #endif
 }
 
+// 이함수 사용하면 에러입니다. 현재 사용되지 않으며, 수정되어야합니다.
 void MoveManager::SendMoveCharacter(SocketInfo* pClient)
 {
 #ifdef _DEV_MODE_
 	std::cout << "보낼 방향은" << int(pClient->userData->GetPosition().x) << " " << int(pClient->userData->GetPosition().y) << "\n";
 #endif
-	pClient->buf[1] = GLOBAL_UTIL::BIT_CONVERTER::MakeByteFromLeftAndRightByte(pClient->userData->GetPosition().x, pClient->userData->GetPosition().y);
+	pClient->loadedBuf[1] = BIT_CONVERTER::MakeByteFromLeftAndRightByte(pClient->userData->GetPosition().x, pClient->userData->GetPosition().y);
 }
 
 #if _USE_STD_FUNCTION_
@@ -64,12 +72,12 @@ void MoveManager::UpMoveTest(UserData* inUserData)
 
 void MoveManager::RightMoveTest(UserData* inUserData)
 {
-	moveFunctionArr[DIRECTION::RIGHT][!(static_cast<bool>(inUserData->GetPosition().x / 7))](*this, inUserData);
+	moveFunctionArr[DIRECTION::RIGHT][!(static_cast<bool>(inUserData->GetPosition().x / GLOBAL_DEFINE::MAX_WIDTH))](*this, inUserData);
 };
 
 void MoveManager::DownMoveTest(UserData* inUserData)
 {
-	moveFunctionArr[DIRECTION::DOWN][!(static_cast<bool>(inUserData->GetPosition().y / 7))](*this, inUserData);
+	moveFunctionArr[DIRECTION::DOWN][!(static_cast<bool>(inUserData->GetPosition().y / GLOBAL_DEFINE::MAX_HEIGHT))](*this, inUserData);
 };
 
 void MoveManager::MoveFail(UserData* inUserData) noexcept

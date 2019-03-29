@@ -15,8 +15,10 @@ namespace GLOBAL_DEFINE
 {
 	constexpr USHORT SERVER_PORT = 9000;
 
-	// 추후 해당 헤더에서 추방, SERVER_DEFINE으로 위치 변경 필요합니다.
+	// 아래 상수들은 추후 해당 헤더에서 추방, SERVER_DEFINE으로 위치 변경 필요합니다.
 	constexpr BYTE MAX_CLIENT = 10;
+	constexpr USHORT MAX_SIZE_OF_BUFFER = 50;
+	constexpr USHORT MAX_SIZE_OF_SEND_POOL = 100;
 }
 
 namespace PACKET_TYPE

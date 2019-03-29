@@ -27,6 +27,9 @@
     <Filter Include="Scene">
       <UniqueIdentifier>{561e16c5-d6a2-4aad-ad3f-b7ed162a14b2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DataStruct">
+      <UniqueIdentifier>{f052244d-703e-432b-855a-280ee59a2e7a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -44,6 +47,15 @@
     </ClCompile>
     <ClCompile Include="Scene.cpp">
       <Filter>Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerDefine.cpp">
+      <Filter>Define</Filter>
+    </ClCompile>
+    <ClCompile Include="SendMemoryPool.cpp">
+      <Filter>DataStruct</Filter>
+    </ClCompile>
+    <ClCompile Include="Define.cpp">
+      <Filter>Define</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -70,6 +82,9 @@
     </ClInclude>
     <ClInclude Include="ServerDefine.h">
       <Filter>Define</Filter>
+    </ClInclude>
+    <ClInclude Include="SendMemoryPool.h">
+      <Filter>DataStruct</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

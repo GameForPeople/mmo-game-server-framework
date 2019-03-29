@@ -1,11 +1,12 @@
 #include "pch.h"
+#include "ServerDefine.h"
 
-#include "UserData.h"
 #include "SocketInfo.h"
+#include "UserData.h"
 
 #include "MoveManager.h"
 
-MoveManager::MoveManager() noexcept
+MoveManager::MoveManager()
 {
 #if _USE_STD_FUNCTION_
 	whatIsYourDirection[DIRECTION::LEFT] = &MoveManager::LeftMoveTest;
@@ -47,6 +48,62 @@ void MoveManager::SendMoveCharacter(SocketInfo* pClient)
 #ifdef _DEV_MODE_
 	std::cout << "보낼 방향은" << int(pClient->userData->GetPosition().x) << " " << int(pClient->userData->GetPosition().y) << "\n";
 #endif
-
 	pClient->buf[1] = GLOBAL_UTIL::BIT_CONVERTER::MakeByteFromLeftAndRightByte(pClient->userData->GetPosition().x, pClient->userData->GetPosition().y);
 }
+
+#if _USE_STD_FUNCTION_
+void MoveManager::LeftMoveTest(UserData* inUserData)
+{
+	moveFunctionArr[DIRECTION::LEFT][static_cast<bool>(inUserData->GetPosition().x)](*this, inUserData);
+};
+
+void MoveManager::UpMoveTest(UserData* inUserData)
+{
+	moveFunctionArr[DIRECTION::UP][static_cast<bool>(inUserData->GetPosition().y)](*this, inUserData);
+};
+
+void MoveManager::RightMoveTest(UserData* inUserData)
+{
+	moveFunctionArr[DIRECTION::RIGHT][!(static_cast<bool>(inUserData->GetPosition().x / 7))](*this, inUserData);
+};
+
+void MoveManager::DownMoveTest(UserData* inUserData)
+{
+	moveFunctionArr[DIRECTION::DOWN][!(static_cast<bool>(inUserData->GetPosition().y / 7))](*this, inUserData);
+};
+
+void MoveManager::MoveFail(UserData* inUserData) noexcept
+{}
+
+void MoveManager::MoveLeft(UserData* inUserData) noexcept
+{
+	//Position2D newPosition = inUserData->GetPosition();
+	//--newPosition.x;
+	//inUserData->SetPosition(newPosition);
+	inUserData->SetPosition(inUserData->GetPosition().x - 1, inUserData->GetPosition().y);
+}
+
+void MoveManager::MoveUp(UserData* inUserData) noexcept
+{
+	//Position2D newPosition = inUserData->GetPosition();
+	//--newPosition.y;
+	//inUserData->SetPosition(newPosition);
+	inUserData->SetPosition(inUserData->GetPosition().x, inUserData->GetPosition().y - 1);
+}
+
+void MoveManager::MoveRight(UserData* inUserData) noexcept
+{
+	//Position2D newPosition = inUserData->GetPosition();
+	//++newPosition.x;
+	//inUserData->SetPosition(newPosition);
+	inUserData->SetPosition(inUserData->GetPosition().x + 1, inUserData->GetPosition().y);
+}
+
+void MoveManager::MoveDown(UserData* inUserData) noexcept
+{
+	//Position2D newPosition = inUserData->GetPosition();
+	//++newPosition.y;
+	//inUserData->SetPosition(newPosition);
+	inUserData->SetPosition(inUserData->GetPosition().x, inUserData->GetPosition().y + 1);
+}
+#endif

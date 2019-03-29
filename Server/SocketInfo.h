@@ -14,6 +14,7 @@ public:
 		, sock()
 		, buf()
 		, userData(new UserData(0, 0)/*std::make_unique<UserData>(0, 0)*/)
+		, clientContIndex()
 	{}
 
 	~SocketInfo()
@@ -29,5 +30,6 @@ public:
 	char buf[BUFFER_MAX_SIZE];
 
 	UserData* userData;
+	int clientContIndex;
 	//std::unique_ptr<UserData> userData;
 };

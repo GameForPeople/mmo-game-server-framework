@@ -158,11 +158,13 @@
     <ClInclude Include="MoveManager.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Scene.h" />
+    <ClInclude Include="SendMemoryPool.h" />
     <ClInclude Include="ServerDefine.h" />
     <ClInclude Include="SocketInfo.h" />
     <ClInclude Include="UserData.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Define.cpp" />
     <ClCompile Include="GameServer.cpp" />
     <ClCompile Include="MoveManager.cpp" />
     <ClCompile Include="pch.cpp">
@@ -172,7 +174,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="SendMemoryPool.cpp" />
     <ClCompile Include="Server.cpp" />
+    <ClCompile Include="ServerDefine.cpp" />
     <ClCompile Include="UserData.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

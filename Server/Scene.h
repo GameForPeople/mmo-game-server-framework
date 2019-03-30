@@ -2,6 +2,7 @@
 
 class MoveManager;
 struct SocketInfo;
+struct MemoryUnit;
 
 /*
 	Scene

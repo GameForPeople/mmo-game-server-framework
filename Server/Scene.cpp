@@ -3,9 +3,9 @@
 #include "ServerDefine.h"
 
 #include "MoveManager.h"
-#include "SocketInfo.h"
 #include "UserData.h"
 
+#include "MemoryUnit.h"
 #include "SendMemoryPool.h"
 
 #include "Scene.h"
@@ -141,16 +141,19 @@ void Scene::RecvCharacterMove(SocketInfo* pClient)
 	const BYTE clientPositionByte 
 		= BIT_CONVERTER::MakeByteFromLeftAndRightByte(pClient->userData->GetPosition().x, pClient->userData->GetPosition().y);
 
-	for (auto& client : clientCont)
+	for (std::pair<bool, SocketInfo*> retClient : clientCont)
 	{
-		SendMemoryUnit* memoryUnit = SendMemoryPool::GetInstance()->PopMemory();
-		
-		memoryUnit->sendBuf[0] = PACKET_TYPE::MOVE;
-		memoryUnit->sendBuf[1] = pClient->clientContIndex;
-		memoryUnit->sendBuf[2] = clientPositionByte;
+		if (retClient.first) 
+		{
+			SendMemoryUnit* sendMemoryUnit = SendMemoryPool::GetInstance()->PopMemory(retClient.second);
 
-		memoryUnit->wsaBuf.len = 3;
+			sendMemoryUnit->memoryUnit.dataBuf[0] = PACKET_TYPE::MOVE;
+			sendMemoryUnit->memoryUnit.dataBuf[1] = pClient->clientContIndex;
+			sendMemoryUnit->memoryUnit.dataBuf[2] = clientPositionByte;
 
-		NETWORK_UTIL::SendPacket(pClient, memoryUnit);
+			sendMemoryUnit->memoryUnit.wsaBuf.len = 3;
+
+			NETWORK_UTIL::SendPacket(pClient, sendMemoryUnit);
+		}
 	}
 }

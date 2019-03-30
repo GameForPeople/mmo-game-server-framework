@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "SocketInfo.h"
+#include "MemoryUnit.h"
 #include "SendMemoryPool.h"
 #include "Scene.h"
 #include "ServerDefine.h"
@@ -15,16 +15,16 @@ namespace NETWORK_UTIL
 
 		?0. wsaBuf의 buf는 보낼때마다 바꿔줘야 할까요?
 	*/
-	void SendPacket(SocketInfo* pClient, SendMemoryUnit* pSendMemoryUnit)
+	void SendPacket(SocketInfo* pClient, SendMemoryUnit* pMemoryUnit)
 	{
 		// 받은 데이터에 대한 처리가 끝나면 바로 다시 받을 준비.
 		DWORD flag{};
 
-		ZeroMemory(&pSendMemoryUnit->overlapped, sizeof(pSendMemoryUnit->overlapped));
+		ZeroMemory(&pMemoryUnit->memoryUnit.overlapped, sizeof(pMemoryUnit->memoryUnit.overlapped));
 
 		ERROR_HANDLING::errorRecvOrSendArr[
 			static_cast<bool>(
-				1 + WSASend(pClient->sock, &pSendMemoryUnit->wsaBuf, 1, NULL, 0, &pSendMemoryUnit->overlapped, NULL)
+				1 + WSASend(pClient->sock, &pMemoryUnit->memoryUnit.wsaBuf, 1, NULL, 0, &pMemoryUnit->memoryUnit.overlapped, NULL)
 				)
 		]();
 	}
@@ -41,11 +41,11 @@ namespace NETWORK_UTIL
 		// 받은 데이터에 대한 처리가 끝나면 바로 다시 받을 준비.
 		DWORD flag{};
 
-		ZeroMemory(&pClient->overlapped, sizeof(pClient->overlapped));
+		ZeroMemory(&pClient->memoryUnit.overlapped, sizeof(pClient->memoryUnit.overlapped));
 
 		ERROR_HANDLING::errorRecvOrSendArr[
 			static_cast<bool>(
-				1 + WSARecv(pClient->sock, &pClient->wsaBuf, 1, NULL, &flag /* NULL*/, &pClient->overlapped, NULL)
+				1 + WSARecv(pClient->sock, &pClient->memoryUnit.wsaBuf, 1, NULL, &flag /* NULL*/, &pClient->memoryUnit.overlapped, NULL)
 				)
 		]();
 	}
@@ -62,19 +62,32 @@ namespace NETWORK_UTIL
 
 			#0. 성능상의 이슈로, !0, !1, !2의 nullptr여부를 보장하지 않습니다. ( 적합한 구조일 경우, nullptr참조가 발생하기 어려움 )
 	*/
-	void LogOutProcess(SocketInfo* pClient)
+	void LogOutProcess(MemoryUnit* pClient)
 	{
+		SocketInfo* pOutClient;
+		if (pClient->isRecv)
+		{
+			pOutClient = reinterpret_cast<SocketInfo*>(pClient);
+		}
+		else
+		{
+			SendMemoryUnit* pMemoryUnit = (reinterpret_cast<SendMemoryUnit*>(pClient));
+			pOutClient = pMemoryUnit->pOwner;
+			SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
+		}
+
 		SOCKADDR_IN clientAddr;
 
 		int addrLength = sizeof(clientAddr);
 
-		getpeername(pClient->sock, (SOCKADDR *)&clientAddr, &addrLength);
+		getpeername(pOutClient->sock, (SOCKADDR *)&clientAddr, &addrLength);
 		std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
-		if (pClient->clientContIndex != -1) pClient->pScene->OutClient(pClient);
+		if (pOutClient->clientContIndex != -1) pOutClient->pScene->OutClient(pOutClient);
 
-		closesocket(pClient->sock);
-		delete pClient;
+		closesocket(pOutClient->sock);
+		delete pOutClient;
 	}
+
 }
 
 namespace BIT_CONVERTER

@@ -2,9 +2,8 @@
 #include "Define.h"
 #include "ServerDefine.h"
 
-#include "SocketInfo.h"
-
 #include "Scene.h"
+#include "MemoryUnit.h"
 #include "SendMemoryPool.h"
 
 #include "GameServer.h"
@@ -181,8 +180,8 @@ void GameServer::AcceptThreadFunction()
 			CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->clientContIndex, 0);
 
 			pClient->sock = clientSocket;
-			pClient->wsaBuf.buf = pClient->recvBuf;
-			pClient->wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
+			pClient->memoryUnit.wsaBuf.buf = pClient->memoryUnit.dataBuf;
+			pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
 
 			// 클라이언트 서버에 접속(Accept) 함을 알림
 			//printf("[TCP 서버] 클라이언트 접속 : IP 주소 =%s, Port 번호 = %d \n", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
@@ -219,8 +218,8 @@ void GameServer::WorkerThreadFunction()
 	// 한 번만 선언해서 여러번 씁시다. 아껴써야지...
 	int retVal{};
 	DWORD cbTransferred;
-	SOCKET clientSocket;
-	SocketInfo *pClient;
+	unsigned long long clientKey;
+	MemoryUnit* pMemoryUnit;
 
 	while (7)
 	{
@@ -229,8 +228,8 @@ void GameServer::WorkerThreadFunction()
 		retVal = GetQueuedCompletionStatus(
 			hIOCP, //입출력 완료 포트 핸들
 			&cbTransferred, //비동기 입출력 작업으로, 전송된 바이트 수가 여기에 저장된다.
-			&clientSocket, //함수 호출 시 전달한 세번째 인자(32비트) 가 여기에 저장된다.
-			(LPOVERLAPPED *)&pClient, //Overlapped 구조체의 주소값
+			&clientKey, //함수 호출 시 전달한 세번째 인자(32비트) 가 여기에 저장된다.
+			reinterpret_cast<LPOVERLAPPED *>(&pMemoryUnit), //Overlapped 구조체의 주소값
 			INFINITE // 대기 시간 -> 깨울 까지 무한대
 		);
 #pragma endregion
@@ -239,15 +238,15 @@ void GameServer::WorkerThreadFunction()
 	//ERROR_CLIENT_DISCONNECT:
 		if (retVal == 0 || cbTransferred == 0)
 		{
-			NETWORK_UTIL::LogOutProcess(pClient);
+			NETWORK_UTIL::LogOutProcess(pMemoryUnit);
 			break;
 		}
 #pragma endregion
 
 #ifdef DISABLED_FUNCTION_POINTER
-		BIT_CONVERTER::GetRecvOrSend(pClient->recvBuf[0]) == true
-			? AfterSend(pClient)
-			: AfterRecv(pClient, cbTransferred);
+		pMemoryUnit->isRecv == true
+			? AfterRecv(pMemoryUnit, cbTransferred)
+			: AfterSend(pMemoryUnit);
 #else
 		recvOrSendArr[GLOBAL_UTIL::BIT_CONVERTER::GetRecvOrSend(pClient->buf[0])](*this, pClient);
 #endif
@@ -258,13 +257,13 @@ void GameServer::WorkerThreadFunction()
 	GameServer::AfterRecv(SocketInfo* pClient)
 		- 리시브 함수 호출 후, 클라이언트의 데이터를 실제로 받았을 때, 호출되는 함수.
 */
-void GameServer::AfterRecv(LPVOID pClient, int cbTransferred)
+void GameServer::AfterRecv(MemoryUnit* pClient, int cbTransferred)
 {
 	// 받은 데이터 처리
-	ProcessRecvData(static_cast<SocketInfo*>(pClient), cbTransferred);
+	ProcessRecvData(reinterpret_cast<SocketInfo*>(pClient), cbTransferred);
 
 	// 바로 다시 Recv!
-	NETWORK_UTIL::RecvPacket(static_cast<SocketInfo*>(pClient));
+	NETWORK_UTIL::RecvPacket(reinterpret_cast<SocketInfo*>(pClient));
 }
 
 /*
@@ -273,7 +272,7 @@ void GameServer::AfterRecv(LPVOID pClient, int cbTransferred)
 */
 void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 {
-	char *pBuf = pClient->recvBuf; // pBuf -> 처리하는 문자열의 시작 위치
+	char *pBuf = pClient->memoryUnit.dataBuf; // pBuf -> 처리하는 문자열의 시작 위치
 	char packetSize{ 0 }; // 처리해야할 패킷의 크기
 
 	// 이전에 처리를 마치지 못한 버퍼가 있다면, 처리해야할 패킷 사이즈를 알려줘.
@@ -312,9 +311,8 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 	GameServer::AfterSend(SocketInfo* pClient)
 		- WSASend 함수 호출 후, 데이터 전송이 끝났을 때, 호출되는 함수.
 */
-void GameServer::AfterSend(LPVOID pSendMemoryUnit)
+void GameServer::AfterSend(MemoryUnit* pMemoryUnit)
 {
 	// 보낼 때 사용한 버퍼 후처리하고 끝! ( 오버랩 초기화는 보낼떄 처리)
-	SendMemoryPool::GetInstance()->PushMemory(static_cast<SendMemoryUnit*>(pSendMemoryUnit));
+	SendMemoryPool::GetInstance()->PushMemory(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
 }
-

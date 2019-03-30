@@ -4,14 +4,16 @@
 	ServerDefine.h
 		- 해당 헤더 파일은, 서버에서만 사용합니다.
 */
-struct SocketInfo;
 struct SendMemoryUnit;
+struct SocketInfo;
+struct MemoryUnit;
 
 namespace NETWORK_UTIL
 {
-	void SendPacket(SocketInfo* pClient, SendMemoryUnit* pSendMemoryUnit);
+	void SendPacket(SocketInfo* pClient, SendMemoryUnit* pMemoryUnit);
 	void RecvPacket(SocketInfo* pClient);
-	void LogOutProcess(SocketInfo* pClient);
+	void LogOutProcess(MemoryUnit* pClient);
+	//_NODISCARD const bool GetRecvOrSendPacket(const LPVOID);
 }
 
 namespace BIT_CONVERTER

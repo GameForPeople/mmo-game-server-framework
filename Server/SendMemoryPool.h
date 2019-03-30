@@ -1,30 +1,6 @@
 #pragma once
 
 /*
-	SendMemoryUnit
-		- 메모리풀에서 사용되는 단위 객체입니다.
-
-	#0. sendBuf의 사이즈는 "GLOBAL_DEFINE::MAX_SIZE_OF_SEND"에서 결정합니다.
-
-	!0. #0과 관련하여, MAX_SIZE_OF_SEND보다 큰 경우에 대하여 전송을 요청할 경우, 오류가 발생합니다.
-		- 따라서 항상, MAX_SIZE_OF_SEND는 전송되는 패킷들 중 가장 큰 사이즈로 정의되야 합니다.
-*/
-struct SendMemoryUnit
-{
-	OVERLAPPED overlapped;
-	WSABUF wsaBuf;
-	char *sendBuf;
-
-public:
-	SendMemoryUnit();
-	~SendMemoryUnit();
-
-	SendMemoryUnit(const SendMemoryUnit& other);
-	SendMemoryUnit(SendMemoryUnit&& other) noexcept;
-	SendMemoryUnit& operator=(SendMemoryUnit&& other) noexcept;
-};
-
-/*
 	SendMemoryPool
 		- Send될 때 사용될 , 오버랩 구조체, wsaBuf, Buf를 미리 할당해 놓은 클래스입니다.
 
@@ -51,7 +27,7 @@ public:
 
 	~SendMemoryPool();
 
-	SendMemoryUnit* PopMemory();	// 메모리 제공
+	SendMemoryUnit* PopMemory(SocketInfo*);	// 메모리 제공
 	void PushMemory(SendMemoryUnit*);	// 메모리 반납
 
 private:

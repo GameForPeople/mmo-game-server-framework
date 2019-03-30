@@ -2,8 +2,8 @@
 #include "Define.h"
 #include "ServerDefine.h"
 
-#include "SocketInfo.h"
 #include "UserData.h"
+#include "MemoryUnit.h"
 
 #include "MoveManager.h"
 

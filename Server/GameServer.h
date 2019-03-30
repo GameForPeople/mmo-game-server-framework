@@ -2,6 +2,7 @@
 
 #define DISABLED_FUNCTION_POINTER
 
+struct MemoryUnit;
 struct SocketInfo;
 class Scene;
 
@@ -38,8 +39,8 @@ private:	// for Aceept Thread
 
 private:
 #ifdef DISABLED_FUNCTION_POINTER
-	void AfterRecv(LPVOID pClient, int cbTransferred);
-	void AfterSend(LPVOID pClient);
+	void AfterRecv(MemoryUnit* pClient, int cbTransferred);
+	void AfterSend(MemoryUnit* pClient);
 #else
 	std::function <void(GameServer&, LPVOID)>* recvOrSendArr;
 	void AfterRecv(LPVOID pClient);

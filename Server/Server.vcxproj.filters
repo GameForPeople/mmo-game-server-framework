@@ -8,17 +8,11 @@
     <Filter Include="GameServer">
       <UniqueIdentifier>{a3f66a2f-a6cf-486b-9548-c83197974030}</UniqueIdentifier>
     </Filter>
-    <Filter Include="SocketInfo">
-      <UniqueIdentifier>{61436111-4ecf-411d-9180-0c18c6947a1c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="UserData">
       <UniqueIdentifier>{233cb163-fdac-4d99-9ace-81319f84441b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Define">
       <UniqueIdentifier>{3ecd20a7-108e-4965-a3b7-63c9035bf90c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameServer\SendMemoryPool">
-      <UniqueIdentifier>{f052244d-703e-432b-855a-280ee59a2e7a}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameServer\Scene">
       <UniqueIdentifier>{561e16c5-d6a2-4aad-ad3f-b7ed162a14b2}</UniqueIdentifier>
@@ -29,6 +23,15 @@
     <Filter Include="Define\PCH">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="GameServer\Memory">
+      <UniqueIdentifier>{f052244d-703e-432b-855a-280ee59a2e7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameServer\SocketInfo">
+      <UniqueIdentifier>{61436111-4ecf-411d-9180-0c18c6947a1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameServer\SendMemoryPool">
+      <UniqueIdentifier>{d340e160-0190-45fa-b1d5-354209d1b254}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -51,14 +54,17 @@
     <ClCompile Include="ServerDefine.cpp">
       <Filter>Define</Filter>
     </ClCompile>
-    <ClCompile Include="SendMemoryPool.cpp">
-      <Filter>GameServer\SendMemoryPool</Filter>
-    </ClCompile>
     <ClCompile Include="Define.cpp">
       <Filter>Define</Filter>
     </ClCompile>
     <ClCompile Include="SocketInfo.cpp">
-      <Filter>SocketInfo</Filter>
+      <Filter>GameServer\SocketInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="MemoryUnit.cpp">
+      <Filter>GameServer\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="SendMemoryPool.cpp">
+      <Filter>GameServer\SendMemoryPool</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -69,7 +75,7 @@
       <Filter>GameServer</Filter>
     </ClInclude>
     <ClInclude Include="SocketInfo.h">
-      <Filter>SocketInfo</Filter>
+      <Filter>GameServer\SocketInfo</Filter>
     </ClInclude>
     <ClInclude Include="UserData.h">
       <Filter>UserData</Filter>
@@ -85,6 +91,9 @@
     </ClInclude>
     <ClInclude Include="ServerDefine.h">
       <Filter>Define</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryUnit.h">
+      <Filter>GameServer\Memory</Filter>
     </ClInclude>
     <ClInclude Include="SendMemoryPool.h">
       <Filter>GameServer\SendMemoryPool</Filter>

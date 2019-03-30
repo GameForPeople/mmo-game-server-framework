@@ -155,6 +155,7 @@
   <ItemGroup>
     <ClInclude Include="Define.h" />
     <ClInclude Include="GameServer.h" />
+    <ClInclude Include="MemoryUnit.h" />
     <ClInclude Include="MoveManager.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Scene.h" />
@@ -166,6 +167,7 @@
   <ItemGroup>
     <ClCompile Include="Define.cpp" />
     <ClCompile Include="GameServer.cpp" />
+    <ClCompile Include="MemoryUnit.cpp" />
     <ClCompile Include="MoveManager.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

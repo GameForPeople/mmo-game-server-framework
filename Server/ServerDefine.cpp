@@ -185,7 +185,8 @@ namespace ERROR_HANDLING
 		);
 
 		//C603 형식 문자열이 일치하지 않습니다. 와이드 문자열이 _Param_(3)으로 전달되었습니다.
-		printf(" [%s]  %s", msg, (LPTSTR)&lpMsgBuf);
+		//printf(" [%s]  %s", msg, (LPTSTR)&lpMsgBuf);
+		std::wcout << L" Error no.%s" << msg << L" - " << lpMsgBuf;
 		LocalFree(lpMsgBuf);
 	};
 
@@ -201,3 +202,4 @@ namespace ERROR_HANDLING
 		}
 	}
 }
+

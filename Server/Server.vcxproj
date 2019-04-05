@@ -153,6 +153,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ConnectManager.h" />
     <ClInclude Include="Define.h" />
     <ClInclude Include="GameServer.h" />
     <ClInclude Include="MemoryUnit.h" />
@@ -165,6 +166,7 @@
     <ClInclude Include="UserData.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ConnectManager.cpp" />
     <ClCompile Include="Define.cpp" />
     <ClCompile Include="GameServer.cpp" />
     <ClCompile Include="MemoryUnit.cpp" />

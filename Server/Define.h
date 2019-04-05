@@ -28,6 +28,7 @@ namespace PACKET_TYPE
 	{
 		enum
 		{
+			//MOVE,
 			LEFT,
 			UP,
 			RIGHT,
@@ -43,7 +44,7 @@ namespace PACKET_TYPE
 			LOGIN_OK,
 			PUT_PLAYER,
 			REMOVE_PLAYER,
-			MOVE,
+			POSITION,
 			ENUM_SIZE
 		};
 	}
@@ -58,19 +59,13 @@ namespace PACKET_DATA
 
 	namespace CLIENT_TO_SERVER
 	{
-		struct Up
-		{
-			char size;
-			char type;
-		};
-
-		struct Down
-		{
-			char size;
-			char type;
-		};
-
 		struct Left
+		{
+			char size;
+			char type;
+		};
+
+		struct Up
 		{
 			char size;
 			char type;
@@ -81,40 +76,54 @@ namespace PACKET_DATA
 			char size;
 			char type;
 		};
+
+		struct Down
+		{
+			char size;
+			char type;
+		};
 	}
 
 	namespace SERVER_TO_CLIENT
 	{
 		struct LoginOk
 		{
-			char size;
-			char type;
+			const char size;
+			const char type;
 			char id;
+
+			LoginOk(const char inNewId) noexcept;
 		};
 
 		struct PutPlayer
 		{
-			char size;
-			char type;
+			const char size;
+			const char type;
 			char id;
 			char x;
 			char y;
+
+			PutPlayer(const char inMovedClientId, const char inX, const char inY) noexcept;
 		};
 
 		struct RemovePlayer
 		{
-			char size;
-			char type;
+			const char size;
+			const char type;
 			char id;
+
+			RemovePlayer(const char inRemovedClientID) noexcept;
 		};
 
 		struct Position
 		{
-			char size;
-			char type;
+			const char size;
+			const char type;
 			char id;
 			char x;
 			char y;
+
+			Position(const char inMovedClientId, const char inX, const char inY) noexcept;
 		};
 	}
 
@@ -137,7 +146,7 @@ namespace DIRECTION
 }
 
 namespace CHARACTER_CONVERTER {
-	void SetLocaleToKorea();
+	void SetLocaleToKorean();
 }
 
 namespace GLOBAL_DEFINE

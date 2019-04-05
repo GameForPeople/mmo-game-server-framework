@@ -15,16 +15,19 @@ namespace NETWORK_UTIL
 
 		?0. wsaBuf의 buf는 보낼때마다 바꿔줘야 할까요?
 	*/
-	void SendPacket(SocketInfo* pClient, SendMemoryUnit* pMemoryUnit)
+	void SendPacket(SocketInfo* pClient, char* packetData)
 	{
-		// 받은 데이터에 대한 처리가 끝나면 바로 다시 받을 준비.
-		DWORD flag{};
+		SendMemoryUnit* sendMemoryUnit = SendMemoryPool::GetInstance()->PopMemory(pClient);
+		memcpy(sendMemoryUnit->memoryUnit.dataBuf, packetData, packetData[0]);
+		
+		sendMemoryUnit->memoryUnit.wsaBuf.len = packetData[0];
 
-		ZeroMemory(&pMemoryUnit->memoryUnit.overlapped, sizeof(pMemoryUnit->memoryUnit.overlapped));
+		DWORD flag{};
+		ZeroMemory(&sendMemoryUnit->memoryUnit.overlapped, sizeof(sendMemoryUnit->memoryUnit.overlapped));
 
 		ERROR_HANDLING::errorRecvOrSendArr[
 			static_cast<bool>(
-				1 + WSASend(pClient->sock, &pMemoryUnit->memoryUnit.wsaBuf, 1, NULL, 0, &pMemoryUnit->memoryUnit.overlapped, NULL)
+				1 + WSASend(pClient->sock, &sendMemoryUnit->memoryUnit.wsaBuf, 1, NULL, 0, &sendMemoryUnit->memoryUnit.overlapped, NULL)
 				)
 		]();
 	}

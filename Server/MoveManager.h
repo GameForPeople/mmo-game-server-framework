@@ -14,19 +14,20 @@ class MoveManager
 {
 public:
 	MoveManager() noexcept;
+	~MoveManager() = default;
 
 	MoveManager(const MoveManager&) = delete;
 	MoveManager& operator=(const MoveManager&) = delete;
 
 public:
 #if _USE_STD_FUNCTION_
-	std::function<void(MoveManager&, UserData*)> whatIsYourDirection[static_cast<int>(DIRECTION::DIRECTION_END)];
-	std::function<void(MoveManager&, UserData*)> moveFunctionArr[static_cast<int>(DIRECTION::DIRECTION_END)][2 /* Fail or Success */];	
+	std::function<void(MoveManager&, UserData*)> whatIsYourDirection[static_cast<int>(DIRECTION::ENUM_SIZE)];
+	std::function<void(MoveManager&, UserData*)> moveFunctionArr[static_cast<int>(DIRECTION::ENUM_SIZE)][2 /* Fail or Success */];
 #else
 	std::function<void(MoveManager&, UserData* )> moveFunctionArr[static_cast<int>(DIRECTION::DIRECTION_END)];
 #endif
 	void MoveCharacter(SocketInfo* pClient);
-	void SendMoveCharacter(SocketInfo* pClient);
+	void SendMoveCharacter(SocketInfo* pMovedClient, std::vector<std::pair<bool, SocketInfo*>>& inClientCont);
 private:
 #if _USE_STD_FUNCTION_
 	/*inline*/ void LeftMoveTest(UserData* inUserData);

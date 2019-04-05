@@ -5,6 +5,8 @@
 #include "UserData.h"
 #include "MemoryUnit.h"
 
+#include "SendMemoryPool.h"
+
 #include "MoveManager.h"
 
 MoveManager::MoveManager() noexcept
@@ -50,13 +52,28 @@ void MoveManager::MoveCharacter(SocketInfo* pClient)
 #endif
 }
 
-// 이함수 사용하면 에러입니다. 현재 사용되지 않으며, 수정되어야합니다.
-void MoveManager::SendMoveCharacter(SocketInfo* pClient)
+void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, std::vector<std::pair<bool, SocketInfo*>>& inClientCont)
 {
+	//const BYTE clientPositionByte
+	//	= BIT_CONVERTER::MakeByteFromLeftAndRightByte(pMovedClient->userData->GetPosition().x, pMovedClient->userData->GetPosition().y);
+
+	PACKET_DATA::SC::Position packet(
+		pMovedClient->clientContIndex,
+		pMovedClient->userData->GetPosition().x, 
+		pMovedClient->userData->GetPosition().y
+	);
+
 #ifdef _DEV_MODE_
-	std::cout << "보낼 방향은" << int(pClient->userData->GetPosition().x) << " " << int(pClient->userData->GetPosition().y) << "\n";
+	std::cout << "보낼 방향은" << int(pMovedClient->userData->GetPosition().x) << " " << int(pMovedClient->userData->GetPosition().y) << "\n";
 #endif
-	pClient->loadedBuf[1] = BIT_CONVERTER::MakeByteFromLeftAndRightByte(pClient->userData->GetPosition().x, pClient->userData->GetPosition().y);
+
+	for (std::pair<bool, SocketInfo*>& pRecvedClient : inClientCont)
+	{
+		if (pRecvedClient.first)
+		{
+			NETWORK_UTIL::SendPacket(pRecvedClient.second, reinterpret_cast<char*>(&packet));
+		}
+	}
 }
 
 #if _USE_STD_FUNCTION_

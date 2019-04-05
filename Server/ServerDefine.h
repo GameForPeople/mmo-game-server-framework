@@ -10,7 +10,7 @@ struct MemoryUnit;
 
 namespace NETWORK_UTIL
 {
-	void SendPacket(SocketInfo* pClient, SendMemoryUnit* pMemoryUnit);
+	void SendPacket(SocketInfo* pClient, char* packetData);
 	void RecvPacket(SocketInfo* pClient);
 	void LogOutProcess(MemoryUnit* pClient);
 	//_NODISCARD const bool GetRecvOrSendPacket(const LPVOID);

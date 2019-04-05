@@ -1,8 +1,10 @@
 #pragma once
 
-class MoveManager;
 struct SocketInfo;
 struct MemoryUnit;
+
+class MoveManager;
+class ConnectManager;
 
 /*
 	Scene
@@ -12,30 +14,36 @@ struct MemoryUnit;
 	#1. 네트워크 함수들은 GameServer의 함수가 아닌, 여기서 호출합니다.
 	#2. 공간 분할의 단위, 기준입니다.
 */
+
 class Scene
 {
+	using _ClientNode = std::pair<bool, SocketInfo*>;
 public:
 	void ProcessPacket(SocketInfo* pClient);
-	std::pair<bool, SocketInfo*> /*std::optional<SocketInfo*>*/ InNewClient();
-	void OutClient(SocketInfo*);
 
 	Scene();
 	~Scene();
+
+public:
+	// ConnectManager
+	_ClientNode /*std::optional<SocketInfo*>*/ InNewClient();
+	void OutClient(SocketInfo*);
 
 private:
 	void InitManagers();
 	void InitClientCont();
 	void InitFunctions();
 
+	// MoveManager
 	void RecvCharacterMove(SocketInfo* pClient);
 
 private:
 	std::unique_ptr<MoveManager> moveManager;
+	std::unique_ptr<ConnectManager> connectManager;
 
-	std::mutex addLock;
 	std::function<void(Scene&, SocketInfo*)>* recvFunctionArr;
 	
 	// 나중에 이부분 Array 들어내고, 리스트가 날 듯 보임.
 	// 접속한 유저 리스트 + 남은 공간 큐
-	std::vector<std::pair<bool, SocketInfo*>>	clientCont;
+	std::vector<_ClientNode>	clientCont;
 };

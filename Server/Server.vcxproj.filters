@@ -33,6 +33,9 @@
     <Filter Include="GameServer\SendMemoryPool">
       <UniqueIdentifier>{d340e160-0190-45fa-b1d5-354209d1b254}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameServer\Scene\ConnectManager">
+      <UniqueIdentifier>{35037509-3041-411c-83d5-b76a750aff41}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -66,6 +69,9 @@
     <ClCompile Include="SendMemoryPool.cpp">
       <Filter>GameServer\SendMemoryPool</Filter>
     </ClCompile>
+    <ClCompile Include="ConnectManager.cpp">
+      <Filter>GameServer\Scene\ConnectManager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -97,6 +103,9 @@
     </ClInclude>
     <ClInclude Include="SendMemoryPool.h">
       <Filter>GameServer\SendMemoryPool</Filter>
+    </ClInclude>
+    <ClInclude Include="ConnectManager.h">
+      <Filter>GameServer\Scene\ConnectManager</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

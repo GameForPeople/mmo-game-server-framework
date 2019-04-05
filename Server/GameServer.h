@@ -19,7 +19,7 @@ public:
 	GameServer(bool);
 	~GameServer();
 
-	// 마 서버가 어딜 복사하누!
+	// 마 감히 서버가 어딜 복사하누!
 	GameServer(const GameServer&) = delete;
 	GameServer& operator=(const GameServer&) = delete;
 

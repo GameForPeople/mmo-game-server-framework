@@ -173,7 +173,7 @@ void GameServer::AcceptThreadFunction()
 			break;
 		}
 
-		if (auto [isTrueAdd, pClient] = sceneCont[0]->InNewClient()
+		if (auto [isTrueAdd, pClient] = sceneCont[0]->InNewClient() 
 			; isTrueAdd)
 		{
 			// 소켓과 입출력 완료 포트 연결

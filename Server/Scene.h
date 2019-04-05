@@ -16,7 +16,7 @@ class Scene
 {
 public:
 	void ProcessPacket(SocketInfo* pClient);
-	std::pair<bool, SocketInfo*> InNewClient();
+	std::pair<bool, SocketInfo*> /*std::optional<SocketInfo*>*/ InNewClient();
 	void OutClient(SocketInfo*);
 
 	Scene();

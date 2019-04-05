@@ -73,6 +73,8 @@ void Scene::ProcessPacket(SocketInfo* pClient)
 	#!?0. 하나의 물리 서버에서 하나의 씐을 가질 경우, 지금처럼하는게 맞음.
 	#!?1. 다만 하나의 서버에서 여러 씐을 가질 경우, 애초에 SocketInfo를 갖고 있고, InNewCliet에 인자로 넣어주는 게맞음.
 */
+
+/*std::optional<SocketInfo*>*/ 
 std::pair<bool, SocketInfo*> Scene::InNewClient()
 {
 	//std::lock_guard<std::mutex> localLock(addLock);
@@ -97,11 +99,14 @@ std::pair<bool, SocketInfo*> Scene::InNewClient()
 			clientCont[index].second = pClient;
 			pClient->clientContIndex = index;
 			pClient->pScene = this;
+			
 			return std::make_pair(true, pClient);
+			//return pClient;
 		}
 	}
 	addLock.unlock();
 	return std::make_pair(false, nullptr);
+	//return {};
 }
 
 /*

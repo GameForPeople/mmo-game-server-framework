@@ -75,8 +75,9 @@ MemoryUnit& MemoryUnit::operator=(MemoryUnit&& other) noexcept
 // SendMemoryUnit
 //---------------------------------------------------------------------------
 
-SendMemoryUnit::SendMemoryUnit()
-	: memoryUnit(false), pOwner(nullptr)
+SendMemoryUnit::SendMemoryUnit() 
+	: memoryUnit(false)
+	//, pOwner(nullptr)
 {
 }
 
@@ -84,18 +85,18 @@ SendMemoryUnit::~SendMemoryUnit()
 {
 }
 
-SendMemoryUnit::SendMemoryUnit(const SendMemoryUnit& other) :
-	memoryUnit(other.memoryUnit),
-	pOwner(other.pOwner)
+SendMemoryUnit::SendMemoryUnit(const SendMemoryUnit& other) 
+	: memoryUnit(other.memoryUnit)
+	//, pOwner(other.pOwner)
 {
 #ifdef _DEV_MODE_
 	std::cout << " SendMemoryUnit의 복사생성자가 호출되었습니다. \n";
 #endif
 }
 
-SendMemoryUnit::SendMemoryUnit(SendMemoryUnit&& other) noexcept :
-	memoryUnit(),
-	pOwner(nullptr)
+SendMemoryUnit::SendMemoryUnit(SendMemoryUnit&& other) noexcept 
+	: memoryUnit()
+	//, pOwner(nullptr)
 {
 	*this = std::move(other);
 }
@@ -108,8 +109,9 @@ SendMemoryUnit& SendMemoryUnit::operator=(SendMemoryUnit&& other) noexcept
 	if (this != &other)
 	{
 		memoryUnit = std::move(other.memoryUnit);
-		pOwner = other.pOwner;
-		other.pOwner = nullptr;
+		
+		//pOwner = other.pOwner;
+		//other.pOwner = nullptr;
 	}
 	return *this;
 }
@@ -132,6 +134,5 @@ SocketInfo::SocketInfo() /*noexcept*/ :
 SocketInfo::~SocketInfo()
 {
 	delete[] loadedBuf;
-
 	delete userData;
 }

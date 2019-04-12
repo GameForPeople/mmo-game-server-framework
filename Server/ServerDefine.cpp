@@ -71,24 +71,26 @@ namespace NETWORK_UTIL
 		if (pClient->isRecv)
 		{
 			pOutClient = reinterpret_cast<SocketInfo*>(pClient);
+
+			SOCKADDR_IN clientAddr;
+
+			int addrLength = sizeof(clientAddr);
+
+			getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
+			std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
+			if (pOutClient->clientContIndex != -1) pOutClient->pScene->OutClient(pOutClient);
+
+			closesocket(pOutClient->sock);
+			delete pOutClient;
 		}
 		else
 		{
 			SendMemoryUnit* pMemoryUnit = (reinterpret_cast<SendMemoryUnit*>(pClient));
-			pOutClient = pMemoryUnit->pOwner;
+			
+			// Send 예외처리 Off
+			//pOutClient = pMemoryUnit->pOwner;
 			SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
 		}
-
-		SOCKADDR_IN clientAddr;
-
-		int addrLength = sizeof(clientAddr);
-
-		getpeername(pOutClient->sock, (SOCKADDR *)&clientAddr, &addrLength);
-		std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
-		if (pOutClient->clientContIndex != -1) pOutClient->pScene->OutClient(pOutClient);
-
-		closesocket(pOutClient->sock);
-		delete pOutClient;
 	}
 
 }

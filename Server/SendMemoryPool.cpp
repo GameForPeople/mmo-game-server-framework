@@ -42,7 +42,8 @@ SendMemoryUnit* SendMemoryPool::PopMemory(SocketInfo* pClient)
 			원래는 여기서 메모리 추가로 할당해서, 넘겨줘야해 어딜 기다려!
 		*/
 	}
-	retMemoryUnit->pOwner = pClient;
+
+	//	retMemoryUnit->pOwner = pClient;
 	return retMemoryUnit;
 }
 

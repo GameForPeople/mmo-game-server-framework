@@ -32,7 +32,7 @@ namespace PACKET_DATA
 	}
 }
 
-namespace CHARACTER_CONVERTER
+namespace UNICODE_UTIL
 {
 	void SetLocaleToKorean()
 	{

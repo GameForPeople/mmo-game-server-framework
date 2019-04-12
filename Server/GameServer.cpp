@@ -92,7 +92,7 @@ void GameServer::InitNetwork()
 
 	// 2. 입출력 완료 포트 생성
 	if (hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)
-		; hIOCP == NULL) ERROR_QUIT(TEXT("Make_WorkerThread()"));
+		; hIOCP == NULL) ERROR_QUIT(TEXT("Create_IOCompletionPort()"));
 
 	// CPU 개수 확인할 필요 없음.
 	//SYSTEM_INFO si;

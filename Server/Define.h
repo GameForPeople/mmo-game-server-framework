@@ -152,9 +152,13 @@ namespace UNICODE_UTIL {
 namespace GLOBAL_DEFINE
 {
 	constexpr USHORT SERVER_PORT = 9000;
-	constexpr BYTE MAX_HEIGHT = 7;
-	constexpr BYTE MAX_WIDTH = 7;
+
 	constexpr BYTE MAX_CLIENT = 10;
+
+	constexpr BYTE MAX_HEIGHT = 100;
+	constexpr BYTE MAX_WIDTH = 100;
+
+	constexpr BYTE VIEW_DISTANCE = 4;
 
 	// 아래 상수들은 추후 해당 헤더에서 추방, SERVER_DEFINE으로 위치 변경 필요합니다.
 	constexpr USHORT MAX_SIZE_OF_RECV = 100;		//Recv 한번에 받을 수 있는 최대 사이즈

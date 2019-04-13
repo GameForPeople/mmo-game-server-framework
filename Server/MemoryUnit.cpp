@@ -125,14 +125,20 @@ SocketInfo::SocketInfo() /*noexcept*/ :
 	loadedSize(),
 	loadedBuf(),
 	userData(new UserData(0, 0)/*std::make_unique<UserData>(0, 0)*/),
-	clientContIndex(-1),
-	pScene(nullptr)
+	clientKey(-1),
+	pScene(nullptr),
+	viewList(),
+	sectorIndexX(),
+	sectorIndexY()
 {
 	loadedBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
+	viewList.clear();
 }
 
 SocketInfo::~SocketInfo()
 {
+	viewList.clear();
+
 	delete[] loadedBuf;
 	delete userData;
 }

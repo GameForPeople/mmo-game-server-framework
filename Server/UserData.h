@@ -5,16 +5,14 @@ struct Position2D
 	UINT8 x;
 	UINT8 y;
 
-	Position2D(const UINT8 inPositionX = 0, const UINT8 inPositionY = 0) noexcept
-		: x(inPositionX), y(inPositionY)
-	{}
+	Position2D(const UINT8 inPositionX, const UINT8 inPositionY) noexcept;
 };
 
 /*
 	UserData
 	 - 유저 데이터를 정의합니다.
 
-	 #0. Position2D
+	#0. Position2D
 		- 해당 객체의 위치값을 정의합니다.
 */
 class UserData 

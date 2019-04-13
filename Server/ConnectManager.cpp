@@ -6,6 +6,8 @@
 #include "UserData.h"
 #include "Scene.h"
 
+#include "ClientContUnit.h"
+
 #include "ConnectManager.h"
 
 /*
@@ -15,20 +17,20 @@
 	#!?0. 하나의 물리 서버에서 하나의 씐을 가질 경우, 지금처럼하는게 맞음.
 	#!?1. 다만 하나의 서버에서 여러 씐을 가질 경우, 애초에 SocketInfo를 갖고 있고, InNewCliet에 인자로 넣어주는 게맞음.
 */
-ConnectManager::_ClientNode ConnectManager::InNewClient(std::vector< _ClientNode>&  inClientCont, Scene* scene)
+_ClientNode ConnectManager::InNewClient(ClientContUnit* inClientContUnit, Scene* scene)
 {
 	//std::lock_guard<std::mutex> localLock(addLock);
-	
-	connectLock.lock();
+	//connectLock.lock();
+	inClientContUnit->wrlock.lock();
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++1
 
-	for (int index = 0; index < inClientCont.size(); ++index)
+	for (int index = 0; index < inClientContUnit->clientCont.size(); ++index)
 	{
-		if (inClientCont[index].first == false)
+		if (inClientContUnit->clientCont[index].first == false)
 		{
-			inClientCont[index].first = true;
+			inClientContUnit->clientCont[index].first = true;
 
-			connectLock.unlock();
+			inClientContUnit->wrlock.unlock();
 			//------------------------------------------------------------0
 
 			// 소켓 정보 구조체 할당
@@ -39,18 +41,18 @@ ConnectManager::_ClientNode ConnectManager::InNewClient(std::vector< _ClientNode
 				break;
 			}
 
-			inClientCont[index].second = pInClient;
-			pInClient->clientContIndex = index;
+			inClientContUnit->clientCont[index].second = pInClient;
+			pInClient->clientKey = index;
 			pInClient->pScene = scene;
 
-			SendPutPlayer(pInClient, inClientCont);
+			SendPutPlayer(pInClient, inClientContUnit);
 
 			return std::make_pair(true, pInClient);
 			//return pClient;
 		}
 	}
 
-	connectLock.unlock();
+	inClientContUnit->wrlock.unlock();
 	//-------------------------------------------------------------------0
 	return std::make_pair(false, nullptr);
 	//return {};
@@ -62,25 +64,26 @@ ConnectManager::_ClientNode ConnectManager::InNewClient(std::vector< _ClientNode
 
 	#!?0. 도대체 여기서 어디까지 보장을 해줘야하는건지. 이 보장이 오히려 버그가 될 수 있지 않은지.
 */
-void ConnectManager::OutClient(SocketInfo* pOutClient, std::vector< _ClientNode>& inClientCont)
+void ConnectManager::OutClient(SocketInfo* pOutClient, ClientContUnit* inClientContUnit)
 {
-	// 굳이 Lock 걸 필요 없지 않나.
-	SendRemovePlayer(inClientCont[pOutClient->clientContIndex].first, inClientCont);
+	// 사실 벡터면 굳이 Lock 걸 필요 없지 않나. -> 그래도 걸자........나는 찐따니까...
 
-	inClientCont[pOutClient->clientContIndex].first = false;
+	SendRemovePlayer(inClientContUnit->clientCont[pOutClient->clientKey].first, inClientContUnit);
+
+	inClientContUnit->clientCont[pOutClient->clientKey].first = false;
 	// second는 초기화 할 필요 없음.
 
 	// 다만 이부분에서, 비용이 조금 더 나가더라도, 안정성을 보장하기 위해 처리해주도록 합시다.
 
 	// 사실 pScene을 nullptr하고, LogOutProcess에서, 해당 여부만 검사하는 것도 날 듯 한데;
 	pOutClient->pScene = nullptr;
-	pOutClient->clientContIndex = -1;
+	pOutClient->clientKey = -1;
 }
 
 void ConnectManager::SendPutPlayer(SocketInfo* pPutClient, std::vector<_ClientNode>& inClientCont)
 {
 	PACKET_DATA::SC::PutPlayer packet(
-		pPutClient->clientContIndex,
+		pPutClient->clientKey,
 		pPutClient->userData->GetPosition().x,
 		pPutClient->userData->GetPosition().y
 	);

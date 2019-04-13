@@ -58,7 +58,7 @@ void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, std::vector<std::p
 	//	= BIT_CONVERTER::MakeByteFromLeftAndRightByte(pMovedClient->userData->GetPosition().x, pMovedClient->userData->GetPosition().y);
 
 	PACKET_DATA::SC::Position packet(
-		pMovedClient->clientContIndex,
+		pMovedClient->clientKey,
 		pMovedClient->userData->GetPosition().x, 
 		pMovedClient->userData->GetPosition().y
 	);

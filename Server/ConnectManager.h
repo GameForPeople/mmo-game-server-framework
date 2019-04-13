@@ -1,11 +1,13 @@
 #pragma once
 
+#include "InHeaderDefine.hh"
+
 struct SocketInfo;
+struct ClientContUnit;
 class Scene;
 
 class ConnectManager
 {
-	using _ClientNode = std::pair<bool, SocketInfo*>;
 public:
 	ConnectManager() = default;
 	~ConnectManager() = default;
@@ -14,13 +16,12 @@ public:
 	ConnectManager& operator=(const ConnectManager&) = delete;
 
 public:
-	_ClientNode InNewClient(std::vector< _ClientNode>& inClientCont, Scene*);
-	void OutClient(SocketInfo*, std::vector< _ClientNode>& inClientCont);
+	_ClientNode InNewClient(ClientContUnit* inClientContUnit, Scene*);
+	void OutClient(SocketInfo*, ClientContUnit* inClientContUnit);
 
 private:
-	void SendPutPlayer(SocketInfo* pPutClient, std::vector<_ClientNode>& inClientCont);
-	void SendRemovePlayer(const char outClientKey, std::vector<_ClientNode>& inClientCont);
+	void SendPutPlayer(SocketInfo* pPutClient, ClientContUnit* inClientCont);
+	void SendRemovePlayer(const char outClientKey, ClientContUnit* inClientCont);
 private:
-
-	std::mutex connectLock;
+	//std::shared_mutex connectLock;
 };

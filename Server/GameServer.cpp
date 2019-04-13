@@ -177,13 +177,14 @@ void GameServer::AcceptThreadFunction()
 			; isTrueAdd)
 		{
 			// 소켓과 입출력 완료 포트 연결
-			CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->clientContIndex, 0);
+			CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->clientKey, 0);
 
 			pClient->sock = clientSocket;
 			pClient->memoryUnit.wsaBuf.buf = pClient->memoryUnit.dataBuf;
 			pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
 
 			// 클라이언트 서버에 접속(Accept) 함을 알림
+
 			//printf("[TCP 서버] 클라이언트 접속 : IP 주소 =%s, Port 번호 = %d \n", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
 			std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
 			

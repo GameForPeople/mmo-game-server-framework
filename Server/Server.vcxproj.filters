@@ -36,6 +36,12 @@
     <Filter Include="GameServer\Scene\ConnectManager">
       <UniqueIdentifier>{35037509-3041-411c-83d5-b76a750aff41}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameServer\Scene\Sector">
+      <UniqueIdentifier>{c963e516-c674-4445-8339-8c6eaf888ef5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameServer\Scene\ClientContUnit">
+      <UniqueIdentifier>{a174d95b-145c-4fd4-8348-8dc3688e4b7d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -72,6 +78,12 @@
     <ClCompile Include="ConnectManager.cpp">
       <Filter>GameServer\Scene\ConnectManager</Filter>
     </ClCompile>
+    <ClCompile Include="Sector.cpp">
+      <Filter>GameServer\Scene\Sector</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientContUnit.cpp">
+      <Filter>GameServer\Scene\ClientContUnit</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -107,5 +119,16 @@
     <ClInclude Include="ConnectManager.h">
       <Filter>GameServer\Scene\ConnectManager</Filter>
     </ClInclude>
+    <ClInclude Include="Sector.h">
+      <Filter>GameServer\Scene\Sector</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientContUnit.h">
+      <Filter>GameServer\Scene\ClientContUnit</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="InHeaderDefine.hh">
+      <Filter>Define</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "InHeaderDefine.hh"
 /*
 	MemoryUnit
 		- 데이터 전송 Send, Recv 및, 해당 처리에서 필요한 목록을 저장해놓은 구조체입니다.
@@ -72,6 +73,10 @@ struct SendMemoryUnit
 class UserData;
 class Scene;
 
+/*
+	4바이트 정렬 짓 해야합니다 여기.
+*/
+
 struct SocketInfo
 {
 public:
@@ -88,6 +93,10 @@ public:
 	UserData* userData;
 	//std::unique_ptr<UserData> userData;
 
-	int clientContIndex;
+	_ClientKeyType clientKey;
 	Scene* pScene;
+	BYTE sectorIndexX;
+	BYTE sectorIndexY;
+
+	Concurrency::concurrent_unordered_set<_ClientKeyType> viewList;
 };

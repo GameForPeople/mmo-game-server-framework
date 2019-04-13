@@ -25,10 +25,14 @@ public:
 	~Sector();
 
 private:
-	BYTE indexX;
-	BYTE indexY;
-	BYTE centerX;
-	BYTE centerY;
+	const BYTE indexX;
+	const BYTE indexY;
+	const BYTE centerX;
+	const BYTE centerY;
 
 	SectorContUnit* sectorContUnit;
+
+public:
+	_NODISCARD inline constexpr BYTE GetCenterX() noexcept { return centerX; }
+	_NODISCARD inline constexpr BYTE GetCenterY() noexcept { return centerY; }
 };

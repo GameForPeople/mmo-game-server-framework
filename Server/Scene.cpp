@@ -139,6 +139,114 @@ void Scene::OutClient(SocketInfo* pOutClient)
 }
 
 
+std::vector<std::pair<BYTE, BYTE>> Scene::FindPossibleSectors(SocketInfo* pClient)
+{
+	std::vector<std::pair<BYTE, BYTE>> retVector;
+	//retVector.reserve(4);	// Max Possible Sector!
+
+	// 내가 속한 곳은 당연히 검사해야지.
+	retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY));
+
+	const BYTE tempX = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterX();
+	const BYTE tempY = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterY();
+
+	UserData* pTempUserData = pClient->userData;
+
+	char xDir = 0;
+	char yDir = 0;
+
+	if (pTempUserData->GetPosition().x > tempX) { xDir = 1; }
+	else if (pTempUserData->GetPosition().x < tempX - 1) { xDir = -1; }
+
+	if (pTempUserData->GetPosition().y > tempY) { yDir = 1; }
+	else if (pTempUserData->GetPosition().y < tempY - 1) { yDir = -1; }
+
+	const bool isYZero = pClient->sectorIndexY == 0 ? true : false;
+	const bool isYMax = pClient->sectorIndexY == 9 ? true : false;
+
+	if (xDir == 0)
+	{
+		retVector.reserve(2);
+
+		if (yDir == -1) { if (!isYZero) retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1)); }
+		else if (yDir == 1) { if (!isYMax) retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1)); }
+		//else if (yDir == 0) 
+		
+		return retVector;
+	}
+
+	if (xDir == 1)
+	{
+		if (pClient->sectorIndexX == 9)
+		{
+			retVector.reserve(2);
+
+			if (yDir == -1) { if (!isYZero) retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1)); }
+			else if (yDir == 1) { if (!isYMax) retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1)); }
+		}
+		else
+		{
+			retVector.reserve(4);
+			retVector.emplace_back(std::make_pair(pClient->sectorIndexX + 1, pClient->sectorIndexY));
+
+			if (yDir == -1) 
+			{ 
+				if (!isYZero)
+				{
+					retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1));
+					retVector.emplace_back(std::make_pair(pClient->sectorIndexX + 1, pClient->sectorIndexY - 1));
+				}
+			}
+			else if (yDir == 1)
+			{
+				if (!isYMax)
+				{
+					retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1));
+					retVector.emplace_back(std::make_pair(pClient->sectorIndexX + 1, pClient->sectorIndexY + 1));
+				}
+			}
+		}
+		return retVector;
+	}
+
+	if (xDir == -1)
+	{
+		if (pClient->sectorIndexX == 0)
+		{
+			retVector.reserve(2);
+
+			if (yDir == -1) { if (!isYZero) retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1)); }
+			else if (yDir == 1) { if (!isYMax) retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1)); }
+		}
+		else
+		{
+			retVector.reserve(4);
+			retVector.emplace_back(std::make_pair(pClient->sectorIndexX - 1, pClient->sectorIndexY));
+
+			if (yDir == -1)
+			{
+				if (!isYZero)
+				{
+					retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1));
+					retVector.emplace_back(std::make_pair(pClient->sectorIndexX - 1, pClient->sectorIndexY - 1));
+				}
+			}
+			else if (yDir == 1)
+			{
+				if (!isYMax)
+				{
+					retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1));
+					retVector.emplace_back(std::make_pair(pClient->sectorIndexX - 1, pClient->sectorIndexY + 1));
+				}
+			}
+		}
+		return retVector;
+	}
+
+	std::cout << "FindPossibleSectors : 여기에 걸릴리가 없는데??";
+	return retVector;
+}
+
 /*
 	Scene::RecvCharacterMove(SocketInfo* pClient)
 		- 클라이언트로부터 CharacterMove를 받았을 경우, 호출되는 함수.

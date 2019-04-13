@@ -27,9 +27,9 @@ SectorContUnit* Sector::GetSectorContUnit()
 
 void Sector::InNewClient(SocketInfo* pOutNewClient)
 {
-	sectorContUnit->wrlock.lock();
+	sectorContUnit->wrlock.lock(); //+++++++++++++++++++++++++++++++++++++1
 	sectorContUnit->clientCont.emplace_back(pOutNewClient->clientKey);
-	sectorContUnit->wrlock.unlock();
+	sectorContUnit->wrlock.unlock(); //-----------------------------------0
 
 	pOutNewClient->sectorIndexX = indexX;
 	pOutNewClient->sectorIndexY = indexY;
@@ -37,7 +37,18 @@ void Sector::InNewClient(SocketInfo* pOutNewClient)
 
 void Sector::OutClient(SocketInfo* pInClient)
 {
-	sectorContUnit->wrlock.lock();
+	sectorContUnit->wrlock.lock(); //+++++++++++++++++++++++++++++++++++++1
 
-	sectorContUnit->wrlock.unlock();
+	for (auto iter = sectorContUnit->clientCont.begin()
+		; iter != sectorContUnit->clientCont.end()
+		; ++iter)
+	{
+		if (pInClient->clientKey == *iter)
+		{
+			sectorContUnit->clientCont.erase(iter);
+			break;
+		}
+	}
+
+	sectorContUnit->wrlock.unlock(); //-----------------------------------0
 }

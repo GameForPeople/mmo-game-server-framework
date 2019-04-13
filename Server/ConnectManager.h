@@ -3,7 +3,8 @@
 #include "InHeaderDefine.hh"
 
 struct SocketInfo;
-struct ClientContUnit;
+struct SceneContUnit;
+
 class Scene;
 
 class ConnectManager
@@ -16,12 +17,12 @@ public:
 	ConnectManager& operator=(const ConnectManager&) = delete;
 
 public:
-	_ClientNode InNewClient(ClientContUnit* inClientContUnit, Scene*);
-	void OutClient(SocketInfo*, ClientContUnit* inClientContUnit);
+	_ClientNode InNewClient(SceneContUnit* inClientContUnit, Scene*);
+	void OutClient(SocketInfo*, SceneContUnit* inClientContUnit);
 
 private:
-	void SendPutPlayer(SocketInfo* pPutClient, ClientContUnit* inClientCont);
-	void SendRemovePlayer(const char outClientKey, ClientContUnit* inClientCont);
+	void SendPutPlayer(SocketInfo* pPutClient, SceneContUnit* inClientCont);
+	void SendRemovePlayer(const char outClientKey, SceneContUnit* inClientCont);
 private:
 	//std::shared_mutex connectLock;
 };

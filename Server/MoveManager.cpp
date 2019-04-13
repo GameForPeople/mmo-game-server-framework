@@ -7,6 +7,8 @@
 
 #include "SendMemoryPool.h"
 
+#include "ClientContUnit.h"
+
 #include "MoveManager.h"
 
 MoveManager::MoveManager() noexcept
@@ -52,7 +54,7 @@ void MoveManager::MoveCharacter(SocketInfo* pClient)
 #endif
 }
 
-void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, std::vector<std::pair<bool, SocketInfo*>>& inClientCont)
+void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, SceneContUnit* inClientCont)
 {
 	//const BYTE clientPositionByte
 	//	= BIT_CONVERTER::MakeByteFromLeftAndRightByte(pMovedClient->userData->GetPosition().x, pMovedClient->userData->GetPosition().y);
@@ -67,7 +69,7 @@ void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, std::vector<std::p
 	std::cout << "보낼 방향은" << int(pMovedClient->userData->GetPosition().x) << " " << int(pMovedClient->userData->GetPosition().y) << "\n";
 #endif
 
-	for (std::pair<bool, SocketInfo*>& pRecvedClient : inClientCont)
+	for (std::pair<bool, SocketInfo*>& pRecvedClient : inClientCont->clientCont)
 	{
 		if (pRecvedClient.first)
 		{

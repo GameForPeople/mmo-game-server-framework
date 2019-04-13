@@ -20,11 +20,6 @@ Sector::~Sector()
 	delete sectorContUnit;
 }
 
-SectorContUnit* Sector::GetSectorContUnit()
-{
-	return sectorContUnit;
-}
-
 void Sector::InNewClient(SocketInfo* pOutNewClient)
 {
 	sectorContUnit->wrlock.lock(); //+++++++++++++++++++++++++++++++++++++1

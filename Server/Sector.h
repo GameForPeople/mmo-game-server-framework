@@ -15,8 +15,6 @@ struct SocketInfo;
 class Sector
 {
 public:
-	SectorContUnit* GetSectorContUnit() noexcept;
-
 	void InNewClient(SocketInfo*);
 	void OutClient(SocketInfo*);
 

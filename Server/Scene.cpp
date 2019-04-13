@@ -89,7 +89,7 @@ void Scene::InitSector()
 	sectorCont.reserve(sectorContCount);
 	for (int i = 0; i < sectorContCount; ++i)
 	{
-		sectorCont.emplace_back(0, i);
+		sectorCont.emplace_back();
 	}
 
 	//Y축에 대한, Sector 생성
@@ -120,7 +120,7 @@ void Scene::ProcessPacket(SocketInfo* pClient)
 /*std::optional<SocketInfo*>*/ 
 _ClientNode /* == std::pair<bool, SocketInfo*>*/ Scene::InNewClient()
 {
-	if (auto retNode = connectManager->InNewClient(clientContUnit, this)
+	if (auto retNode = connectManager->InNewClient(sceneContUnit, this)
 		; retNode.first)
 	{
 		sectorCont[5][5].InNewClient(retNode.second);
@@ -135,7 +135,7 @@ _ClientNode /* == std::pair<bool, SocketInfo*>*/ Scene::InNewClient()
 void Scene::OutClient(SocketInfo* pOutClient)
 {
 	sectorCont[pOutClient->sectorIndexY][pOutClient->sectorIndexX].OutClient(pOutClient);
-	connectManager->OutClient(pOutClient, clientContUnit);
+	connectManager->OutClient(pOutClient, sceneContUnit);
 }
 
 
@@ -260,5 +260,5 @@ void Scene::RecvCharacterMove(SocketInfo* pClient)
 	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[1]) << "\n";
 #endif
 	moveManager->MoveCharacter(pClient);
-	moveManager->SendMoveCharacter(pClient, clientContUnit);
+	moveManager->SendMoveCharacter(pClient, sceneContUnit);
 }

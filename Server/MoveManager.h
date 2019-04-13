@@ -5,6 +5,7 @@
 
 struct SocketInfo;
 class UserData;
+struct SceneContUnit;
 
 /*
 	MoveManager
@@ -27,7 +28,7 @@ public:
 	std::function<void(MoveManager&, UserData* )> moveFunctionArr[static_cast<int>(DIRECTION::DIRECTION_END)];
 #endif
 	void MoveCharacter(SocketInfo* pClient);
-	void SendMoveCharacter(SocketInfo* pMovedClient, std::vector<std::pair<bool, SocketInfo*>>& inClientCont);
+	void SendMoveCharacter(SocketInfo* pMovedClient, SceneContUnit* inClientCont);
 private:
 #if _USE_STD_FUNCTION_
 	/*inline*/ void LeftMoveTest(UserData* inUserData);

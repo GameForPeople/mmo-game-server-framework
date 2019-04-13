@@ -17,7 +17,7 @@
 	#!?0. 하나의 물리 서버에서 하나의 씐을 가질 경우, 지금처럼하는게 맞음.
 	#!?1. 다만 하나의 서버에서 여러 씐을 가질 경우, 애초에 SocketInfo를 갖고 있고, InNewCliet에 인자로 넣어주는 게맞음.
 */
-_ClientNode ConnectManager::InNewClient(ClientContUnit* inClientContUnit, Scene* scene)
+_ClientNode ConnectManager::InNewClient(SceneContUnit* inClientContUnit, Scene* scene)
 {
 	//std::lock_guard<std::mutex> localLock(addLock);
 	//connectLock.lock();
@@ -64,10 +64,9 @@ _ClientNode ConnectManager::InNewClient(ClientContUnit* inClientContUnit, Scene*
 
 	#!?0. 도대체 여기서 어디까지 보장을 해줘야하는건지. 이 보장이 오히려 버그가 될 수 있지 않은지.
 */
-void ConnectManager::OutClient(SocketInfo* pOutClient, ClientContUnit* inClientContUnit)
+void ConnectManager::OutClient(SocketInfo* pOutClient, SceneContUnit* inClientContUnit)
 {
 	// 사실 벡터면 굳이 Lock 걸 필요 없지 않나. -> 그래도 걸자........나는 찐따니까...
-
 	SendRemovePlayer(inClientContUnit->clientCont[pOutClient->clientKey].first, inClientContUnit);
 
 	inClientContUnit->clientCont[pOutClient->clientKey].first = false;
@@ -80,7 +79,7 @@ void ConnectManager::OutClient(SocketInfo* pOutClient, ClientContUnit* inClientC
 	pOutClient->clientKey = -1;
 }
 
-void ConnectManager::SendPutPlayer(SocketInfo* pPutClient, std::vector<_ClientNode>& inClientCont)
+void ConnectManager::SendPutPlayer(SocketInfo* pPutClient, SceneContUnit* inClientCont)
 {
 	PACKET_DATA::SC::PutPlayer packet(
 		pPutClient->clientKey,
@@ -88,7 +87,7 @@ void ConnectManager::SendPutPlayer(SocketInfo* pPutClient, std::vector<_ClientNo
 		pPutClient->userData->GetPosition().y
 	);
 
-	for (std::pair<bool, SocketInfo*>& pRecvedClient : inClientCont)
+	for (std::pair<bool, SocketInfo*>& pRecvedClient : inClientCont->clientCont)
 	{
 		if (pRecvedClient.first)
 		{
@@ -97,17 +96,17 @@ void ConnectManager::SendPutPlayer(SocketInfo* pPutClient, std::vector<_ClientNo
 	}
 }
 
-void ConnectManager::SendRemovePlayer(const char outClientKey, std::vector<_ClientNode>& inClientCont)
+void ConnectManager::SendRemovePlayer(const char outClientKey, SceneContUnit* inClientCont)
 {
 	PACKET_DATA::SC::RemovePlayer packet(
 		outClientKey
 	);
 
-	for (int i = 0; i < inClientCont.size(); ++i)
+	for (int i = 0; i < inClientCont->clientCont.size(); ++i)
 	{
-		if (inClientCont[i].first && i != outClientKey) 
+		if (inClientCont->clientCont[i].first && i != outClientKey)
 		{
-			NETWORK_UTIL::SendPacket(inClientCont[i].second, reinterpret_cast<char*>(&packet));
+			NETWORK_UTIL::SendPacket(inClientCont->clientCont[i].second, reinterpret_cast<char*>(&packet));
 		}
 	}
 

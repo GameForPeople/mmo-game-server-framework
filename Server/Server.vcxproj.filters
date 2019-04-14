@@ -14,12 +14,6 @@
     <Filter Include="Define">
       <UniqueIdentifier>{3ecd20a7-108e-4965-a3b7-63c9035bf90c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameServer\Scene">
-      <UniqueIdentifier>{561e16c5-d6a2-4aad-ad3f-b7ed162a14b2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameServer\Scene\MoveManager">
-      <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Define\PCH">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
@@ -33,13 +27,19 @@
     <Filter Include="GameServer\SendMemoryPool">
       <UniqueIdentifier>{d340e160-0190-45fa-b1d5-354209d1b254}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameServer\Scene\ConnectManager">
+    <Filter Include="GameServer\Zone">
+      <UniqueIdentifier>{561e16c5-d6a2-4aad-ad3f-b7ed162a14b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameServer\Zone\MoveManager">
+      <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameServer\Zone\ConnectManager">
       <UniqueIdentifier>{35037509-3041-411c-83d5-b76a750aff41}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameServer\Scene\Sector">
+    <Filter Include="GameServer\Zone\Sector">
       <UniqueIdentifier>{c963e516-c674-4445-8339-8c6eaf888ef5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameServer\Scene\ClientContUnit">
+    <Filter Include="GameServer\Zone\ClientContUnit">
       <UniqueIdentifier>{a174d95b-145c-4fd4-8348-8dc3688e4b7d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -55,10 +55,7 @@
       <Filter>UserData</Filter>
     </ClCompile>
     <ClCompile Include="MoveManager.cpp">
-      <Filter>GameServer\Scene\MoveManager</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene.cpp">
-      <Filter>GameServer\Scene</Filter>
+      <Filter>GameServer\Zone\MoveManager</Filter>
     </ClCompile>
     <ClCompile Include="ServerDefine.cpp">
       <Filter>Define</Filter>
@@ -76,13 +73,16 @@
       <Filter>GameServer\SendMemoryPool</Filter>
     </ClCompile>
     <ClCompile Include="ConnectManager.cpp">
-      <Filter>GameServer\Scene\ConnectManager</Filter>
+      <Filter>GameServer\Zone\ConnectManager</Filter>
     </ClCompile>
     <ClCompile Include="Sector.cpp">
-      <Filter>GameServer\Scene\Sector</Filter>
+      <Filter>GameServer\Zone\Sector</Filter>
     </ClCompile>
     <ClCompile Include="ClientContUnit.cpp">
-      <Filter>GameServer\Scene\ClientContUnit</Filter>
+      <Filter>GameServer\Zone\ClientContUnit</Filter>
+    </ClCompile>
+    <ClCompile Include="Zone.cpp">
+      <Filter>GameServer\Zone</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -99,13 +99,10 @@
       <Filter>UserData</Filter>
     </ClInclude>
     <ClInclude Include="MoveManager.h">
-      <Filter>GameServer\Scene\MoveManager</Filter>
+      <Filter>GameServer\Zone\MoveManager</Filter>
     </ClInclude>
     <ClInclude Include="Define.h">
       <Filter>Define</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene.h">
-      <Filter>GameServer\Scene</Filter>
     </ClInclude>
     <ClInclude Include="ServerDefine.h">
       <Filter>Define</Filter>
@@ -117,13 +114,16 @@
       <Filter>GameServer\SendMemoryPool</Filter>
     </ClInclude>
     <ClInclude Include="ConnectManager.h">
-      <Filter>GameServer\Scene\ConnectManager</Filter>
+      <Filter>GameServer\Zone\ConnectManager</Filter>
     </ClInclude>
     <ClInclude Include="Sector.h">
-      <Filter>GameServer\Scene\Sector</Filter>
+      <Filter>GameServer\Zone\Sector</Filter>
     </ClInclude>
     <ClInclude Include="ClientContUnit.h">
-      <Filter>GameServer\Scene\ClientContUnit</Filter>
+      <Filter>GameServer\Zone\ClientContUnit</Filter>
+    </ClInclude>
+    <ClInclude Include="Zone.h">
+      <Filter>GameServer\Zone</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

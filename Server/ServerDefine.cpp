@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "MemoryUnit.h"
 #include "SendMemoryPool.h"
-#include "Scene.h"
+#include "Zone.h"
 #include "ServerDefine.h"
 
 namespace NETWORK_UTIL
@@ -57,11 +57,11 @@ namespace NETWORK_UTIL
 		LogOutProcess()
 			- 클라이언트의 로그아웃 처리를 합니다.
 
-			#0. OutClient 함수에서, pScene의 nullptr와 clientKey의 -1을 보장합니다.
+			#0. OutClient 함수에서, pZone의 nullptr와 clientKey의 -1을 보장합니다.
 
 			!0. 다만, Socket이 없는 경우 해당 함수 호출 시, 문제가 될 수 있습니다. (Accept 실패 시 
 			!1. 또, nullptr가 인자로 들어올 경우, nullptr 참조 오류가 발생합니다.
-			!2. pClient의 pScene이 nullptr일 경우, nullptr 참조 오류가 발생합니다. 
+			!2. pClient의 pZone이 nullptr일 경우, nullptr 참조 오류가 발생합니다. 
 
 			#0. 성능상의 이슈로, !0, !1, !2의 nullptr여부를 보장하지 않습니다. ( 적합한 구조일 경우, nullptr참조가 발생하기 어려움 )
 	*/
@@ -78,7 +78,7 @@ namespace NETWORK_UTIL
 
 			getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
 			std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
-			if (pOutClient->clientKey != -1) pOutClient->pScene->OutClient(pOutClient);
+			if (pOutClient->clientKey != -1) pOutClient->pZone->OutClient(pOutClient);
 
 			closesocket(pOutClient->sock);
 			delete pOutClient;

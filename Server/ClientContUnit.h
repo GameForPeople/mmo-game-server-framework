@@ -4,7 +4,7 @@
 
 struct SocketInfo;
 
-struct SceneContUnit
+struct ZoneContUnit
 {
 	std::vector<_ClientNode> clientCont;
 	std::shared_mutex wrlock;

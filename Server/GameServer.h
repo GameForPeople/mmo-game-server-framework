@@ -4,7 +4,7 @@
 
 struct MemoryUnit;
 struct SocketInfo;
-class Scene;
+class Zone;
 
 /*
 	GameServer
@@ -25,7 +25,7 @@ public:
 
 private:	// for Init
 	void PrintServerInfoUI();
-	void InitScenes();
+	void InitZones();
 	void InitFunctions();
 	void InitNetwork();
 
@@ -56,7 +56,7 @@ private:
 	SOCKADDR_IN							serverAddr;
 
 	std::vector<std::thread>			workerThreadCont;
-	std::vector<std::unique_ptr<Scene>>	sceneCont;
+	std::vector<std::unique_ptr<Zone>>	zoneCont;
 };
 
 #pragma region [Legacy]

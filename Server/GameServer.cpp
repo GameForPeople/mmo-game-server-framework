@@ -2,7 +2,7 @@
 #include "Define.h"
 #include "ServerDefine.h"
 
-#include "Scene.h"
+#include "Zone.h"
 #include "MemoryUnit.h"
 #include "SendMemoryPool.h"
 
@@ -15,10 +15,10 @@ GameServer::GameServer(bool inNotUse)
 	, serverAddr()
 	//, recvOrSendArr()
 	, workerThreadCont()
-	, sceneCont()
+	, zoneCont()
 {
 	PrintServerInfoUI();
-	InitScenes();
+	InitZones();
 	InitFunctions();
 	InitNetwork();
 
@@ -33,7 +33,7 @@ GameServer::~GameServer()
 	SendMemoryPool::DeleteInstance();
 
 	workerThreadCont.clear();
-	sceneCont.clear();
+	zoneCont.clear();
 
 	CloseHandle(hIOCP);
 }
@@ -56,13 +56,13 @@ void GameServer::PrintServerInfoUI()
 }
 
 /*
-	GameServer::InitScene()
+	GameServer::InitZone()
 		- GamsServer의 생성자에서 호출되며, 씐들의 초기화를 담당합니다.
 */
-void GameServer::InitScenes()
+void GameServer::InitZones()
 {
-	sceneCont.reserve(1);
-	sceneCont.emplace_back(std::make_unique<Scene>());
+	zoneCont.reserve(1);
+	zoneCont.emplace_back(std::make_unique<Zone>());
 }
 
 /*
@@ -173,7 +173,7 @@ void GameServer::AcceptThreadFunction()
 			break;
 		}
 
-		if (auto [isTrueAdd, pClient] = sceneCont[0]->InNewClient() 
+		if (auto [isTrueAdd, pClient] = zoneCont[0]->InNewClient() 
 			; isTrueAdd)
 		{
 			// 소켓과 입출력 완료 포트 연결
@@ -292,7 +292,7 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 		if (restSize >= required)
 		{
 			memcpy(pClient->loadedBuf + pClient->loadedSize, pBuf, required);
-			pClient->pScene->ProcessPacket(pClient);
+			pClient->pZone->ProcessPacket(pClient);
 
 			restSize -= required;
 			pBuf += required;

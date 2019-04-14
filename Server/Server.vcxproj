@@ -160,7 +160,7 @@
     <ClInclude Include="MemoryUnit.h" />
     <ClInclude Include="MoveManager.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="Scene.h" />
+    <ClInclude Include="Zone.h" />
     <ClInclude Include="Sector.h" />
     <ClInclude Include="SendMemoryPool.h" />
     <ClInclude Include="ServerDefine.h" />
@@ -180,7 +180,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="Zone.cpp" />
     <ClCompile Include="Sector.cpp" />
     <ClCompile Include="SendMemoryPool.cpp" />
     <ClCompile Include="Server.cpp" />

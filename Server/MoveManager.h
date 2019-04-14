@@ -5,11 +5,11 @@
 
 struct SocketInfo;
 class UserData;
-struct SceneContUnit;
+struct ZoneContUnit;
 
 /*
 	MoveManager
-		- Scene 내부에서, 이동과 관련된 패킷을 처리하는 객체입니다.
+		- Zone 내부에서, 이동과 관련된 패킷을 처리하는 객체입니다.
 */
 class MoveManager
 {
@@ -28,7 +28,7 @@ public:
 	std::function<void(MoveManager&, UserData* )> moveFunctionArr[static_cast<int>(DIRECTION::DIRECTION_END)];
 #endif
 	void MoveCharacter(SocketInfo* pClient);
-	void SendMoveCharacter(SocketInfo* pMovedClient, SceneContUnit* inClientCont);
+	void SendMoveCharacter(SocketInfo* pMovedClient, ZoneContUnit* inClientCont);
 private:
 #if _USE_STD_FUNCTION_
 	/*inline*/ void LeftMoveTest(UserData* inUserData);

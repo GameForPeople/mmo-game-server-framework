@@ -71,7 +71,7 @@ struct SendMemoryUnit
 	!0. 멤버 변수 가장 상위에는 MemoryUnit가 있어야합니다. 절대로 보장되야합니다.
 */
 class UserData;
-class Scene;
+class Zone;
 
 /*
 	4바이트 정렬 짓 해야합니다 여기.
@@ -95,7 +95,7 @@ public:
 
 	_ClientKeyType clientKey;
 	
-	Scene* pScene;
+	Zone* pZone;
 	BYTE sectorIndexX;	// 자신의 섹터로 슥~
 	BYTE sectorIndexY;	// 자신의 섹터로 슥~
 

@@ -9,10 +9,10 @@ class MoveManager;
 class ConnectManager;
 class Sector;
 
-struct SceneContUnit;
+struct ZoneContUnit;
 
 /*
-	Scene
+	Zone
 		- GameServer(GameWorld)를 구성하는 단위 객체입니다.
 	
 	#0. 씐에 접속한 Client의 객체들의 컨테이너를 갖고, 관리합니다.
@@ -20,13 +20,13 @@ struct SceneContUnit;
 	#2. 공간 분할의 단위, 기준은 Sector입니다.
 */
 
-class Scene
+class Zone
 {
 public:
 	void ProcessPacket(SocketInfo* pClient);
 
-	Scene();
-	~Scene();
+	Zone();
+	~Zone();
 
 public:
 	// ConnectManager
@@ -52,6 +52,6 @@ private:
 	
 	std::vector<std::vector<Sector>> sectorCont;
 
-	SceneContUnit* sceneContUnit;
-	std::function<void(Scene&, SocketInfo*)>* recvFunctionArr;
+	ZoneContUnit* zoneContUnit;
+	std::function<void(Zone&, SocketInfo*)>* recvFunctionArr;
 };

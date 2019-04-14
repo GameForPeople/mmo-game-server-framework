@@ -54,7 +54,7 @@ void MoveManager::MoveCharacter(SocketInfo* pClient)
 #endif
 }
 
-void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, SceneContUnit* inClientCont)
+void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, ZoneContUnit* inClientCont)
 {
 	//const BYTE clientPositionByte
 	//	= BIT_CONVERTER::MakeByteFromLeftAndRightByte(pMovedClient->userData->GetPosition().x, pMovedClient->userData->GetPosition().y);

@@ -14,12 +14,12 @@
 
 #include "Sector.h"
 
-#include "Scene.h"
+#include "Zone.h"
 
-Scene::Scene() : 
+Zone::Zone() : 
 	moveManager(nullptr),
 	connectManager(nullptr),
-	sceneContUnit(nullptr),
+	zoneContUnit(nullptr),
 	recvFunctionArr()
 {
 	InitManagers();
@@ -28,60 +28,60 @@ Scene::Scene() :
 	InitFunctions();
 }
 
-Scene::~Scene()
+Zone::~Zone()
 {
 	delete[] recvFunctionArr;
-	delete[] sceneContUnit;
+	delete[] zoneContUnit;
 }
 
 /*
-	Scene::InitManagers()
+	Zone::InitManagers()
 		- GamsServer의 생성자에서 호출되며, 각 매니저들의 초기화를 담당합니다.
 */
-void Scene::InitManagers()
+void Zone::InitManagers()
 {
 	moveManager = std::make_unique<MoveManager>();
 	connectManager = std::make_unique<ConnectManager>();
 }
 
 /*
-	Scene::InitClientCont()
+	Zone::InitClientCont()
 		- GamsServer의 생성자에서 호출되며, 클라이언트 컨테이너들을 초기화합니다.
 */
-void Scene::InitClientCont()
+void Zone::InitClientCont()
 {
-	sceneContUnit = new SceneContUnit;
-	sceneContUnit->clientCont.reserve(GLOBAL_DEFINE::MAX_CLIENT);
+	zoneContUnit = new ZoneContUnit;
+	zoneContUnit->clientCont.reserve(GLOBAL_DEFINE::MAX_CLIENT);
 
 	for (int i = 0; i < GLOBAL_DEFINE::MAX_CLIENT; ++i)
 	{
-		sceneContUnit->clientCont.emplace_back(false, nullptr);
+		zoneContUnit->clientCont.emplace_back(false, nullptr);
 	}
 }
 
 /*
-	Scene::InitFunctions()
+	Zone::InitFunctions()
 		- GamsServer의 생성자에서 호출되며, 게임과 관련된 데이터들의 초기화를 담당합니다.
 */
-void Scene::InitFunctions()
+void Zone::InitFunctions()
 {
-	recvFunctionArr = new std::function<void(Scene&, SocketInfo*)>[PACKET_TYPE::CS::ENUM_SIZE];
-	recvFunctionArr[PACKET_TYPE::CS::LEFT] = &Scene::RecvCharacterMove;
-	recvFunctionArr[PACKET_TYPE::CS::UP] = &Scene::RecvCharacterMove;
-	recvFunctionArr[PACKET_TYPE::CS::RIGHT] = &Scene::RecvCharacterMove;
-	recvFunctionArr[PACKET_TYPE::CS::DOWN] = &Scene::RecvCharacterMove;
+	recvFunctionArr = new std::function<void(Zone&, SocketInfo*)>[PACKET_TYPE::CS::ENUM_SIZE];
+	recvFunctionArr[PACKET_TYPE::CS::LEFT] = &Zone::RecvCharacterMove;
+	recvFunctionArr[PACKET_TYPE::CS::UP] = &Zone::RecvCharacterMove;
+	recvFunctionArr[PACKET_TYPE::CS::RIGHT] = &Zone::RecvCharacterMove;
+	recvFunctionArr[PACKET_TYPE::CS::DOWN] = &Zone::RecvCharacterMove;
 }
 
 /*
-	Scene::InitSectorCont()
+	Zone::InitSectorCont()
 		- GamsServer의 생성자에서 호출되며, 섹터들을 초기화합니다.
 */
-void Scene::InitSector()
+void Zone::InitSector()
 {
 	// 상수 무결성 검사
-	if(GLOBAL_DEFINE::MAX_HEIGHT != GLOBAL_DEFINE::MAX_WIDTH) std::cout << "### Scene의 상수가 비정상적입니다. 확인해주세요.";
+	if(GLOBAL_DEFINE::MAX_HEIGHT != GLOBAL_DEFINE::MAX_WIDTH) std::cout << "### Zone의 상수가 비정상적입니다. 확인해주세요.";
 	if((int)((GLOBAL_DEFINE::MAX_HEIGHT - 1) / GLOBAL_DEFINE::SECTOR_DISTANCE) 
-		== (int)((GLOBAL_DEFINE::MAX_HEIGHT + 1) / GLOBAL_DEFINE::SECTOR_DISTANCE)) std::cout << "### Scene의 상수가 비정상적입니다. 확인해주세요.";
+		== (int)((GLOBAL_DEFINE::MAX_HEIGHT + 1) / GLOBAL_DEFINE::SECTOR_DISTANCE)) std::cout << "### Zone의 상수가 비정상적입니다. 확인해주세요.";
 
 	constexpr BYTE sectorContCount = GLOBAL_DEFINE::MAX_HEIGHT / GLOBAL_DEFINE::SECTOR_DISTANCE;
 	
@@ -105,22 +105,22 @@ void Scene::InitSector()
 }
 
 /*
-	Scene::ProcessRecvData()
+	Zone::ProcessRecvData()
 		- 받은 데이터들을 함수와 연결해줍니다.
 */
-void Scene::ProcessPacket(SocketInfo* pClient)
+void Zone::ProcessPacket(SocketInfo* pClient)
 {
 	recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CS::ENUM_SIZE)](*this, pClient);
 }
 
 /*
-	Scene::InNewClient()
+	Zone::InNewClient()
 		- connectManager에서 해당 함수 처리하도록 변경.
 */
 /*std::optional<SocketInfo*>*/ 
-_ClientNode /* == std::pair<bool, SocketInfo*>*/ Scene::InNewClient()
+_ClientNode /* == std::pair<bool, SocketInfo*>*/ Zone::InNewClient()
 {
-	if (auto retNode = connectManager->InNewClient(sceneContUnit, this)
+	if (auto retNode = connectManager->InNewClient(zoneContUnit, this)
 		; retNode.first)
 	{
 		sectorCont[5][5].InNewClient(retNode.second);
@@ -129,13 +129,13 @@ _ClientNode /* == std::pair<bool, SocketInfo*>*/ Scene::InNewClient()
 }
 
 /*
-	Scene::OutClient()
+	Zone::OutClient()
 		- connectManager에서 해당 함수 처리하도록 변경.
 */
-void Scene::OutClient(SocketInfo* pOutClient)
+void Zone::OutClient(SocketInfo* pOutClient)
 {
 	sectorCont[pOutClient->sectorIndexY][pOutClient->sectorIndexX].OutClient(pOutClient);
-	connectManager->OutClient(pOutClient, sceneContUnit);
+	connectManager->OutClient(pOutClient, zoneContUnit);
 }
 
 /*
@@ -145,7 +145,7 @@ void Scene::OutClient(SocketInfo* pOutClient)
 	?0. 기존의 지역변수를 생성하여, 리턴하는 방식에서, SocketInfo의 멤버변수를 두는 방식으로 변경하는게 날꺼 같은디?
 */
 
-void Scene::RenewPossibleSectors(SocketInfo* pClient)
+void Zone::RenewPossibleSectors(SocketInfo* pClient)
 {
 	// 로컬 변수를 리턴하는 코드에서, 멤버 변수를 변경하는 방식으로 변경.
 	//std::vector<std::pair<BYTE, BYTE>> retVector;
@@ -323,23 +323,23 @@ void Scene::RenewPossibleSectors(SocketInfo* pClient)
 
 	!0. 반드시 이 함수가 호출되기 전에, RenewPossibleSectors가 선행되어야 옳은 ViewList를 획득할 수 있습니다.
 */
-void Scene::RenewViewListInSectors(SocketInfo* pClient)
+void Zone::RenewViewListInSectors(SocketInfo* pClient)
 {
 	sectorCont[pClient->sectorIndexY][pClient->sectorIndexX];
 }
 
 /*
-	Scene::RecvCharacterMove(SocketInfo* pClient)
+	Zone::RecvCharacterMove(SocketInfo* pClient)
 		- 클라이언트로부터 CharacterMove를 받았을 경우, 호출되는 함수.
 
 	#0. 해당 클라이언트의 Move를 먼저 처리합니다.
-	#1. Scene에 존재하는 자신을 포함한 모든 클라이언트에게 ID값과 위치값을 전송합니다.
+	#1. Zone에 존재하는 자신을 포함한 모든 클라이언트에게 ID값과 위치값을 전송합니다.
 */
-void Scene::RecvCharacterMove(SocketInfo* pClient)
+void Zone::RecvCharacterMove(SocketInfo* pClient)
 {
 #ifdef _DEV_MODE_
 	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[1]) << "\n";
 #endif
 	moveManager->MoveCharacter(pClient);
-	moveManager->SendMoveCharacter(pClient, sceneContUnit);
+	moveManager->SendMoveCharacter(pClient, zoneContUnit);
 }

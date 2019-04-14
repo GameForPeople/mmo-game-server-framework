@@ -3,7 +3,7 @@
 #include "ServerDefine.h"
 
 #include "UserData.h"
-#include "Scene.h"
+#include "Zone.h"
 
 #include "MemoryUnit.h"
 
@@ -126,7 +126,7 @@ SocketInfo::SocketInfo() /*noexcept*/ :
 	loadedBuf(),
 	userData(new UserData(0, 0)/*std::make_unique<UserData>(0, 0)*/),
 	clientKey(-1),
-	pScene(nullptr),
+	pZone(nullptr),
 	viewList(),
 	sectorArr(),
 	sectorIndexX(),

@@ -45,7 +45,7 @@ _ClientNode ConnectManager::InNewClient(ZoneContUnit* inClientContUnit, Zone* zo
 			pInClient->clientKey = index;
 			pInClient->pZone = zone;
 
-			SendPutPlayer(pInClient, inClientContUnit);
+			//SendPutPlayer(pInClient, inClientContUnit);
 
 			return std::make_pair(true, pInClient);
 			//return pClient;
@@ -79,42 +79,43 @@ void ConnectManager::OutClient(SocketInfo* pOutClient, ZoneContUnit* inClientCon
 	pOutClient->clientKey = -1;
 }
 
-void ConnectManager::SendPutPlayer(SocketInfo* pPutClient, ZoneContUnit* inClientCont)
-{
-	PACKET_DATA::SC::PutPlayer packet(
-		pPutClient->clientKey,
-		pPutClient->userData->GetPosition().x,
-		pPutClient->userData->GetPosition().y
-	);
-
-	for (std::pair<bool, SocketInfo*>& pRecvedClient : inClientCont->clientCont)
-	{
-		if (pRecvedClient.first)
-		{
-			NETWORK_UTIL::SendPacket(pRecvedClient.second, reinterpret_cast<char*>(&packet));
-		}
-	}
-}
-
-void ConnectManager::SendRemovePlayer(const char outClientKey, ZoneContUnit* inClientCont)
-{
-	PACKET_DATA::SC::RemovePlayer packet(
-		outClientKey
-	);
-
-	for (int i = 0; i < inClientCont->clientCont.size(); ++i)
-	{
-		if (inClientCont->clientCont[i].first && i != outClientKey)
-		{
-			NETWORK_UTIL::SendPacket(inClientCont->clientCont[i].second, reinterpret_cast<char*>(&packet));
-		}
-	}
-
-	//for (std::pair<bool, SocketInfo*>& pRecvedClient : inClientCont)
-	//{
-	//	if (pRecvedClient.first)
-	//	{
-	//		NETWORK_UTIL::SendPacket(pRecvedClient.second, reinterpret_cast<char*>(&packet));
-	//	}
-	//}
-}
+// 더 이상 해당 함수들은 ConnectManager에서 실행되지 않습니다. Sector로 변경.
+//void ConnectManager::SendPutPlayer(SocketInfo* pPutClient, ZoneContUnit* inClientCont)
+//{
+//	PACKET_DATA::SC::PutPlayer packet(
+//		pPutClient->clientKey,
+//		pPutClient->userData->GetPosition().x,
+//		pPutClient->userData->GetPosition().y
+//	);
+//
+//	for (std::pair<bool, SocketInfo*>& pRecvedClient : inClientCont->clientCont)
+//	{
+//		if (pRecvedClient.first)
+//		{
+//			NETWORK_UTIL::SendPacket(pRecvedClient.second, reinterpret_cast<char*>(&packet));
+//		}
+//	}
+//}
+//
+//void ConnectManager::SendRemovePlayer(const char outClientKey, ZoneContUnit* inClientCont)
+//{
+//	PACKET_DATA::SC::RemovePlayer packet(
+//		outClientKey
+//	);
+//
+//	for (int i = 0; i < inClientCont->clientCont.size(); ++i)
+//	{
+//		if (inClientCont->clientCont[i].first && i != outClientKey)
+//		{
+//			NETWORK_UTIL::SendPacket(inClientCont->clientCont[i].second, reinterpret_cast<char*>(&packet));
+//		}
+//	}
+//
+//	//for (std::pair<bool, SocketInfo*>& pRecvedClient : inClientCont)
+//	//{
+//	//	if (pRecvedClient.first)
+//	//	{
+//	//		NETWORK_UTIL::SendPacket(pRecvedClient.second, reinterpret_cast<char*>(&packet));
+//	//	}
+//	//}
+//}

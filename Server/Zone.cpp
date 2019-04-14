@@ -144,13 +144,11 @@ void Zone::OutClient(SocketInfo* pOutClient)
 
 	?0. 기존의 지역변수를 생성하여, 리턴하는 방식에서, SocketInfo의 멤버변수를 두는 방식으로 변경하는게 날꺼 같은디?
 */
-
 void Zone::RenewPossibleSectors(SocketInfo* pClient)
 {
 	// 로컬 변수를 리턴하는 코드에서, 멤버 변수를 변경하는 방식으로 변경.
 	//std::vector<std::pair<BYTE, BYTE>> retVector;
 	//retVector.reserve(4);	// Max Possible Sector!
-
 	//retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY));
 
 	const BYTE tempX = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterX();
@@ -325,7 +323,12 @@ void Zone::RenewPossibleSectors(SocketInfo* pClient)
 */
 void Zone::RenewViewListInSectors(SocketInfo* pClient)
 {
-	sectorCont[pClient->sectorIndexY][pClient->sectorIndexX];
+	sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].CheckViewList(pClient, zoneContUnit);
+
+	for (int i = 0; i < pClient->possibleSectorCount; ++i)
+	{
+		sectorCont[pClient->sectorArr[i].second][pClient->sectorArr[i].first].CheckViewList(pClient, zoneContUnit);
+	}
 }
 
 /*
@@ -340,6 +343,8 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 #ifdef _DEV_MODE_
 	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[1]) << "\n";
 #endif
-	moveManager->MoveCharacter(pClient);
-	moveManager->SendMoveCharacter(pClient, zoneContUnit);
+	// Old!
+	//moveManager->MoveCharacter(pClient);
+	//moveManager->SendMoveCharacter(pClient, zoneContUnit);
+	//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].
 }

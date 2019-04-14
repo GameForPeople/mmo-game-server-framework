@@ -1,6 +1,9 @@
 #pragma once
 
+#include "InHeaderDefine.hh"
+
 struct SectorContUnit;
+struct ZoneContUnit;
 
 struct SocketInfo;
 
@@ -19,7 +22,13 @@ public:
 	void InNewClient(SocketInfo*);
 	void OutClient(SocketInfo*);
 
-	//void CheckViewList(SocketInfo*);
+	void CheckViewList(SocketInfo*, ZoneContUnit*);
+
+	void SendPutPlayer(SocketInfo* pPutClient, SocketInfo* pRecvClient);
+	void SendRemovePlayer(const _ClientKeyType pRemoveClient, SocketInfo* pRecvClient);
+
+private:
+	bool IsSeeEachOther(const Position2D&, const Position2D&) noexcept;
 
 public:
 	Sector(const BYTE X, const BYTE Y);

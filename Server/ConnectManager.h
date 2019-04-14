@@ -21,8 +21,10 @@ public:
 	void OutClient(SocketInfo*, ZoneContUnit* inClientContUnit);
 
 private:
-	void SendPutPlayer(SocketInfo* pPutClient, ZoneContUnit* inClientCont);
-	void SendRemovePlayer(const char outClientKey, ZoneContUnit* inClientCont);
+	// Sector로 이사갔습니다.
+	//void SendPutPlayer(SocketInfo* pPutClient, ZoneContUnit* inClientCont);
+	//void SendRemovePlayer(const char outClientKey, ZoneContUnit* inClientCont);
+
 private:
 	//std::shared_mutex connectLock;
 };

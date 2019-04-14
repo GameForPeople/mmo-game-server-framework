@@ -12,6 +12,8 @@ struct ZoneContUnit
 
 struct SectorContUnit
 {
-	std::list<_ClientKeyType> clientCont;
+	std::unordered_set<_ClientKeyType> clientCont;
+	//Concurrency::concurrent_unordered_set<_ClientKeyType> clientCont;
+	//std::list<_ClientKeyType> clientCont;
 	std::shared_mutex wrlock;
 };

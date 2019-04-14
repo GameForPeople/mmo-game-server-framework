@@ -94,9 +94,13 @@ public:
 	//std::unique_ptr<UserData> userData;
 
 	_ClientKeyType clientKey;
+	
 	Scene* pScene;
-	BYTE sectorIndexX;
-	BYTE sectorIndexY;
+	BYTE sectorIndexX;	// 자신의 섹터로 슥~
+	BYTE sectorIndexY;	// 자신의 섹터로 슥~
+
+	BYTE possibleSectorCount;	// 검사해야하는 섹터 개수, 최대 3을 초과할 수 없음.
+	std::array<std::pair<BYTE, BYTE>, 3> sectorArr;
 
 	Concurrency::concurrent_unordered_set<_ClientKeyType> viewList;
 };

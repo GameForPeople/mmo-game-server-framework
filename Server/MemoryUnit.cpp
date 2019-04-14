@@ -128,8 +128,10 @@ SocketInfo::SocketInfo() /*noexcept*/ :
 	clientKey(-1),
 	pScene(nullptr),
 	viewList(),
+	sectorArr(),
 	sectorIndexX(),
-	sectorIndexY()
+	sectorIndexY(),
+	possibleSectorCount()
 {
 	loadedBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
 	viewList.clear();

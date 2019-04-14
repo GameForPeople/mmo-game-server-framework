@@ -40,7 +40,8 @@ private:
 	void InitSector();
 
 private:
-	std::vector<std::pair<BYTE, BYTE>> FindPossibleSectors(SocketInfo* pClient);
+	void RenewPossibleSectors(SocketInfo* pClient);
+	void RenewViewListInSectors(SocketInfo* pClient);
 
 	// MoveManager
 	void RecvCharacterMove(SocketInfo* pClient);

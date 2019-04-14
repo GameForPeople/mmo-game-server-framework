@@ -1,6 +1,7 @@
 #pragma once
 
 struct SectorContUnit;
+
 struct SocketInfo;
 
 /*
@@ -17,6 +18,8 @@ class Sector
 public:
 	void InNewClient(SocketInfo*);
 	void OutClient(SocketInfo*);
+
+	//void CheckViewList(SocketInfo*);
 
 public:
 	Sector(const BYTE X, const BYTE Y);

@@ -138,14 +138,20 @@ void Scene::OutClient(SocketInfo* pOutClient)
 	connectManager->OutClient(pOutClient, sceneContUnit);
 }
 
+/*
+	FindPossibleSectors? CheckPossibleSectors?
+		- 현재 캐릭터의 섹터와 위치를 검사하여, 시야 체크를 해야하는 섹터를 검사합니다.
 
-std::vector<std::pair<BYTE, BYTE>> Scene::FindPossibleSectors(SocketInfo* pClient)
+	?0. 기존의 지역변수를 생성하여, 리턴하는 방식에서, SocketInfo의 멤버변수를 두는 방식으로 변경하는게 날꺼 같은디?
+*/
+
+void Scene::RenewPossibleSectors(SocketInfo* pClient)
 {
-	std::vector<std::pair<BYTE, BYTE>> retVector;
+	// 로컬 변수를 리턴하는 코드에서, 멤버 변수를 변경하는 방식으로 변경.
+	//std::vector<std::pair<BYTE, BYTE>> retVector;
 	//retVector.reserve(4);	// Max Possible Sector!
 
-	// 내가 속한 곳은 당연히 검사해야지.
-	retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY));
+	//retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY));
 
 	const BYTE tempX = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterX();
 	const BYTE tempY = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterY();
@@ -164,87 +170,162 @@ std::vector<std::pair<BYTE, BYTE>> Scene::FindPossibleSectors(SocketInfo* pClien
 	const bool isYZero = pClient->sectorIndexY == 0 ? true : false;
 	const bool isYMax = pClient->sectorIndexY == 9 ? true : false;
 
+	pClient->possibleSectorCount = 0;
+
 	if (xDir == 0)
 	{
-		retVector.reserve(2);
-
-		if (yDir == -1) { if (!isYZero) retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1)); }
-		else if (yDir == 1) { if (!isYMax) retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1)); }
-		//else if (yDir == 0) 
-		
-		return retVector;
-	}
-
-	if (xDir == 1)
-	{
-		if (pClient->sectorIndexX == 9)
+		if (yDir == -1)
 		{
-			retVector.reserve(2);
+			if (!isYZero)
+			{
+				pClient->possibleSectorCount = 1;
+				pClient->sectorArr[0] = { pClient->sectorIndexX, pClient->sectorIndexY - 1 };
+			}
+		}
+		else if (yDir == 1)
+		{
+			if (!isYMax)
+			{
+				pClient->possibleSectorCount = 1;
+				pClient->sectorArr[0] = { pClient->sectorIndexX, pClient->sectorIndexY + 1 };
+				
+			}
+		}
+		/* else if (yDir == 0) */
+		
+		return; //return retVector;
+	}
+	else if (xDir == 1)
+	{
+		if (pClient->sectorIndexX == 9)	// X의 끝일 때,
+		{
+			if (yDir == -1) 
+			{ 
+				if (!isYZero)
+				{
+					pClient->possibleSectorCount = 1;
+					pClient->sectorArr[0] = { pClient->sectorIndexX, pClient->sectorIndexY - 1 };
+					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1));
+				}
+			}
+			else if (yDir == 1)
+			{
+				if (!isYMax)
+				{
+					pClient->possibleSectorCount = 1;
+					pClient->sectorArr[0] = { pClient->sectorIndexX, pClient->sectorIndexY + 1 };
+					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1));
 
-			if (yDir == -1) { if (!isYZero) retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1)); }
-			else if (yDir == 1) { if (!isYMax) retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1)); }
+				}
+			}
 		}
 		else
 		{
-			retVector.reserve(4);
-			retVector.emplace_back(std::make_pair(pClient->sectorIndexX + 1, pClient->sectorIndexY));
+			pClient->possibleSectorCount = 1;
+			pClient->sectorArr[0] = { pClient->sectorIndexX + 1, pClient->sectorIndexY};
+			//retVector.reserve(4);
+			//retVector.emplace_back(std::make_pair(pClient->sectorIndexX + 1, pClient->sectorIndexY));
 
 			if (yDir == -1) 
 			{ 
 				if (!isYZero)
 				{
-					retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1));
-					retVector.emplace_back(std::make_pair(pClient->sectorIndexX + 1, pClient->sectorIndexY - 1));
+					pClient->sectorArr[1] = { pClient->sectorIndexX, pClient->sectorIndexY - 1 };
+					pClient->sectorArr[2] = { pClient->sectorIndexX + 1, pClient->sectorIndexY - 1};
+					pClient->possibleSectorCount = 3;
+
+					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1));
+					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX + 1, pClient->sectorIndexY - 1));
 				}
 			}
 			else if (yDir == 1)
 			{
 				if (!isYMax)
 				{
-					retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1));
-					retVector.emplace_back(std::make_pair(pClient->sectorIndexX + 1, pClient->sectorIndexY + 1));
+					pClient->sectorArr[1] = { pClient->sectorIndexX, pClient->sectorIndexY + 1 };
+					pClient->sectorArr[2] = { pClient->sectorIndexX + 1, pClient->sectorIndexY + 1 };
+					pClient->possibleSectorCount = 3;
+
+					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1));
+					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX + 1, pClient->sectorIndexY + 1));
 				}
 			}
 		}
-		return retVector;
+		
+		return;
 	}
-
-	if (xDir == -1)
+	else if (xDir == -1)
 	{
 		if (pClient->sectorIndexX == 0)
 		{
-			retVector.reserve(2);
+			if (yDir == -1) 
+			{ 
+				if (!isYZero)
+				{
+					pClient->possibleSectorCount = 1;
+					pClient->sectorArr[0] = { pClient->sectorIndexX, pClient->sectorIndexY - 1 };
+					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1));
+				}
+			}
+			else if (yDir == 1)
+			{
+				if (!isYMax)
+				{
+					pClient->possibleSectorCount = 1;
+					pClient->sectorArr[0] = { pClient->sectorIndexX, pClient->sectorIndexY + 1 };
 
-			if (yDir == -1) { if (!isYZero) retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1)); }
-			else if (yDir == 1) { if (!isYMax) retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1)); }
+					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1));
+				}
+			}
 		}
 		else
 		{
-			retVector.reserve(4);
-			retVector.emplace_back(std::make_pair(pClient->sectorIndexX - 1, pClient->sectorIndexY));
+			pClient->possibleSectorCount = 1;
+			pClient->sectorArr[0] = { pClient->sectorIndexX - 1, pClient->sectorIndexY };
+			//retVector.reserve(4);
+			//retVector.emplace_back(std::make_pair(pClient->sectorIndexX - 1, pClient->sectorIndexY));
 
 			if (yDir == -1)
 			{
 				if (!isYZero)
 				{
-					retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1));
-					retVector.emplace_back(std::make_pair(pClient->sectorIndexX - 1, pClient->sectorIndexY - 1));
+					pClient->possibleSectorCount = 3;
+					pClient->sectorArr[1] = { pClient->sectorIndexX, pClient->sectorIndexY - 1 };
+					pClient->sectorArr[2] = { pClient->sectorIndexX - 1, pClient->sectorIndexY - 1 };
+
+					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY - 1));
+					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX - 1, pClient->sectorIndexY - 1));
 				}
 			}
 			else if (yDir == 1)
 			{
 				if (!isYMax)
 				{
-					retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1));
-					retVector.emplace_back(std::make_pair(pClient->sectorIndexX - 1, pClient->sectorIndexY + 1));
+					pClient->possibleSectorCount = 3;
+					pClient->sectorArr[1] = { pClient->sectorIndexX, pClient->sectorIndexY + 1 };
+					pClient->sectorArr[2] = { pClient->sectorIndexX - 1, pClient->sectorIndexY + 1 };
+
+					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1));
+					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX - 1, pClient->sectorIndexY + 1));
 				}
 			}
 		}
-		return retVector;
+		return ;
 	}
 
-	std::cout << "FindPossibleSectors : 여기에 걸릴리가 없는데??";
-	return retVector;
+	assert(false, "FindPossibleSectors : 여기에 걸릴리가 없는데??");
+	return;
+}
+
+/*
+	RenewViewListInSectors
+		- 최신화된 섹터에서, 뷰리스트를 갱신한다.
+
+	!0. 반드시 이 함수가 호출되기 전에, RenewPossibleSectors가 선행되어야 옳은 ViewList를 획득할 수 있습니다.
+*/
+void Scene::RenewViewListInSectors(SocketInfo* pClient)
+{
+	sectorCont[pClient->sectorIndexY][pClient->sectorIndexX];
 }
 
 /*

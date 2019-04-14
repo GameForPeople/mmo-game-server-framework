@@ -6,6 +6,7 @@
 #include "MemoryUnit.h"
 #include "UserData.h"
 
+
 #include "Sector.h"
 
 Sector::Sector(const BYTE inX, const BYTE inY)
@@ -34,6 +35,7 @@ void Sector::InNewClient(SocketInfo* pOutNewClient)
 
 void Sector::OutClient(SocketInfo* pInClient)
 {
+	// 지역 정보에서 나를 지워주고.
 	sectorContUnit->wrlock.lock(); //+++++++++++++++++++++++++++++++++++++1
 
 	for (auto iter = sectorContUnit->clientCont.begin()

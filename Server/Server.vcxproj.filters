@@ -8,9 +8,6 @@
     <Filter Include="GameServer">
       <UniqueIdentifier>{a3f66a2f-a6cf-486b-9548-c83197974030}</UniqueIdentifier>
     </Filter>
-    <Filter Include="UserData">
-      <UniqueIdentifier>{233cb163-fdac-4d99-9ace-81319f84441b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Define">
       <UniqueIdentifier>{3ecd20a7-108e-4965-a3b7-63c9035bf90c}</UniqueIdentifier>
     </Filter>
@@ -18,29 +15,35 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="GameServer\Memory">
-      <UniqueIdentifier>{f052244d-703e-432b-855a-280ee59a2e7a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameServer\SocketInfo">
-      <UniqueIdentifier>{61436111-4ecf-411d-9180-0c18c6947a1c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameServer\SendMemoryPool">
-      <UniqueIdentifier>{d340e160-0190-45fa-b1d5-354209d1b254}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameServer\Zone">
       <UniqueIdentifier>{561e16c5-d6a2-4aad-ad3f-b7ed162a14b2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameServer\Zone\MoveManager">
-      <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
+    <Filter Include="GameServer\Sector">
+      <UniqueIdentifier>{c963e516-c674-4445-8339-8c6eaf888ef5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Others">
+      <UniqueIdentifier>{58d3a35a-d44d-4f2f-8454-853cd0d6c496}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Others\UserData">
+      <UniqueIdentifier>{233cb163-fdac-4d99-9ace-81319f84441b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Others\Memory">
+      <UniqueIdentifier>{f052244d-703e-432b-855a-280ee59a2e7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Others\SendMemoryPool">
+      <UniqueIdentifier>{d340e160-0190-45fa-b1d5-354209d1b254}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Others\SocketInfo">
+      <UniqueIdentifier>{61436111-4ecf-411d-9180-0c18c6947a1c}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameServer\Zone\ConnectManager">
       <UniqueIdentifier>{35037509-3041-411c-83d5-b76a750aff41}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameServer\Zone\Sector">
-      <UniqueIdentifier>{c963e516-c674-4445-8339-8c6eaf888ef5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameServer\Zone\ClientContUnit">
+    <Filter Include="Others\ClientContUnit">
       <UniqueIdentifier>{a174d95b-145c-4fd4-8348-8dc3688e4b7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameServer\Sector\MoveManager">
+      <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -52,10 +55,10 @@
       <Filter>GameServer</Filter>
     </ClCompile>
     <ClCompile Include="UserData.cpp">
-      <Filter>UserData</Filter>
+      <Filter>Others\UserData</Filter>
     </ClCompile>
     <ClCompile Include="MoveManager.cpp">
-      <Filter>GameServer\Zone\MoveManager</Filter>
+      <Filter>GameServer\Sector\MoveManager</Filter>
     </ClCompile>
     <ClCompile Include="ServerDefine.cpp">
       <Filter>Define</Filter>
@@ -64,22 +67,22 @@
       <Filter>Define</Filter>
     </ClCompile>
     <ClCompile Include="SocketInfo.cpp">
-      <Filter>GameServer\SocketInfo</Filter>
+      <Filter>Others\SocketInfo</Filter>
     </ClCompile>
     <ClCompile Include="MemoryUnit.cpp">
-      <Filter>GameServer\Memory</Filter>
+      <Filter>Others\Memory</Filter>
     </ClCompile>
     <ClCompile Include="SendMemoryPool.cpp">
-      <Filter>GameServer\SendMemoryPool</Filter>
+      <Filter>Others\SendMemoryPool</Filter>
     </ClCompile>
     <ClCompile Include="ConnectManager.cpp">
       <Filter>GameServer\Zone\ConnectManager</Filter>
     </ClCompile>
     <ClCompile Include="Sector.cpp">
-      <Filter>GameServer\Zone\Sector</Filter>
+      <Filter>GameServer\Sector</Filter>
     </ClCompile>
     <ClCompile Include="ClientContUnit.cpp">
-      <Filter>GameServer\Zone\ClientContUnit</Filter>
+      <Filter>Others\ClientContUnit</Filter>
     </ClCompile>
     <ClCompile Include="Zone.cpp">
       <Filter>GameServer\Zone</Filter>
@@ -93,13 +96,13 @@
       <Filter>GameServer</Filter>
     </ClInclude>
     <ClInclude Include="SocketInfo.h">
-      <Filter>GameServer\SocketInfo</Filter>
+      <Filter>Others\SocketInfo</Filter>
     </ClInclude>
     <ClInclude Include="UserData.h">
-      <Filter>UserData</Filter>
+      <Filter>Others\UserData</Filter>
     </ClInclude>
     <ClInclude Include="MoveManager.h">
-      <Filter>GameServer\Zone\MoveManager</Filter>
+      <Filter>GameServer\Sector\MoveManager</Filter>
     </ClInclude>
     <ClInclude Include="Define.h">
       <Filter>Define</Filter>
@@ -108,19 +111,19 @@
       <Filter>Define</Filter>
     </ClInclude>
     <ClInclude Include="MemoryUnit.h">
-      <Filter>GameServer\Memory</Filter>
+      <Filter>Others\Memory</Filter>
     </ClInclude>
     <ClInclude Include="SendMemoryPool.h">
-      <Filter>GameServer\SendMemoryPool</Filter>
+      <Filter>Others\SendMemoryPool</Filter>
     </ClInclude>
     <ClInclude Include="ConnectManager.h">
       <Filter>GameServer\Zone\ConnectManager</Filter>
     </ClInclude>
     <ClInclude Include="Sector.h">
-      <Filter>GameServer\Zone\Sector</Filter>
+      <Filter>GameServer\Sector</Filter>
     </ClInclude>
     <ClInclude Include="ClientContUnit.h">
-      <Filter>GameServer\Zone\ClientContUnit</Filter>
+      <Filter>Others\ClientContUnit</Filter>
     </ClInclude>
     <ClInclude Include="Zone.h">
       <Filter>GameServer\Zone</Filter>

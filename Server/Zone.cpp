@@ -123,7 +123,16 @@ _ClientNode /* == std::pair<bool, SocketInfo*>*/ Zone::InNewClient()
 	if (auto retNode = connectManager->InNewClient(zoneContUnit, this)
 		; retNode.first)
 	{
+		//최초 Sector에 클라이언트 삽입.
 		sectorCont[5][5].InNewClient(retNode.second);
+
+		// 둘러볼 지역 결정하고
+		RenewPossibleSectors(retNode.second);
+
+		// 친구들 새로 사귀고
+		RenewViewListInSectors(retNode.second);
+
+		return retNode;
 	}
 	else return retNode;
 }
@@ -134,7 +143,10 @@ _ClientNode /* == std::pair<bool, SocketInfo*>*/ Zone::InNewClient()
 */
 void Zone::OutClient(SocketInfo* pOutClient)
 {
+	// 섹터 컨테이너에서 내 정보를 지워주고
 	sectorCont[pOutClient->sectorIndexY][pOutClient->sectorIndexX].OutClient(pOutClient);
+	
+	// 내 ViewList의 Client에게 나 나간다고 알려주고.
 	connectManager->OutClient(pOutClient, zoneContUnit);
 }
 
@@ -331,6 +343,21 @@ void Zone::RenewViewListInSectors(SocketInfo* pClient)
 	}
 }
 
+void Zone::RenewClientSector(SocketInfo* pClient)
+{
+	bool isNeedToChangeSector{ false };
+
+	if (static_cast<BYTE>(pClient->userData->GetPosition().x / 10) != pClient->sectorIndexX) isNeedToChangeSector = true;
+	if (static_cast<BYTE>(pClient->userData->GetPosition().y / 10) != pClient->sectorIndexY) isNeedToChangeSector = true;
+
+	if (isNeedToChangeSector == false) 	return;
+	else
+	{
+		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].OutClient(pClient);
+		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].InNewClient(pClient);
+	}
+}
+
 /*
 	Zone::RecvCharacterMove(SocketInfo* pClient)
 		- 클라이언트로부터 CharacterMove를 받았을 경우, 호출되는 함수.
@@ -343,8 +370,11 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 #ifdef _DEV_MODE_
 	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[1]) << "\n";
 #endif
-	// Old!
-	//moveManager->MoveCharacter(pClient);
+	moveManager->MoveCharacter(pClient);
+	RenewClientSector(pClient);
+	RenewPossibleSectors(pClient);
+	RenewViewListInSectors(pClient);
+
 	//moveManager->SendMoveCharacter(pClient, zoneContUnit);
-	//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].
+	//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].RecvCharacterMove(pClient);
 }

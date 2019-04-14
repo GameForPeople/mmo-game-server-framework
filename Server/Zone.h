@@ -5,8 +5,9 @@
 struct SocketInfo;
 struct MemoryUnit;
 
-class MoveManager;
 class ConnectManager;
+class MoveManager;
+
 class Sector;
 
 struct ZoneContUnit;
@@ -40,6 +41,7 @@ private:
 	void InitSector();
 
 private:
+	void RenewClientSector(SocketInfo* pClient);
 	void RenewPossibleSectors(SocketInfo* pClient);
 	void RenewViewListInSectors(SocketInfo* pClient);
 
@@ -47,9 +49,9 @@ private:
 	void RecvCharacterMove(SocketInfo* pClient);
 
 private:
-	std::unique_ptr<MoveManager> moveManager;
 	std::unique_ptr<ConnectManager> connectManager;
-	
+	std::unique_ptr<MoveManager> moveManager;
+
 	std::vector<std::vector<Sector>> sectorCont;
 
 	ZoneContUnit* zoneContUnit;

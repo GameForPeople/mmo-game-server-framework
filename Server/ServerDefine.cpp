@@ -78,6 +78,8 @@ namespace NETWORK_UTIL
 
 			getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
 			std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
+			
+			// 애초에 접속도 못했는데, 로그아웃 할 경우를 방지.
 			if (pOutClient->clientKey != -1) pOutClient->pZone->OutClient(pOutClient);
 
 			closesocket(pOutClient->sock);

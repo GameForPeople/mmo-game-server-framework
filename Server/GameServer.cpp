@@ -292,7 +292,9 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 		if (restSize >= required)
 		{
 			memcpy(pClient->loadedBuf + pClient->loadedSize, pBuf, required);
-			pClient->pZone->ProcessPacket(pClient);
+			
+			zoneCont[0]->ProcessPacket(pClient);
+			//== pClient->pZone->ProcessPacket(pClient);
 
 			restSize -= required;
 			pBuf += required;

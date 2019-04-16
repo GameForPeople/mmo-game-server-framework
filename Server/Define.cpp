@@ -4,6 +4,13 @@
 
 namespace PACKET_DATA
 {
+	namespace CLIENT_TO_SERVER
+	{
+		Move::Move(char inDirection) noexcept :
+			direction(inDirection)
+		{}
+	}
+
 	namespace SERVER_TO_CLIENT
 	{
 		LoginOk::LoginOk(const char inNewId) noexcept :
@@ -36,9 +43,10 @@ namespace UNICODE_UTIL
 {
 	void SetLocaleToKorean()
 	{
-		_wsetlocale(LC_ALL, L"korean");
+		_wsetlocale(LC_ALL, L"Korean");
 
+		// ? 계속 오류 내뱉어서 일단 꺼놓음.
 		//26444 왜 때문에, 굳이 필요 없이, L-Value를 만들어야하는가;
-		auto oldLocale = std::wcout.imbue(std::locale("koeran"));
+		/*auto oldLocale = std::wcout.imbue(std::locale("koeran")); */
 	}
 }

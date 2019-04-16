@@ -69,6 +69,8 @@ void Sector::CheckViewList(SocketInfo* pClient, ZoneContUnit* pZoneContUnit)
 	sectorContUnit->wrlock.lock_shared();	//++++++++++++++++++++++++++++1	Sector : Read Lock!
 	for (auto& otherKey : sectorContUnit->clientCont)
 	{
+		if (otherKey == pClient->clientKey) continue;
+
 		if (IsSeeEachOther(pClient->userData->GetPosition(), oldZoneCont[otherKey].second->userData->GetPosition()))
 		{
 			// 서로 보입니다.
@@ -82,10 +84,13 @@ void Sector::CheckViewList(SocketInfo* pClient, ZoneContUnit* pZoneContUnit)
 				pClient->viewList.insert(otherKey);
 				oldZoneCont[otherKey].second->viewList.insert(pClient->clientKey);
 			}
-			//else
-			//{
-			//	// 서로 보이고, 서로 원래 알던 클라이언트였을 때.
-			//}
+			else
+			{
+				//서로 보이고, 서로 아는 사이였을 때,
+
+				// 나는 내가 알아서 할게 너 나 바뀐거 받아라 얌마!
+				SendMovePlayer(pClient, oldZoneCont[otherKey].second);
+			}
 		}
 		else
 		{
@@ -107,6 +112,7 @@ void Sector::CheckViewList(SocketInfo* pClient, ZoneContUnit* pZoneContUnit)
 			//}
 		}
 	}
+	sectorContUnit->wrlock.unlock_shared();	//----------------------------0	Sector : Read Lock!
 }
 
 bool Sector::IsSeeEachOther(const Position2D& inAPosition, const Position2D& inBPosition) noexcept
@@ -131,6 +137,17 @@ void Sector::SendRemovePlayer(const _ClientKeyType pRemoveClientID, SocketInfo* 
 {
 	PACKET_DATA::SC::RemovePlayer packet(
 		pRemoveClientID
+	);
+
+	NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
+}
+
+void Sector::SendMovePlayer(SocketInfo* pMovedClientKey, SocketInfo* pRecvClient) 
+{
+	PACKET_DATA::SC::Position packet(
+		pMovedClientKey->clientKey,
+		pMovedClientKey->userData->GetPosition().x,
+		pMovedClientKey->userData->GetPosition().y
 	);
 
 	NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));

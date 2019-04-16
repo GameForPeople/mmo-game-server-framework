@@ -66,10 +66,7 @@ void Zone::InitClientCont()
 void Zone::InitFunctions()
 {
 	recvFunctionArr = new std::function<void(Zone&, SocketInfo*)>[PACKET_TYPE::CS::ENUM_SIZE];
-	recvFunctionArr[PACKET_TYPE::CS::LEFT] = &Zone::RecvCharacterMove;
-	recvFunctionArr[PACKET_TYPE::CS::UP] = &Zone::RecvCharacterMove;
-	recvFunctionArr[PACKET_TYPE::CS::RIGHT] = &Zone::RecvCharacterMove;
-	recvFunctionArr[PACKET_TYPE::CS::DOWN] = &Zone::RecvCharacterMove;
+	recvFunctionArr[PACKET_TYPE::CS::MOVE] = &Zone::RecvCharacterMove;
 }
 
 /*
@@ -126,15 +123,23 @@ _ClientNode /* == std::pair<bool, SocketInfo*>*/ Zone::InNewClient()
 		//최초 Sector에 클라이언트 삽입.
 		sectorCont[5][5].InNewClient(retNode.second);
 
-		// 둘러볼 지역 결정하고
-		RenewPossibleSectors(retNode.second);
+		// InitViewAndSector으로 래핑됨.
 
-		// 친구들 새로 사귀고
-		RenewViewListInSectors(retNode.second);
+		// 둘러볼 지역 결정하고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
+		//RenewPossibleSectors(retNode.second);
+
+		// 친구들 새로 사귀고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
+		//RenewViewListInSectors(retNode.second);
 
 		return retNode;
 	}
 	else return retNode;
+}
+
+void Zone::InitViewAndSector(SocketInfo* pClient)
+{
+	RenewPossibleSectors(pClient);
+	RenewViewListInSectors(pClient);
 }
 
 /*
@@ -368,9 +373,18 @@ void Zone::RenewClientSector(SocketInfo* pClient)
 void Zone::RecvCharacterMove(SocketInfo* pClient)
 {
 #ifdef _DEV_MODE_
-	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[1]) << "\n";
+	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[2]) << "\n";
 #endif
 	moveManager->MoveCharacter(pClient);
+
+	// 스스로에게 전송.
+	PACKET_DATA::SC::Position packet(
+		pClient->clientKey,
+		pClient->userData->GetPosition().x,
+		pClient->userData->GetPosition().y
+	);
+	NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&packet));
+
 	RenewClientSector(pClient);
 	RenewPossibleSectors(pClient);
 	RenewViewListInSectors(pClient);

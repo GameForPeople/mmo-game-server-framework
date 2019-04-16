@@ -18,9 +18,6 @@
     <Filter Include="GameServer\Zone">
       <UniqueIdentifier>{561e16c5-d6a2-4aad-ad3f-b7ed162a14b2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameServer\Sector">
-      <UniqueIdentifier>{c963e516-c674-4445-8339-8c6eaf888ef5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Others">
       <UniqueIdentifier>{58d3a35a-d44d-4f2f-8454-853cd0d6c496}</UniqueIdentifier>
     </Filter>
@@ -42,8 +39,11 @@
     <Filter Include="Others\ClientContUnit">
       <UniqueIdentifier>{a174d95b-145c-4fd4-8348-8dc3688e4b7d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameServer\Sector\MoveManager">
+    <Filter Include="GameServer\Zone\MoveManager">
       <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameServer\Zone\Sector">
+      <UniqueIdentifier>{c963e516-c674-4445-8339-8c6eaf888ef5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -58,7 +58,7 @@
       <Filter>Others\UserData</Filter>
     </ClCompile>
     <ClCompile Include="MoveManager.cpp">
-      <Filter>GameServer\Sector\MoveManager</Filter>
+      <Filter>GameServer\Zone\MoveManager</Filter>
     </ClCompile>
     <ClCompile Include="ServerDefine.cpp">
       <Filter>Define</Filter>
@@ -79,7 +79,7 @@
       <Filter>GameServer\Zone\ConnectManager</Filter>
     </ClCompile>
     <ClCompile Include="Sector.cpp">
-      <Filter>GameServer\Sector</Filter>
+      <Filter>GameServer\Zone\Sector</Filter>
     </ClCompile>
     <ClCompile Include="ClientContUnit.cpp">
       <Filter>Others\ClientContUnit</Filter>
@@ -102,7 +102,7 @@
       <Filter>Others\UserData</Filter>
     </ClInclude>
     <ClInclude Include="MoveManager.h">
-      <Filter>GameServer\Sector\MoveManager</Filter>
+      <Filter>GameServer\Zone\MoveManager</Filter>
     </ClInclude>
     <ClInclude Include="Define.h">
       <Filter>Define</Filter>
@@ -120,7 +120,7 @@
       <Filter>GameServer\Zone\ConnectManager</Filter>
     </ClInclude>
     <ClInclude Include="Sector.h">
-      <Filter>GameServer\Sector</Filter>
+      <Filter>GameServer\Zone\Sector</Filter>
     </ClInclude>
     <ClInclude Include="ClientContUnit.h">
       <Filter>Others\ClientContUnit</Filter>
@@ -128,6 +128,7 @@
     <ClInclude Include="Zone.h">
       <Filter>GameServer\Zone</Filter>
     </ClInclude>
+    <ClInclude Include="ToDo.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="InHeaderDefine.hh">

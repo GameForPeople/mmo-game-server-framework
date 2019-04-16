@@ -26,7 +26,7 @@ public:
 public:
 	
 public:
-	_NODISCARD inline Position2D GetPosition() const noexcept { return position; }
+	/*_NODISCARD*/ inline Position2D GetPosition() const noexcept { return position; }
 	inline void SetPosition(const Position2D& inNewPosition) noexcept { position = inNewPosition; }
 	inline void SetPosition(const UINT8 inNewPositionX, const UINT8 inNewPositionY) noexcept 
 	{

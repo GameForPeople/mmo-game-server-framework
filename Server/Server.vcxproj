@@ -42,8 +42,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -166,6 +166,7 @@
     <ClInclude Include="ServerDefine.h" />
     <ClInclude Include="SocketInfo.h" />
     <ClInclude Include="UserData.h" />
+    <ClInclude Include="ToDo.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClientContUnit.cpp" />

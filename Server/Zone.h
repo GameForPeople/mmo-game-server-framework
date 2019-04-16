@@ -33,6 +33,7 @@ public:
 	// ConnectManager
 	_ClientNode /*std::optional<SocketInfo*>*/ InNewClient();
 	void OutClient(SocketInfo*);
+	void InitViewAndSector(SocketInfo* );
 
 private:
 	void InitManagers();

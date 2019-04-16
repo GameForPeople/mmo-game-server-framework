@@ -6,6 +6,8 @@
 #include "MemoryUnit.h"
 #include "SendMemoryPool.h"
 
+#include "UserData.h"
+
 #include "GameServer.h"
 
 GameServer::GameServer(bool inNotUse)
@@ -22,10 +24,10 @@ GameServer::GameServer(bool inNotUse)
 	InitFunctions();
 	InitNetwork();
 
-	SendMemoryPool::MakeInstance();
-
 	ERROR_HANDLING::errorRecvOrSendArr[0] = ERROR_HANDLING::HandleRecvOrSendError;
 	ERROR_HANDLING::errorRecvOrSendArr[1] = ERROR_HANDLING::NotError;
+
+	SendMemoryPool::MakeInstance();
 };
 
 GameServer::~GameServer()
@@ -183,11 +185,20 @@ void GameServer::AcceptThreadFunction()
 			pClient->memoryUnit.wsaBuf.buf = pClient->memoryUnit.dataBuf;
 			pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
 
-			// 클라이언트 서버에 접속(Accept) 함을 알림
+			// 클라이언트에게 서버에 접속(Accept) 함을 알림
+			PACKET_DATA::SC::LoginOk loginPacket(pClient->clientKey);
+			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&loginPacket));
+
+			// 자신의 캐릭터를 넣어줌.
+			PACKET_DATA::SC::PutPlayer putPacket( pClient->clientKey, pClient->userData->GetPosition().x, pClient->userData->GetPosition().y);
+			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
 
 			//printf("[TCP 서버] 클라이언트 접속 : IP 주소 =%s, Port 번호 = %d \n", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
 			std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
 			
+			// 최초 위치에서 처음 뷰리스트와 섹터 갱신.
+			pClient->pZone->InitViewAndSector(pClient);
+
 			// 비동기 입출력의 시작.
 			NETWORK_UTIL::RecvPacket(pClient);
 		}

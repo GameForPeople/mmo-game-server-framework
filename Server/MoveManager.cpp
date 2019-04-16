@@ -53,7 +53,7 @@ void MoveManager::MoveCharacter(SocketInfo* pClient)
 	moveFunctionArr[static_cast<int>(pClient->buf[1])](*this, pClient->userData);
 #endif
 }
-
+/*
 void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, ZoneContUnit* inClientCont)
 {
 	//const BYTE clientPositionByte
@@ -69,15 +69,15 @@ void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, ZoneContUnit* inCl
 	std::cout << "보낼 방향은" << int(pMovedClient->userData->GetPosition().x) << " " << int(pMovedClient->userData->GetPosition().y) << "\n";
 #endif
 
-	for (std::pair<bool, SocketInfo*>& pRecvedClient : inClientCont->clientCont)
+	for (auto pRecvedClient : pMovedClient->viewList)
 	{
-		if (pRecvedClient.first)
+		if (pRecvedClient)
 		{
-			NETWORK_UTIL::SendPacket(pRecvedClient.second, reinterpret_cast<char*>(&packet));
+			NETWORK_UTIL::SendPacket(inClientCont->clientCont[pRecvedClient].second, reinterpret_cast<char*>(&packet));
 		}
 	}
 }
-
+*/
 #if _USE_STD_FUNCTION_
 void MoveManager::LeftMoveTest(UserData* inUserData)
 {

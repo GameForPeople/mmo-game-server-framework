@@ -27,6 +27,8 @@ public:
 	void SendPutPlayer(SocketInfo* pPutClient, SocketInfo* pRecvClient);
 	void SendRemovePlayer(const _ClientKeyType pRemoveClient, SocketInfo* pRecvClient);
 
+	void SendMovePlayer(SocketInfo* pPutClient, SocketInfo* pRecvClient);
+
 private:
 	bool IsSeeEachOther(const Position2D&, const Position2D&) noexcept;
 
@@ -43,6 +45,6 @@ private:
 	SectorContUnit* sectorContUnit;
 
 public:
-	_NODISCARD inline constexpr BYTE GetCenterX() noexcept { return centerX; }
-	_NODISCARD inline constexpr BYTE GetCenterY() noexcept { return centerY; }
+	inline constexpr BYTE GetCenterX() noexcept { return centerX; }
+	inline constexpr BYTE GetCenterY() noexcept { return centerY; }
 };

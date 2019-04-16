@@ -124,7 +124,7 @@ SocketInfo::SocketInfo() /*noexcept*/ :
 	sock(),
 	loadedSize(),
 	loadedBuf(),
-	userData(new UserData(0, 0)/*std::make_unique<UserData>(0, 0)*/),
+	userData(new UserData(GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y)/*std::make_unique<UserData>(0, 0)*/),
 	clientKey(-1),
 	pZone(nullptr),
 	viewList(),

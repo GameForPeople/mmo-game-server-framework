@@ -109,7 +109,6 @@ SendMemoryUnit& SendMemoryUnit::operator=(SendMemoryUnit&& other) noexcept
 	if (this != &other)
 	{
 		memoryUnit = std::move(other.memoryUnit);
-		
 		//pOwner = other.pOwner;
 		//other.pOwner = nullptr;
 	}

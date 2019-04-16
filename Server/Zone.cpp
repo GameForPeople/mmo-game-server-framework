@@ -17,10 +17,11 @@
 #include "Zone.h"
 
 Zone::Zone() : 
-	moveManager(nullptr),
 	connectManager(nullptr),
+	moveManager(nullptr),
+	sectorCont(),
 	zoneContUnit(nullptr),
-	recvFunctionArr()
+	recvFunctionArr(nullptr)
 {
 	InitManagers();
 	InitClientCont();
@@ -75,10 +76,13 @@ void Zone::InitFunctions()
 */
 void Zone::InitSector()
 {
-	// 상수 무결성 검사
-	if(GLOBAL_DEFINE::MAX_HEIGHT != GLOBAL_DEFINE::MAX_WIDTH) std::cout << "### Zone의 상수가 비정상적입니다. 확인해주세요.";
-	if((int)((GLOBAL_DEFINE::MAX_HEIGHT - 1) / GLOBAL_DEFINE::SECTOR_DISTANCE) 
-		== (int)((GLOBAL_DEFINE::MAX_HEIGHT + 1) / GLOBAL_DEFINE::SECTOR_DISTANCE)) std::cout << "### Zone의 상수가 비정상적입니다. 확인해주세요.";
+	//무결성 검사
+	static_assert(GLOBAL_DEFINE::MAX_HEIGHT == GLOBAL_DEFINE::MAX_WIDTH, 
+		"MAX_HEIGHT와 MAX_WIDTH가 다르며, 이는 Sector 계산에서 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
+
+	static_assert((int)((GLOBAL_DEFINE::MAX_HEIGHT - 1) / GLOBAL_DEFINE::SECTOR_DISTANCE) 
+		!= (int)((GLOBAL_DEFINE::MAX_HEIGHT + 1) / GLOBAL_DEFINE::SECTOR_DISTANCE),
+		"MAX_HEIGHT(그리고 MAX_WIDTH)는 SECTOR_DISTANCE의 배수가 아닐 경우, 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
 
 	constexpr BYTE sectorContCount = GLOBAL_DEFINE::MAX_HEIGHT / GLOBAL_DEFINE::SECTOR_DISTANCE;
 	
@@ -123,14 +127,14 @@ _ClientNode /* == std::pair<bool, SocketInfo*>*/ Zone::InNewClient()
 		//최초 Sector에 클라이언트 삽입.
 		sectorCont[5][5].InNewClient(retNode.second);
 
-		// InitViewAndSector으로 래핑됨.
+		// InitViewAndSector에서 래핑되며, IOCP 등록 후, 호출함
+		{
+			// 둘러볼 지역 결정하고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
+			//RenewPossibleSectors(retNode.second);
 
-		// 둘러볼 지역 결정하고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
-		//RenewPossibleSectors(retNode.second);
-
-		// 친구들 새로 사귀고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
-		//RenewViewListInSectors(retNode.second);
-
+			// 친구들 새로 사귀고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
+			//RenewViewListInSectors(retNode.second);
+		}
 		return retNode;
 	}
 	else return retNode;
@@ -163,24 +167,47 @@ void Zone::OutClient(SocketInfo* pOutClient)
 */
 void Zone::RenewPossibleSectors(SocketInfo* pClient)
 {
-	// 로컬 변수를 리턴하는 코드에서, 멤버 변수를 변경하는 방식으로 변경.
-	//std::vector<std::pair<BYTE, BYTE>> retVector;
-	//retVector.reserve(4);	// Max Possible Sector!
-	//retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY));
+	// 로컬 변수를 리턴하는 코드에서, 멤버 변수를 활용하여 구현하는 방식으로 변경.
 
-	const BYTE tempX = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterX();
-	const BYTE tempY = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterY();
+	const BYTE nowSectorCenterX = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterX();
+	const BYTE nowSectorCenterY = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterY();
 
 	UserData* pTempUserData = pClient->userData;
 
-	char xDir = 0;
-	char yDir = 0;
+	char xDir = 0;	// x 섹터의 판단 방향
+	char yDir = 0;	// y 섹터의 판단 방향
 
-	if (pTempUserData->GetPosition().x > tempX) { xDir = 1; }
-	else if (pTempUserData->GetPosition().x < tempX - 1) { xDir = -1; }
+	/*
+		Sector's Size = 10
+		View Length = 3
 
-	if (pTempUserData->GetPosition().y > tempY) { yDir = 1; }
-	else if (pTempUserData->GetPosition().y < tempY - 1) { yDir = -1; }
+		possible Other Sector Count
+
+		0   1   2 | 3   4   5   6 | 7   8   9
+		1	      |				  |
+		 -1,1 = 3 |		0,1 = 1	  |	 1,1 = 3
+		2		  |				  |
+		--------------------------------------
+		3		  |				  |
+				  |				  |
+		4		  |				  |
+		 -1,0 = 1 |		0,0 = 0	  |	 1,0 = 1
+		5		  |				  |
+				  |				  |
+		6		  |				  |
+		--------------------------------------
+		7		  |				  |
+				  |				  |
+		8		  |				  |
+		 -1,-1 = 3|		0,-1 = 1  |	 1,-1 = 3
+		9		  |				  |
+	*/
+
+	if (pTempUserData->GetPosition().x > nowSectorCenterX + 1) { xDir = 1; }
+	else if (pTempUserData->GetPosition().x < nowSectorCenterX - 2) { xDir = -1; }
+
+	if (pTempUserData->GetPosition().y > nowSectorCenterY + 1) { yDir = 1; }
+	else if (pTempUserData->GetPosition().y < nowSectorCenterY - 2) { yDir = -1; }
 
 	const bool isYZero = pClient->sectorIndexY == 0 ? true : false;
 	const bool isYMax = pClient->sectorIndexY == 9 ? true : false;

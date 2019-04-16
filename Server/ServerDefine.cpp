@@ -83,10 +83,9 @@ namespace NETWORK_UTIL
 	*/
 	void LogOutProcess(MemoryUnit* pClient)
 	{
-		SocketInfo* pOutClient;
 		if (pClient->isRecv)
 		{
-			pOutClient = reinterpret_cast<SocketInfo*>(pClient);
+			SocketInfo* pOutClient = reinterpret_cast<SocketInfo*>(pClient);
 
 			SOCKADDR_IN clientAddr;
 
@@ -105,8 +104,6 @@ namespace NETWORK_UTIL
 		{
 			SendMemoryUnit* pMemoryUnit = (reinterpret_cast<SendMemoryUnit*>(pClient));
 			
-			// Send 예외처리 Off
-			//pOutClient = pMemoryUnit->pOwner;
 			SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
 		}
 	}

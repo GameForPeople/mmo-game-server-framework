@@ -14,7 +14,11 @@ SendMemoryPool* SendMemoryPool::instance = nullptr;
 SendMemoryPool::SendMemoryPool()
 {
 	for(int i = 0 ; i < GLOBAL_DEFINE::MAX_NUMBER_OF_SEND_POOL; ++i)
-		sendMemoryPool.push(std::move(SendMemoryUnit()));
+		sendMemoryPool.push(new SendMemoryUnit() /* == std::move(SendMemoryUnit())*/);
+
+#ifdef _DEV_MODE_
+	std::cout << "sendMemoryPool의 사이즈는 " << sendMemoryPool.unsafe_size() << std::endl;
+#endif
 }
 
 SendMemoryPool::~SendMemoryPool()
@@ -32,16 +36,18 @@ SendMemoryPool::~SendMemoryPool()
 SendMemoryUnit* SendMemoryPool::PopMemory(SocketInfo* pClient)
 {
 	SendMemoryUnit* retMemoryUnit{nullptr};
-	
+
 	// C6013 : NULL 포인터 'retMemoryUnit'을 역참조하고 있습니다.
 	// 역참조되었지만 여전히 NULL 포인터 일 수 있습니다.
-	while (!sendMemoryPool.try_pop(*retMemoryUnit))
+	while (!sendMemoryPool.try_pop(retMemoryUnit))
 	{
 		ERROR_HANDLING::ERROR_DISPLAY("[ERROR]SendPool의 메모리가 부족합니다.");
 		/*
 			원래는 여기서 메모리 추가로 할당해서, 넘겨줘야해 어딜 기다려!
 		*/
 	}
+
+	//assert(retMemoryUnit != nullptr, "retMemoryUnit의 try_pop이 nullptr을 반환했습니다.");
 
 	//	retMemoryUnit->pOwner = pClient;
 	return retMemoryUnit;
@@ -55,6 +61,6 @@ SendMemoryUnit* SendMemoryPool::PopMemory(SocketInfo* pClient)
 */
 void SendMemoryPool::PushMemory(SendMemoryUnit* inMemoryUnit)
 {
-	sendMemoryPool.push(std::move(*inMemoryUnit));
+	sendMemoryPool.push(/*std::move(*/inMemoryUnit/*)*/);
 }
 

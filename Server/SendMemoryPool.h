@@ -34,6 +34,6 @@ private:
 	static SendMemoryPool* instance;
 	SendMemoryPool();
 
-	Concurrency::concurrent_queue<SendMemoryUnit> sendMemoryPool;
+	Concurrency::concurrent_queue<SendMemoryUnit*> sendMemoryPool;
 };
 

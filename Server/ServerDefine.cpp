@@ -81,9 +81,9 @@ namespace NETWORK_UTIL
 
 			#0. 성능상의 이슈로, !0, !1, !2의 nullptr여부를 보장하지 않습니다. ( 적합한 구조일 경우, nullptr참조가 발생하기 어려움 )
 	*/
-	void LogOutProcess(MemoryUnit* pClient)
+	void LogOutProcess(LPVOID pClient)
 	{
-		if (pClient->isRecv)
+		if (reinterpret_cast<MemoryUnit*>(pClient)->isRecv)
 		{
 			SocketInfo* pOutClient = reinterpret_cast<SocketInfo*>(pClient);
 
@@ -94,8 +94,8 @@ namespace NETWORK_UTIL
 			getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
 			std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
 			
-			// 애초에 접속도 못했는데, 로그아웃 할 경우를 방지.
-			if (pOutClient->clientKey != -1) pOutClient->pZone->OutClient(pOutClient);
+			// 애초에 존에 접속도 못했는데, 로그아웃 할 경우를 방지.
+			if (pOutClient->clientKey != -1) pOutClient->pZone->Exit(pOutClient);
 
 			closesocket(pOutClient->sock);
 			delete pOutClient;
@@ -198,7 +198,7 @@ namespace ERROR_HANDLING
 			NULL,
 			WSAGetLastError(),
 			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			(LPTSTR)&lpMsgBuf,
+			(LPSTR)&lpMsgBuf,
 			0,
 			NULL
 		);

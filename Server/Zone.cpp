@@ -105,6 +105,7 @@ void Zone::InitSector()
 	}
 }
 
+
 /*
 	Zone::ProcessRecvData()
 		- 받은 데이터들을 함수와 연결해줍니다.
@@ -115,31 +116,42 @@ void Zone::ProcessPacket(SocketInfo* pClient)
 }
 
 /*
-	Zone::InNewClient()
-		- connectManager에서 해당 함수 처리하도록 변경.
+	Zone::TryToEnter()
+		- 해당 존으로의 입장을 시도합니다.
+
+	#0. Zone의 connectManager에서 입장 여부 판단
+	#1. 입장 성공 시, 최초 위치(섹터 5, 5)에 클라이언트 삽입.
+	#2.	입장 실패 시, 아무런 짓도 하지 않음
 */
 /*std::optional<SocketInfo*>*/ 
-_ClientNode /* == std::pair<bool, SocketInfo*>*/ Zone::InNewClient()
+_ClientNode /* == std::pair<bool, SocketInfo*>*/ Zone::TryToEnter()
 {
-	if (auto retNode = connectManager->InNewClient(zoneContUnit, this)
+	if (auto retNode = connectManager->LogInToZone(zoneContUnit, this)
 		; retNode.first)
 	{
 		//최초 Sector에 클라이언트 삽입.
-		sectorCont[5][5].InNewClient(retNode.second);
+		sectorCont[5][5].Join(retNode.second);
 
-		// InitViewAndSector에서 래핑되며, IOCP 등록 후, 호출함
-		{
+		// InitViewAndSector에서 래핑되며, Accept Process에서 해당 클라이언트 소켓을 IOCP 등록 후, 호출함
+		//{
 			// 둘러볼 지역 결정하고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
 			//RenewPossibleSectors(retNode.second);
 
 			// 친구들 새로 사귀고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
 			//RenewViewListInSectors(retNode.second);
-		}
+		//}
 		return retNode;
 	}
 	else return retNode;
 }
 
+/*
+	Zone::InitViewAndSector()
+		- Zone의 Enter 후, 최초로 Sector와 ViewList를 갱신합니다.
+
+	!0. 해당 두 함수들은 네트워크 함수를 포함하고 있습니다.
+		- IOCP에 소켓을 등록한 후에, 호출되어야 합니다.
+*/
 void Zone::InitViewAndSector(SocketInfo* pClient)
 {
 	RenewPossibleSectors(pClient);
@@ -147,16 +159,18 @@ void Zone::InitViewAndSector(SocketInfo* pClient)
 }
 
 /*
-	Zone::OutClient()
-		- connectManager에서 해당 함수 처리하도록 변경.
+	Zone::Exit()
+		- 해당 존에서 나갑니다.
+
+	#0.connectManager에서 해당 함수 처리하도록 변경.
 */
-void Zone::OutClient(SocketInfo* pOutClient)
+void Zone::Exit(SocketInfo* pOutClient)
 {
 	// 섹터 컨테이너에서 내 정보를 지워주고
-	sectorCont[pOutClient->sectorIndexY][pOutClient->sectorIndexX].OutClient(pOutClient);
+	sectorCont[pOutClient->sectorIndexY][pOutClient->sectorIndexX].Exit(pOutClient);
 	
 	// 내 ViewList의 Client에게 나 나간다고 알려주고.
-	connectManager->OutClient(pOutClient, zoneContUnit);
+	connectManager->LogOutToZone(pOutClient, zoneContUnit);
 }
 
 /*
@@ -361,20 +375,26 @@ void Zone::RenewPossibleSectors(SocketInfo* pClient)
 
 /*
 	RenewViewListInSectors
-		- 최신화된 섹터에서, 뷰리스트를 갱신한다.
+		- RenewPossibleSectors에서 최신화한 섹터들에서, 뷰리스트를 갱신한다.
 
 	!0. 반드시 이 함수가 호출되기 전에, RenewPossibleSectors가 선행되어야 옳은 ViewList를 획득할 수 있습니다.
 */
 void Zone::RenewViewListInSectors(SocketInfo* pClient)
 {
-	sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].CheckViewList(pClient, zoneContUnit);
+	sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].JudgeClientWithViewList(pClient, zoneContUnit);
 
 	for (int i = 0; i < pClient->possibleSectorCount; ++i)
 	{
-		sectorCont[pClient->sectorArr[i].second][pClient->sectorArr[i].first].CheckViewList(pClient, zoneContUnit);
+		sectorCont[pClient->sectorArr[i].second][pClient->sectorArr[i].first].JudgeClientWithViewList(pClient, zoneContUnit);
 	}
 }
 
+/*
+	RenewClientSector
+		- 클라이언트가 이동한 후, 다른 섹터로의 이동 여부를 판단합니다.
+
+	!0. 반드시 이 함수가 호출되기 전에, RenewPossibleSectors가 선행되어야 옳은 ViewList를 획득할 수 있습니다.
+*/
 void Zone::RenewClientSector(SocketInfo* pClient)
 {
 	bool isNeedToChangeSector{ false };
@@ -385,8 +405,8 @@ void Zone::RenewClientSector(SocketInfo* pClient)
 	if (isNeedToChangeSector == false) 	return;
 	else
 	{
-		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].OutClient(pClient);
-		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].InNewClient(pClient);
+		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].Exit(pClient);
+		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].Join(pClient);
 	}
 }
 
@@ -415,7 +435,4 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 	RenewClientSector(pClient);
 	RenewPossibleSectors(pClient);
 	RenewViewListInSectors(pClient);
-
-	//moveManager->SendMoveCharacter(pClient, zoneContUnit);
-	//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].RecvCharacterMove(pClient);
 }

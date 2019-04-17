@@ -17,14 +17,14 @@ public:
 	ConnectManager& operator=(const ConnectManager&) = delete;
 
 public:
-	_ClientNode InNewClient(ZoneContUnit* inClientContUnit, Zone*);
-	void OutClient(SocketInfo*, ZoneContUnit* inClientContUnit);
+	_ClientNode LogInToZone(ZoneContUnit* inClientContUnit, Zone*);
+	void LogOutToZone(SocketInfo*, ZoneContUnit* inClientContUnit);
 
 private:
+	void SendRemovePlayerInOuttedClientViewList(SocketInfo* pOutClient, ZoneContUnit* inClientCont);
+	
 	// Sector로 이사갔습니다.
 	//void SendPutPlayer(SocketInfo* pPutClient, ZoneContUnit* inClientCont);
-	void SendRemovePlayer(SocketInfo* pOutClient, ZoneContUnit* inClientCont);
-
 private:
 	//std::shared_mutex connectLock;
 };

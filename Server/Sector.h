@@ -19,10 +19,10 @@ struct SocketInfo;
 class Sector
 {
 public:
-	void InNewClient(SocketInfo*);
-	void OutClient(SocketInfo*);
+	void Join(SocketInfo*);
+	void Exit(SocketInfo*);
 
-	void CheckViewList(SocketInfo*, ZoneContUnit*);
+	void JudgeClientWithViewList(SocketInfo*, ZoneContUnit*);
 
 	void SendPutPlayer(SocketInfo* pPutClient, SocketInfo* pRecvClient);
 	void SendRemovePlayer(const _ClientKeyType pRemoveClient, SocketInfo* pRecvClient);

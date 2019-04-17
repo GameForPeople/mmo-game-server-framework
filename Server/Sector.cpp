@@ -23,7 +23,11 @@ Sector::~Sector()
 	delete sectorContUnit;
 }
 
-void Sector::InNewClient(SocketInfo* pOutNewClient)
+/*
+	Join
+		- 섹터에 새로운 클라이언트가 들어옵니다.
+*/
+void Sector::Join(SocketInfo* pOutNewClient)
 {
 	sectorContUnit->wrlock.lock(); //+++++++++++++++++++++++++++++++++++++1
 	sectorContUnit->clientCont.emplace(pOutNewClient->clientKey);
@@ -33,7 +37,11 @@ void Sector::InNewClient(SocketInfo* pOutNewClient)
 	pOutNewClient->sectorIndexY = indexY;
 }
 
-void Sector::OutClient(SocketInfo* pInClient)
+/*
+	Exit
+		- 섹터에 있던 클라이언트가 나갑니다.
+*/
+void Sector::Exit(SocketInfo* pInClient)
 {
 	// 지역 정보에서 나를 지워주고.
 	sectorContUnit->wrlock.lock(); //+++++++++++++++++++++++++++++++++++++1
@@ -53,13 +61,14 @@ void Sector::OutClient(SocketInfo* pInClient)
 }
 
 /*
-	CheckViewList
-	 - Sector 내에서, 인자로 전달된 클라이언트와의 viewList의 여부 검사.
+	JudgeClientInViewList
+	 - Sector의 컨테이너에서 볼수 있는 클라이언트를 판단하고, viewList의 여부에 따라 처리합니다..
 
 	 !0. 미친 이상한 구조 떔시, ZoneContUnit을 갖고 옵니다... 잘못쓰면 성능 간다간다 훅간다!
 	 !1. 서로의 viewList에 넣을 때, 동기화 백프로 꺠질걸?? ConCurrency가 아닌 Lock을 써야 될꺼 같어.
+	 !2. 내부에서 네트워크 함수가 호출됩니다.
 */
-void Sector::CheckViewList(SocketInfo* pClient, ZoneContUnit* pZoneContUnit)
+void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneContUnit)
 {
 	// 이부분 나중에 동접 오지면 오버헤드 왕 오집니다. 다른 방안을 생각해야합니다.
 	pZoneContUnit->wrlock.lock_shared();	//++++++++++++++++++++++++++++1 Zone : Read Lock!
@@ -115,6 +124,10 @@ void Sector::CheckViewList(SocketInfo* pClient, ZoneContUnit* pZoneContUnit)
 	sectorContUnit->wrlock.unlock_shared();	//----------------------------0	Sector : Read Lock!
 }
 
+/*
+	IsSeeEachOther
+		- 마! 서로 볼수 있나 없나! 위치값 둘다 내나 봐라 마!
+*/
 bool Sector::IsSeeEachOther(const Position2D& inAPosition, const Position2D& inBPosition) noexcept
 {
 	if (GLOBAL_DEFINE::VIEW_DISTANCE < abs(inAPosition.x - inBPosition.x)) return false;
@@ -135,9 +148,7 @@ void Sector::SendPutPlayer(SocketInfo* pPutClient, SocketInfo* pRecvClient)
 
 void Sector::SendRemovePlayer(const _ClientKeyType pRemoveClientID, SocketInfo* pRecvClient)
 {
-	PACKET_DATA::SC::RemovePlayer packet(
-		pRemoveClientID
-	);
+	PACKET_DATA::SC::RemovePlayer packet(pRemoveClientID);
 
 	NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
 }

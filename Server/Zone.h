@@ -18,7 +18,7 @@ struct ZoneContUnit;
 	
 	#0. 씐에 접속한 Client의 객체들의 컨테이너를 갖고, 관리합니다.
 	#1. 네트워크 함수들은 GameServer의 함수가 아닌, 여기서 호출합니다.
-	#2. 공간 분할의 단위, 기준은 Sector입니다.
+	#2. 공간 분할의 단위, 기준은 멤버 변수인 Sector입니다.
 */
 
 class Zone
@@ -29,10 +29,9 @@ public:
 	Zone();
 	~Zone();
 
-public:
-	// ConnectManager
-	_ClientNode /*std::optional<SocketInfo*>*/ InNewClient();
-	void OutClient(SocketInfo*);
+public: // ConnectManager
+	_ClientNode /*std::optional<SocketInfo*>*/ TryToEnter();
+	void Exit(SocketInfo*);
 	void InitViewAndSector(SocketInfo* );
 
 private:
@@ -48,7 +47,6 @@ private:
 
 	// MoveManager
 	void RecvCharacterMove(SocketInfo* pClient);
-
 private:
 	std::unique_ptr<ConnectManager> connectManager;
 	std::unique_ptr<MoveManager> moveManager;

@@ -29,7 +29,7 @@ MemoryUnit::MemoryUnit(const bool InIsRecv) :
 MemoryUnit::~MemoryUnit()
 {
 #ifdef _DEV_MODE_
-	std::cout << "그럴리가 없는데?? MemoryUnit의 소멸자가 호출되었습니다. \n";
+	//std::cout << "MemoryUnit의 소멸자가 호출되었습니다. \n";
 #endif
 	delete[] dataBuf;
 }
@@ -132,7 +132,7 @@ SocketInfo::SocketInfo() /*noexcept*/ :
 	sectorIndexY(),
 	possibleSectorCount()
 {
-	loadedBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
+	//loadedBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
 	viewList.clear();
 }
 
@@ -140,6 +140,6 @@ SocketInfo::~SocketInfo()
 {
 	viewList.clear();
 
-	delete[] loadedBuf;
+	//delete[] loadedBuf;
 	delete userData;
 }

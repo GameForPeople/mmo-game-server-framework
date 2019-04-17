@@ -11,13 +11,13 @@
 #include "ConnectManager.h"
 
 /*
-	ConnectManager::InNewClient()
+	ConnectManager::LogInToZone()
 		- 새로운 클라이언트가 접속했을 떄, 이를 컨테이너에 넣어줍니다.
 
 	#!?0. 하나의 물리 서버에서 하나의 씐을 가질 경우, 지금처럼하는게 맞음.
 	#!?1. 다만 하나의 서버에서 여러 씐을 가질 경우, 애초에 SocketInfo를 갖고 있고, InNewCliet에 인자로 넣어주는 게맞음.
 */
-_ClientNode ConnectManager::InNewClient(ZoneContUnit* inClientContUnit, Zone* zone)
+_ClientNode ConnectManager::LogInToZone(ZoneContUnit* inClientContUnit, Zone* zone)
 {
 	//std::lock_guard<std::mutex> localLock(addLock);
 	//connectLock.lock();
@@ -64,10 +64,10 @@ _ClientNode ConnectManager::InNewClient(ZoneContUnit* inClientContUnit, Zone* zo
 
 	#!?0. 도대체 여기서 어디까지 보장을 해줘야하는건지. 이 보장이 오히려 버그가 될 수 있지 않은지.
 */
-void ConnectManager::OutClient(SocketInfo* pOutClient, ZoneContUnit* inClientContUnit)
+void ConnectManager::LogOutToZone(SocketInfo* pOutClient, ZoneContUnit* inClientContUnit)
 {
 	// 사실 벡터면 굳이 Lock 걸 필요 없지 않나. -> 그래도 걸자........나는 찐따니까...
-	SendRemovePlayer(pOutClient, inClientContUnit);
+	SendRemovePlayerInOuttedClientViewList(pOutClient, inClientContUnit);
 
 	inClientContUnit->clientCont[pOutClient->clientKey].first = false;
 	// second는 초기화 할 필요 없음.
@@ -96,7 +96,7 @@ void ConnectManager::OutClient(SocketInfo* pOutClient, ZoneContUnit* inClientCon
 //	}
 //}
 //
-void ConnectManager::SendRemovePlayer(SocketInfo* pOutClient, ZoneContUnit* inClientCont)
+void ConnectManager::SendRemovePlayerInOuttedClientViewList(SocketInfo* pOutClient, ZoneContUnit* inClientCont)
 {
 	PACKET_DATA::SC::RemovePlayer packet(
 		pOutClient->clientKey

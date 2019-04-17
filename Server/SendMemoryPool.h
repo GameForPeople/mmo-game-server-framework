@@ -25,14 +25,13 @@ public:
 	// 해당 함수는 GameServer.cpp의 소멸자에서 한번 호출되어야합니다.
 	static void DeleteInstance() { delete instance; }
 
-	~SendMemoryPool();
-
 	SendMemoryUnit* PopMemory(SocketInfo*);	// 메모리 제공
 	void PushMemory(SendMemoryUnit*);	// 메모리 반납
 
 private:
 	static SendMemoryPool* instance;
 	SendMemoryPool();
+	~SendMemoryPool();
 
 	Concurrency::concurrent_queue<SendMemoryUnit*> sendMemoryPool;
 };

@@ -15,10 +15,11 @@ GameServer::GameServer(bool inNotUse)
 	, hIOCP()
 	, listenSocket()
 	, serverAddr()
-	//, recvOrSendArr()
 	, workerThreadCont()
 	, zoneCont()
 {
+	SendMemoryPool::MakeInstance();
+
 	PrintServerInfoUI();
 	InitZones();
 	InitFunctions();
@@ -26,8 +27,6 @@ GameServer::GameServer(bool inNotUse)
 
 	ERROR_HANDLING::errorRecvOrSendArr[0] = ERROR_HANDLING::HandleRecvOrSendError;
 	ERROR_HANDLING::errorRecvOrSendArr[1] = ERROR_HANDLING::NotError;
-
-	SendMemoryPool::MakeInstance();
 };
 
 GameServer::~GameServer()
@@ -37,6 +36,7 @@ GameServer::~GameServer()
 	workerThreadCont.clear();
 	zoneCont.clear();
 
+	closesocket(listenSocket);
 	CloseHandle(hIOCP);
 }
 
@@ -96,7 +96,7 @@ void GameServer::InitNetwork()
 	if (hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)
 		; hIOCP == NULL) ERROR_QUIT(TEXT("Create_IOCompletionPort()"));
 
-	// CPU 개수 확인할 필요 없음.
+	// 현재는 CPU 개수 확인할 필요 없음.
 	//SYSTEM_INFO si;
 	//GetSystemInfo(&si);
 
@@ -105,10 +105,6 @@ void GameServer::InitNetwork()
 	for (int i = 0; i < /* (int)si.dwNumberOfProcessors * 2 */ 2; ++i)
 	{
 		workerThreadCont.emplace_back(std::thread{ StartWorkerThread, (LPVOID)this });
-		//if (hThread = CreateThread(NULL, 0, StartWorkerThread, (LPVOID)this, 0, NULL)
-		//	; hThread == NULL) ERROR_QUIT(TEXT("Make_WorkerThread()"));
-		//
-		//CloseHandle(hThread);
 	}
 
 	// 4. 소켓 생성
@@ -175,7 +171,7 @@ void GameServer::AcceptThreadFunction()
 			break;
 		}
 
-		if (auto [isTrueAdd, pClient] = zoneCont[0]->InNewClient() 
+		if (auto [isTrueAdd, pClient] = zoneCont[0]->TryToEnter()
 			; isTrueAdd)
 		{
 			// 소켓과 입출력 완료 포트 연결
@@ -231,7 +227,9 @@ void GameServer::WorkerThreadFunction()
 	int retVal{};
 	DWORD cbTransferred;
 	unsigned long long clientKey;
-	MemoryUnit* pMemoryUnit;
+	
+	//MemoryUnit* pMemoryUnit;
+	LPVOID pMemoryUnit;
 
 	while (7)
 	{
@@ -251,14 +249,15 @@ void GameServer::WorkerThreadFunction()
 		if (retVal == 0 || cbTransferred == 0)
 		{
 			NETWORK_UTIL::LogOutProcess(pMemoryUnit);
-			break;
+			/*break;*/
+			continue;
 		}
 #pragma endregion
 
 #ifdef DISABLED_FUNCTION_POINTER
-		pMemoryUnit->isRecv == true
-			? AfterRecv(pMemoryUnit, cbTransferred)
-			: AfterSend(pMemoryUnit);
+		reinterpret_cast<MemoryUnit *>(pMemoryUnit)->isRecv == true
+			? AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred)
+			: AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
 #else
 		recvOrSendArr[GLOBAL_UTIL::BIT_CONVERTER::GetRecvOrSend(pClient->buf[0])](*this, pClient);
 #endif
@@ -269,13 +268,13 @@ void GameServer::WorkerThreadFunction()
 	GameServer::AfterRecv(SocketInfo* pClient)
 		- 리시브 함수 호출 후, 클라이언트의 데이터를 실제로 받았을 때, 호출되는 함수.
 */
-void GameServer::AfterRecv(MemoryUnit* pClient, int cbTransferred)
+void GameServer::AfterRecv(SocketInfo* pClient, int cbTransferred)
 {
 	// 받은 데이터 처리
-	ProcessRecvData(reinterpret_cast<SocketInfo*>(pClient), cbTransferred);
+	ProcessRecvData(pClient, cbTransferred);
 
 	// 바로 다시 Recv!
-	NETWORK_UTIL::RecvPacket(reinterpret_cast<SocketInfo*>(pClient));
+	NETWORK_UTIL::RecvPacket(pClient);
 }
 
 /*
@@ -304,8 +303,9 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 		{
 			memcpy(pClient->loadedBuf + pClient->loadedSize, pBuf, required);
 			
-			zoneCont[0]->ProcessPacket(pClient);
-			//== pClient->pZone->ProcessPacket(pClient);
+			//-------------------------------------------------------------------------------
+			zoneCont[0]->ProcessPacket(pClient); //== pClient->pZone->ProcessPacket(pClient); // 패킷처리 가가가가아아아아즈즈즈즞즈아아아아앗!!!!!!
+			//-------------------------------------------------------------------------------
 
 			restSize -= required;
 			pBuf += required;
@@ -325,8 +325,8 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 	GameServer::AfterSend(SocketInfo* pClient)
 		- WSASend 함수 호출 후, 데이터 전송이 끝났을 때, 호출되는 함수.
 */
-void GameServer::AfterSend(MemoryUnit* pMemoryUnit)
+void GameServer::AfterSend(SendMemoryUnit* pMemoryUnit)
 {
 	// 보낼 때 사용한 버퍼 후처리하고 끝! ( 오버랩 초기화는 보낼떄 처리)
-	SendMemoryPool::GetInstance()->PushMemory(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
+	SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
 }

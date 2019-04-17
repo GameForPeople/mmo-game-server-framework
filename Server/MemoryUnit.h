@@ -72,7 +72,6 @@ struct SendMemoryUnit
 */
 class UserData;
 class Zone;
-
 /*
 	4바이트 정렬 짓 해야합니다 여기.
 */
@@ -87,7 +86,8 @@ public:
 	MemoryUnit memoryUnit;
 
 	int loadedSize;
-	char *loadedBuf;
+	//char *loadedBuf;
+	char loadedBuf[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
 
 	SOCKET sock;
 	UserData* userData;
@@ -95,12 +95,12 @@ public:
 
 	_ClientKeyType clientKey;
 	
-	Zone* pZone;
+	Zone* pZone;		// 현재 입장한 존.
+
 	BYTE sectorIndexX;	// 자신의 섹터로 슥~
 	BYTE sectorIndexY;	// 자신의 섹터로 슥~
 
 	BYTE possibleSectorCount;	// 검사해야하는 섹터 개수, 최대 3을 초과할 수 없음.
 	std::array<std::pair<BYTE, BYTE>, 3> sectorArr;
-
 	Concurrency::concurrent_unordered_set<_ClientKeyType> viewList;
 };

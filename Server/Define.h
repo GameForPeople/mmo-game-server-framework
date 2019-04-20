@@ -32,11 +32,8 @@ namespace PACKET_TYPE
 	{
 		enum
 		{
-			MOVE,
-			//LEFT,
-			//UP,
-			//RIGHT,
-			//DOWN,
+			MOVE, 	//LEFT, //UP, //RIGHT, //DOWN,
+			CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
 			ENUM_SIZE
 		};
 	}
@@ -45,10 +42,11 @@ namespace PACKET_TYPE
 	{
 		enum
 		{
+			POSITION,	
+			CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
 			LOGIN_OK,
 			PUT_PLAYER,
 			REMOVE_PLAYER,
-			POSITION,
 			ENUM_SIZE
 		};
 	}
@@ -64,37 +62,28 @@ namespace PACKET_DATA
 	namespace CLIENT_TO_SERVER
 	{
 		struct Move {
-			char size;
-			char type;
+			const char size;
+			const char type;
 			char direction;
 
 			Move(char inDirection) noexcept;
 		};
-		/*
-		struct Left
-		{
-			char size;
-			char type;
-		};
 
-		struct Up
-		{
-			char size;
-			char type;
-		};
+		struct Chat {	// 해당 구조체는 서버 코드에서 사용될 수 없습니다.
+			char size;	// Fixed - 1	0
+			const char type;	// Fixed - 1	1
+			char nickNameLength;	// 1	2
+			std::wstring nickName;	// 1	
+			std::wstring message;
 
-		struct Right
-		{
-			char size;
-			char type;
-		};
+			//message[0] = Length;				//Fixed
+			//message[1] = type;					//Fixed
+			//message[2] = nickNameLength;
+			//message[3] ~message[3 + nickNameLength * 2] = Nickname;
+			//message[3 + nickNameLength * 2 + 1] ~message[Length] = ChatMessage;
 
-		struct Down
-		{
-			char size;
-			char type;
+			Chat() = delete;
 		};
-		*/
 	}
 
 	namespace SERVER_TO_CLIENT
@@ -158,8 +147,12 @@ namespace DIRECTION
 	};
 }
 
-namespace UNICODE_UTIL {
+namespace UNICODE_UTIL 
+{
 	void SetLocaleToKorean();
+
+	_NODISCARD std::string WStringToString(std::wstring& InWstring);
+	_NODISCARD std::wstring StringToWString(std::string& InString);
 }
 
 namespace GLOBAL_DEFINE

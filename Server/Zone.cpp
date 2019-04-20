@@ -4,6 +4,7 @@
 
 #include "ConnectManager.h"
 #include "MoveManager.h"
+#include "ChatManager.h"
 
 #include "ClientContUnit.h"
 
@@ -19,6 +20,7 @@
 Zone::Zone() : 
 	connectManager(nullptr),
 	moveManager(nullptr),
+	chatManager(nullptr),
 	sectorCont(),
 	zoneContUnit(nullptr),
 	recvFunctionArr(nullptr)
@@ -68,6 +70,7 @@ void Zone::InitFunctions()
 {
 	recvFunctionArr = new std::function<void(Zone&, SocketInfo*)>[PACKET_TYPE::CS::ENUM_SIZE];
 	recvFunctionArr[PACKET_TYPE::CS::MOVE] = &Zone::RecvCharacterMove;
+	recvFunctionArr[PACKET_TYPE::CS::CHAT] = &Zone::RecvChat;
 }
 
 /*
@@ -76,14 +79,6 @@ void Zone::InitFunctions()
 */
 void Zone::InitSector()
 {
-	//무결성 검사
-	static_assert(GLOBAL_DEFINE::MAX_HEIGHT == GLOBAL_DEFINE::MAX_WIDTH, 
-		"MAX_HEIGHT와 MAX_WIDTH가 다르며, 이는 Sector 계산에서 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
-
-	static_assert((int)((GLOBAL_DEFINE::MAX_HEIGHT - 1) / GLOBAL_DEFINE::SECTOR_DISTANCE) 
-		!= (int)((GLOBAL_DEFINE::MAX_HEIGHT + 1) / GLOBAL_DEFINE::SECTOR_DISTANCE),
-		"MAX_HEIGHT(그리고 MAX_WIDTH)는 SECTOR_DISTANCE의 배수가 아닐 경우, 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
-
 	constexpr BYTE sectorContCount = GLOBAL_DEFINE::MAX_HEIGHT / GLOBAL_DEFINE::SECTOR_DISTANCE;
 	
 	//X축에 대한, Sector 생성
@@ -435,4 +430,12 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 	RenewClientSector(pClient);
 	RenewPossibleSectors(pClient);
 	RenewViewListInSectors(pClient);
+}
+
+void Zone::RecvChat(SocketInfo* pClient)
+{
+#ifdef _DEV_MODE_
+	std::cout << "[AfterRecv] 채팅 버퍼를 받았습니다. \n";
+#endif
+	chatManager->ChatProcess(pClient, zoneContUnit);
 }

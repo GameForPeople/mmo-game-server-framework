@@ -7,8 +7,18 @@ namespace PACKET_DATA
 	namespace CLIENT_TO_SERVER
 	{
 		Move::Move(char inDirection) noexcept :
+			size(sizeof(Move)), type(PACKET_TYPE::CS::MOVE),
 			direction(inDirection)
 		{}
+
+		//Chat::Chat(const char* inRecvBuffer) noexcept :
+		//	size(inRecvBuffer[0]), type(PACKET_TYPE::CS::CHAT),
+		//	characterType(inRecvBuffer[2]),
+		//	messageLength(inRecvBuffer[3]),
+		//	chatMessage()
+		//{
+		//	memcpy(chatMessage, inRecvBuffer + 4, messageLength);
+		//}
 	}
 
 	namespace SERVER_TO_CLIENT
@@ -48,5 +58,31 @@ namespace UNICODE_UTIL
 		// ? 계속 오류 내뱉어서 일단 꺼놓음.
 		//26444 왜 때문에, 굳이 필요 없이, L-Value를 만들어야하는가;
 		/*auto oldLocale = std::wcout.imbue(std::locale("koeran")); */
+	}
+
+	_NODISCARD std::string WStringToString(std::wstring& InWString)
+	{
+		const int sizeBuffer = WideCharToMultiByte(CP_ACP, 0, &InWString[0], -1, NULL, 0, NULL, NULL);
+
+		std::string retString(sizeBuffer, 0);
+
+		WideCharToMultiByte(CP_ACP, 0, &InWString[0], -1, &retString[0], sizeBuffer, NULL, NULL);
+
+		// FixError ==
+		retString.pop_back(); //(retString.end(), retString.end());
+		//retString.insert(retString.end(), '\0');
+
+		return retString;
+	}
+
+	_NODISCARD std::wstring StringToWString(std::string& InString)
+	{
+		const int sizeBuffer = MultiByteToWideChar(CP_ACP, 0, &InString[0], -1, NULL, 0);
+
+		std::wstring retString(sizeBuffer, 0);
+
+		MultiByteToWideChar(CP_ACP, 0, &InString[0], -1, &retString[0], sizeBuffer);
+
+		return retString;
 	}
 }

@@ -45,6 +45,9 @@
     <Filter Include="GameServer\Zone\Sector">
       <UniqueIdentifier>{c963e516-c674-4445-8339-8c6eaf888ef5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameServer\Zone\ChatManager">
+      <UniqueIdentifier>{dc3146ed-3cd0-44e8-a9f4-60aee3c5305d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -86,6 +89,9 @@
     </ClCompile>
     <ClCompile Include="Zone.cpp">
       <Filter>GameServer\Zone</Filter>
+    </ClCompile>
+    <ClCompile Include="ChatManager.cpp">
+      <Filter>GameServer\Zone\ChatManager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -129,6 +135,9 @@
       <Filter>GameServer\Zone</Filter>
     </ClInclude>
     <ClInclude Include="ToDo.hpp" />
+    <ClInclude Include="ChatManager.h">
+      <Filter>GameServer\Zone\ChatManager</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="InHeaderDefine.hh">

@@ -11,16 +11,20 @@
 // MemoryUnit
 //---------------------------------------------------------------------------
 
-MemoryUnit::MemoryUnit(const bool InIsRecv) :
+MemoryUnit::MemoryUnit(const MEMORY_UNIT_TYPE inMemoryUnitType) :
 	overlapped(),
 	wsaBuf(),
-	dataBuf(nullptr),
-	isRecv(InIsRecv)
+	memoryUnitType(inMemoryUnitType),
+	dataBuf(nullptr)
 {
 #ifdef _DEV_MODE_
 	std::cout << " MemoryUnit의 기본생성자가 호출되었습니다. \n";
 #endif
-	if (isRecv) dataBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV];
+	if (MEMORY_UNIT_TYPE::RECV == inMemoryUnitType)
+	{
+		dataBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV];
+		wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
+	}
 	else dataBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_SEND];
 
 	wsaBuf.buf = dataBuf;
@@ -38,7 +42,7 @@ MemoryUnit::MemoryUnit(const MemoryUnit& other) :
 	overlapped(),
 	wsaBuf(other.wsaBuf),
 	dataBuf(other.dataBuf),
-	isRecv(other.isRecv)
+	memoryUnitType(other.memoryUnitType)
 {
 #ifdef _DEV_MODE_
 	std::cout << " MemoryUnit의 복사생성자가 호출되었습니다. \n";
@@ -49,7 +53,7 @@ MemoryUnit::MemoryUnit(MemoryUnit&& other) noexcept :
 	overlapped(),
 	wsaBuf(),
 	dataBuf(nullptr),
-	isRecv(false)
+	memoryUnitType(other.memoryUnitType)
 {
 	*this = std::move(other);
 }
@@ -76,7 +80,7 @@ MemoryUnit& MemoryUnit::operator=(MemoryUnit&& other) noexcept
 //---------------------------------------------------------------------------
 
 SendMemoryUnit::SendMemoryUnit() 
-	: memoryUnit(false)
+	: memoryUnit(MEMORY_UNIT_TYPE::SEND)
 	//, pOwner(nullptr)
 {
 }
@@ -95,8 +99,7 @@ SendMemoryUnit::SendMemoryUnit(const SendMemoryUnit& other)
 }
 
 SendMemoryUnit::SendMemoryUnit(SendMemoryUnit&& other) noexcept 
-	: memoryUnit()
-	//, pOwner(nullptr)
+	: memoryUnit(other.memoryUnit)
 {
 	*this = std::move(other);
 }
@@ -109,8 +112,6 @@ SendMemoryUnit& SendMemoryUnit::operator=(SendMemoryUnit&& other) noexcept
 	if (this != &other)
 	{
 		memoryUnit = std::move(other.memoryUnit);
-		//pOwner = other.pOwner;
-		//other.pOwner = nullptr;
 	}
 	return *this;
 }
@@ -119,7 +120,7 @@ SendMemoryUnit& SendMemoryUnit::operator=(SendMemoryUnit&& other) noexcept
 // SocketInfo
 //---------------------------------------------------------------------------
 SocketInfo::SocketInfo() /*noexcept*/ :
-	memoryUnit(true),
+	memoryUnit(MEMORY_UNIT_TYPE::RECV),
 	sock(),
 	loadedSize(),
 	loadedBuf(),

@@ -2,6 +2,7 @@
 
 #define DISABLED_FUNCTION_POINTER
 
+struct UnallocatedMemoryUnit;
 struct MemoryUnit;
 struct SendMemoryUnit;
 struct SocketInfo;
@@ -25,6 +26,7 @@ public:
 	GameServer& operator=(const GameServer&) = delete;
 
 private:	// for Init
+	void ServerIntegrityCheck();
 	void PrintServerInfoUI();
 	void InitZones();
 	void InitFunctions();
@@ -41,7 +43,9 @@ private:	// for Aceept Thread
 private:
 #ifdef DISABLED_FUNCTION_POINTER
 	void AfterRecv(SocketInfo* pClient, int cbTransferred);
-	void AfterSend(SendMemoryUnit* pClient);
+	void AfterSend(SendMemoryUnit* pUnit);
+	void AfterUnallocatedSend(UnallocatedMemoryUnit* pUnit);
+
 #else
 	std::function <void(GameServer&, LPVOID)>* recvOrSendArr;
 	void AfterRecv(LPVOID pClient);

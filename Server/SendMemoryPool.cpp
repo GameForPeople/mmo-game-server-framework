@@ -33,7 +33,7 @@ SendMemoryPool::~SendMemoryPool()
 
 	?0. 적절한 초기 메모리 풀 사이즈를 알기 위해, 현재 Send풀이 없을 경우, 로그를 출력합니다.
 */
-SendMemoryUnit* SendMemoryPool::PopMemory(SocketInfo* pClient)
+SendMemoryUnit* SendMemoryPool::PopMemory()
 {
 	SendMemoryUnit* retMemoryUnit{nullptr};
 
@@ -43,12 +43,11 @@ SendMemoryUnit* SendMemoryPool::PopMemory(SocketInfo* pClient)
 	{
 		ERROR_HANDLING::ERROR_DISPLAY("[ERROR]SendPool의 메모리가 부족합니다.");
 		/*
-			원래는 여기서 메모리 추가로 할당해서, 넘겨줘야해 어딜 기다려!
+			원래는 여기서 메모리 추가로 할당해서, 넘겨줘야함. 기다리면 안됨.
 		*/
 	}
 
 	//assert(retMemoryUnit != nullptr, "retMemoryUnit의 try_pop이 nullptr을 반환했습니다.");
-
 	//	retMemoryUnit->pOwner = pClient;
 	return retMemoryUnit;
 }
@@ -64,3 +63,24 @@ void SendMemoryPool::PushMemory(SendMemoryUnit* inMemoryUnit)
 	sendMemoryPool.push(/*std::move(*/inMemoryUnit/*)*/);
 }
 
+
+UnallocatedMemoryUnit* SendMemoryPool::PopUnallocatedMemory()
+{
+	UnallocatedMemoryUnit* retMemoryUnit{ nullptr };
+
+	// C6013 : NULL 포인터 'retMemoryUnit'을 역참조하고 있습니다.
+	// 역참조되었지만 여전히 NULL 포인터 일 수 있습니다.
+	while (!sendUnallocatedMemoryPool.try_pop(retMemoryUnit))
+	{
+		ERROR_HANDLING::ERROR_DISPLAY("[ERROR]PopUnallocatedMemory의 메모리가 부족합니다.");
+		/*
+			원래는 여기서 메모리 추가로 할당해서, 넘겨줘야함. 기다리면 안됨.
+		*/
+	}
+	return retMemoryUnit;
+}
+
+void SendMemoryPool::PushUnallocatedMemory(UnallocatedMemoryUnit* inMemoryUnit)
+{
+	sendUnallocatedMemoryPool.push(/*std::move(*/inMemoryUnit/*)*/);
+}

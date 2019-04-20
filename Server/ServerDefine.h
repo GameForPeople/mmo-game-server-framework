@@ -11,6 +11,7 @@ struct MemoryUnit;
 namespace NETWORK_UTIL
 {
 	void SendPacket(SocketInfo* pClient, char* packetData);
+	void SendUnallocatedPacket(SocketInfo* pClient, char* pOriginData);
 	void RecvPacket(SocketInfo* pClient);
 	void LogOutProcess(LPVOID pClient);
 	//_NODISCARD const bool GetRecvOrSendPacket(const LPVOID);
@@ -47,5 +48,6 @@ namespace ERROR_HANDLING {
 	constexpr BYTE SECTOR_HALF_DISTANCE = SECTOR_DISTANCE / 2;
 
 	constexpr BYTE VIEW_DISTANCE = 3;
+
 	//---------
 }

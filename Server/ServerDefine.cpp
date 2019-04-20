@@ -20,7 +20,7 @@ namespace NETWORK_UTIL
 
 	void SendPacket(SocketInfo* pClient, char* packetData)
 	{
-		SendMemoryUnit* sendMemoryUnit = SendMemoryPool::GetInstance()->PopMemory(pClient);
+		SendMemoryUnit* sendMemoryUnit = SendMemoryPool::GetInstance()->PopMemory();
 		memcpy(sendMemoryUnit->memoryUnit.dataBuf, packetData, packetData[0]);
 		
 		sendMemoryUnit->memoryUnit.wsaBuf.len = static_cast<ULONG>(packetData[0]);
@@ -38,9 +38,27 @@ namespace NETWORK_UTIL
 			WSASend(pClient->sock, &(sendMemoryUnit->memoryUnit.wsaBuf), 1, NULL, 0, &(sendMemoryUnit->memoryUnit.overlapped), NULL)
 			)
 		{
-			ERROR_HANDLING::ERROR_DISPLAY("¸øº¸³Â¾î¿ä....");
+			ERROR_HANDLING::ERROR_DISPLAY("SendPacket()");
 		}
 			//]();
+	}
+
+	void SendUnallocatedPacket(SocketInfo* pClient, char* pOriginData)
+	{
+		UnallocatedMemoryUnit* pUnallocatedMemoryUnit
+			= SendMemoryPool::GetInstance()->PopUnallocatedMemory();
+
+		pUnallocatedMemoryUnit->wsaBuf.buf = pOriginData;
+		pUnallocatedMemoryUnit->wsaBuf.len = static_cast<ULONG>(pOriginData[0]);
+
+		ZeroMemory(&(pUnallocatedMemoryUnit->overlapped), sizeof(pUnallocatedMemoryUnit->overlapped));
+
+		if (SOCKET_ERROR ==
+			WSASend(pClient->sock, &(pUnallocatedMemoryUnit->wsaBuf), 1, NULL, 0, &(pUnallocatedMemoryUnit->overlapped), NULL)
+			)
+		{
+			ERROR_HANDLING::ERROR_DISPLAY("SendUnallocatedPacket()");
+		}
 	}
 
 	/*
@@ -83,7 +101,7 @@ namespace NETWORK_UTIL
 	*/
 	void LogOutProcess(LPVOID pClient)
 	{
-		if (reinterpret_cast<MemoryUnit*>(pClient)->isRecv)
+		if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::RECV)
 		{
 			SocketInfo* pOutClient = reinterpret_cast<SocketInfo*>(pClient);
 
@@ -100,11 +118,17 @@ namespace NETWORK_UTIL
 			closesocket(pOutClient->sock);
 			delete pOutClient;
 		}
-		else
+		else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND)
 		{
 			SendMemoryUnit* pMemoryUnit = (reinterpret_cast<SendMemoryUnit*>(pClient));
 			
 			SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
+		}
+		else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND)
+		{
+			UnallocatedMemoryUnit* pMemoryUnit = (reinterpret_cast<UnallocatedMemoryUnit*>(pClient));
+
+			SendMemoryPool::GetInstance()->PushUnallocatedMemory(pMemoryUnit);
 		}
 	}
 

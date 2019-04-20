@@ -1,6 +1,26 @@
 #pragma once
 
 #include "InHeaderDefine.hh"
+
+enum class MEMORY_UNIT_TYPE : BYTE
+{
+	RECV = 0x00,
+	SEND = 0x01,
+	UNALLOCATED_SEND = 0x02
+};
+
+/*
+	UnallocatedMemoryUnit
+		- 할당하지 않고, 공유 버퍼를 활용하여 Send하는 메모리에 사용됩니다.
+*/
+struct UnallocatedMemoryUnit
+{
+	OVERLAPPED overlapped;
+	WSABUF wsaBuf;
+
+	const MEMORY_UNIT_TYPE memoryUnitType;	// 해당 변수는 생성 시에 정의되고 변하지 않음.
+};
+
 /*
 	MemoryUnit
 		- 데이터 전송 Send, Recv 및, 해당 처리에서 필요한 목록을 저장해놓은 구조체입니다.
@@ -25,12 +45,12 @@ struct MemoryUnit
 	OVERLAPPED overlapped;
 	WSABUF wsaBuf;
 	
-	const bool isRecv;	// 해당 변수는 생성 시에 정의되고 변하지 않음.
+	const MEMORY_UNIT_TYPE memoryUnitType;	// 해당 변수는 생성 시에 정의되고 변하지 않음.
 	
 	char *dataBuf;
 
 public:
-	MemoryUnit(const bool InIsRecv = false);
+	MemoryUnit(const MEMORY_UNIT_TYPE InMemoryUnitType);
 	~MemoryUnit();
 
 	MemoryUnit(const MemoryUnit& other);

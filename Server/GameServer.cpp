@@ -18,6 +18,8 @@ GameServer::GameServer(bool inNotUse)
 	, workerThreadCont()
 	, zoneCont()
 {
+	ServerIntegrityCheck();
+	
 	SendMemoryPool::MakeInstance();
 
 	PrintServerInfoUI();
@@ -38,6 +40,20 @@ GameServer::~GameServer()
 
 	closesocket(listenSocket);
 	CloseHandle(hIOCP);
+}
+
+void GameServer::ServerIntegrityCheck()
+{
+	//무결성 검사
+	static_assert(GLOBAL_DEFINE::MAX_HEIGHT == GLOBAL_DEFINE::MAX_WIDTH,
+		"MAX_HEIGHT와 MAX_WIDTH가 다르며, 이는 Sector 계산에서 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
+
+	static_assert((int)((GLOBAL_DEFINE::MAX_HEIGHT - 1) / GLOBAL_DEFINE::SECTOR_DISTANCE)
+		!= (int)((GLOBAL_DEFINE::MAX_HEIGHT + 1) / GLOBAL_DEFINE::SECTOR_DISTANCE),
+		"MAX_HEIGHT(그리고 MAX_WIDTH)는 SECTOR_DISTANCE의 배수가 아닐 경우, 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
+
+	static_assert(PACKET_TYPE::CLIENT_TO_SERVER::CHAT == PACKET_TYPE::SERVER_TO_CLIENT::CHAT,
+		"CS::CHAT와 SC::CHAT의 값이 다르며, 이는 클라이언트에 치명적인 오류를 발생시킵니다. 서버 실행을 거절하였습니다.");
 }
 
 /*
@@ -255,9 +271,23 @@ void GameServer::WorkerThreadFunction()
 #pragma endregion
 
 #ifdef DISABLED_FUNCTION_POINTER
-		reinterpret_cast<MemoryUnit *>(pMemoryUnit)->isRecv == true
-			? AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred)
-			: AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
+		//reinterpret_cast<MemoryUnit *>(pMemoryUnit)->memoryUnitType == MEMORY_UNIT_TYPE::RECV
+		//	? AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred)
+		//	: AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
+		
+		switch (reinterpret_cast<UnallocatedMemoryUnit*>(pMemoryUnit)->memoryUnitType)
+		{
+		case MEMORY_UNIT_TYPE::SEND:
+			AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
+			break;
+		case MEMORY_UNIT_TYPE::RECV:
+			AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
+			break;
+		case MEMORY_UNIT_TYPE::UNALLOCATED_SEND:
+			AfterUnallocatedSend(reinterpret_cast<UnallocatedMemoryUnit*>(pMemoryUnit));
+			break;
+		}
+
 #else
 		recvOrSendArr[GLOBAL_UTIL::BIT_CONVERTER::GetRecvOrSend(pClient->buf[0])](*this, pClient);
 #endif
@@ -329,4 +359,9 @@ void GameServer::AfterSend(SendMemoryUnit* pMemoryUnit)
 {
 	// 보낼 때 사용한 버퍼 후처리하고 끝! ( 오버랩 초기화는 보낼떄 처리)
 	SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
+}
+
+void GameServer::AfterUnallocatedSend(UnallocatedMemoryUnit* pUnit)
+{
+	SendMemoryPool::GetInstance()->PushUnallocatedMemory(pUnit);
 }

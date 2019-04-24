@@ -275,8 +275,7 @@ void GameServer::WorkerThreadFunction()
 			? AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred)
 			: AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
 		
-		// UNALLOCATED_SEND 비활성화 
-
+#ifndef  DISABLED_FUNCTION_POINTER
 		//switch (reinterpret_cast<UnallocatedMemoryUnit*>(pMemoryUnit)->memoryUnitType)
 		//{
 		//case MEMORY_UNIT_TYPE::SEND:
@@ -289,6 +288,7 @@ void GameServer::WorkerThreadFunction()
 		//	AfterUnallocatedSend(reinterpret_cast<UnallocatedMemoryUnit*>(pMemoryUnit));
 		//	break;
 		//}
+#endif // ! DISABLED_FUNCTION_POINTER
 
 #else
 		recvOrSendArr[GLOBAL_UTIL::BIT_CONVERTER::GetRecvOrSend(pClient->buf[0])](*this, pClient);
@@ -318,14 +318,14 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 	char *pBuf = pClient->memoryUnit.dataBuf; // pBuf -> 처리하는 문자열의 시작 위치
 	char packetSize{ 0 }; // 처리해야할 패킷의 크기
 
-	// 이전에 처리를 마치지 못한 버퍼가 있다면, 처리해야할 패킷 사이즈를 알려줘.
+	// 이전에 처리를 마치지 못한 버퍼가 있다면, 지금 처리해야할 패킷 사이즈를 알려줘.
 	if (0 < pClient->loadedSize ) packetSize = pClient->loadedBuf[0];
 
-	// 처리하지 않은 버퍼의 크기가 0이 될때까지 돌립니다.
+	// 처리하지 않은 버퍼의 크기가 있으면, 계속 루프문을 돕니다.
 	while (restSize > 0)
 	{
-		// 이전에 처리를 마치지 못한 버퍼를 처리해야한다면 패스, 아니라면 처리해야할 패킷의 크기를 받음.
-		if (packetSize == 0) packetSize = pBuf[0];
+		// 이전에 처리를 마치지 못한 버퍼를 처리해야한다면 패스, 아니라면 지금 처리해야할 패킷의 크기를 받음.
+		if (packetSize == 0) packetSize = static_cast<int>(pBuf[0]);
 
 		// 처리해야하는 패킷 사이즈 중에서, 이전에 이미 처리한 패킷 사이즈를 빼준다.
 		int required = packetSize - pClient->loadedSize;
@@ -339,6 +339,7 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 			zoneCont[0]->ProcessPacket(pClient); //== pClient->pZone->ProcessPacket(pClient); // 패킷처리 가가가가아아아아즈즈즈즞즈아아아아앗!!!!!!
 			//-------------------------------------------------------------------------------
 
+			pClient->loadedSize = 0;
 			restSize -= required;
 			pBuf += required;
 			packetSize = 0;
@@ -346,9 +347,10 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 		// 패킷을 완성할 수 없을 때
 		else
 		{
-			memcpy(pClient->loadedBuf, pBuf, restSize);
-			pClient->loadedSize = restSize;
-			restSize = 0;
+			memcpy(pClient->loadedBuf + pClient->loadedSize , pBuf, restSize);
+			pClient->loadedSize += restSize;
+			break;
+			//restSize = 0; 
 		}
 	}
 }

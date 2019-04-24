@@ -7,7 +7,6 @@ struct MemoryUnit;
 
 class ConnectManager;
 class MoveManager;
-class ChatManager;
 
 class Sector;
 
@@ -53,7 +52,6 @@ private:
 private:
 	std::unique_ptr<ConnectManager> connectManager;
 	std::unique_ptr<MoveManager> moveManager;
-	std::unique_ptr<ChatManager> chatManager;
 
 	std::vector<std::vector<Sector>> sectorCont;
 

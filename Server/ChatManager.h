@@ -5,6 +5,7 @@
 struct SocketInfo;
 struct ZoneContUnit;
 
+// 해당 ChatManager는 분리될 예정입니다.
 struct ChatUnit
 {
 	static constexpr BYTE chatUnitCount{ 100 };

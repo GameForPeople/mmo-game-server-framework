@@ -44,7 +44,10 @@ private:
 #ifdef DISABLED_FUNCTION_POINTER
 	void AfterRecv(SocketInfo* pClient, int cbTransferred);
 	void AfterSend(SendMemoryUnit* pUnit);
+
+#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
 	void AfterUnallocatedSend(UnallocatedMemoryUnit* pUnit);
+#endif
 
 #else
 	std::function <void(GameServer&, LPVOID)>* recvOrSendArr;

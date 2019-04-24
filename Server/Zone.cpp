@@ -20,7 +20,6 @@
 Zone::Zone() : 
 	connectManager(nullptr),
 	moveManager(nullptr),
-	chatManager(nullptr),
 	sectorCont(),
 	zoneContUnit(nullptr),
 	recvFunctionArr(nullptr)
@@ -437,5 +436,5 @@ void Zone::RecvChat(SocketInfo* pClient)
 #ifdef _DEV_MODE_
 	std::cout << "[AfterRecv] 채팅 버퍼를 받았습니다. \n";
 #endif
-	chatManager->ChatProcess(pClient, zoneContUnit);
+	//chatManager->ChatProcess(pClient, zoneContUnit);
 }

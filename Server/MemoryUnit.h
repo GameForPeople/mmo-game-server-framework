@@ -6,9 +6,10 @@ enum class MEMORY_UNIT_TYPE : BYTE
 {
 	RECV = 0x00,
 	SEND = 0x01,
-	UNALLOCATED_SEND = 0x02
+	//UNALLOCATED_SEND = 0x02
 };
 
+#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
 /*
 	UnallocatedMemoryUnit
 		- 할당하지 않고, 공유 버퍼를 활용하여 Send하는 메모리에 사용됩니다.
@@ -20,6 +21,7 @@ struct UnallocatedMemoryUnit
 
 	const MEMORY_UNIT_TYPE memoryUnitType;	// 해당 변수는 생성 시에 정의되고 변하지 않음.
 };
+#endif
 
 /*
 	MemoryUnit

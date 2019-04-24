@@ -271,22 +271,24 @@ void GameServer::WorkerThreadFunction()
 #pragma endregion
 
 #ifdef DISABLED_FUNCTION_POINTER
-		//reinterpret_cast<MemoryUnit *>(pMemoryUnit)->memoryUnitType == MEMORY_UNIT_TYPE::RECV
-		//	? AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred)
-		//	: AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
+		reinterpret_cast<MemoryUnit *>(pMemoryUnit)->memoryUnitType == MEMORY_UNIT_TYPE::RECV
+			? AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred)
+			: AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
 		
-		switch (reinterpret_cast<UnallocatedMemoryUnit*>(pMemoryUnit)->memoryUnitType)
-		{
-		case MEMORY_UNIT_TYPE::SEND:
-			AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
-			break;
-		case MEMORY_UNIT_TYPE::RECV:
-			AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
-			break;
-		case MEMORY_UNIT_TYPE::UNALLOCATED_SEND:
-			AfterUnallocatedSend(reinterpret_cast<UnallocatedMemoryUnit*>(pMemoryUnit));
-			break;
-		}
+		// UNALLOCATED_SEND 비활성화 
+
+		//switch (reinterpret_cast<UnallocatedMemoryUnit*>(pMemoryUnit)->memoryUnitType)
+		//{
+		//case MEMORY_UNIT_TYPE::SEND:
+		//	AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
+		//	break;
+		//case MEMORY_UNIT_TYPE::RECV:
+		//	AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
+		//	break;
+		//case MEMORY_UNIT_TYPE::UNALLOCATED_SEND:
+		//	AfterUnallocatedSend(reinterpret_cast<UnallocatedMemoryUnit*>(pMemoryUnit));
+		//	break;
+		//}
 
 #else
 		recvOrSendArr[GLOBAL_UTIL::BIT_CONVERTER::GetRecvOrSend(pClient->buf[0])](*this, pClient);
@@ -361,7 +363,9 @@ void GameServer::AfterSend(SendMemoryUnit* pMemoryUnit)
 	SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
 }
 
+#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
 void GameServer::AfterUnallocatedSend(UnallocatedMemoryUnit* pUnit)
 {
 	SendMemoryPool::GetInstance()->PushUnallocatedMemory(pUnit);
 }
+#endif

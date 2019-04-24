@@ -43,6 +43,7 @@ namespace NETWORK_UTIL
 			//]();
 	}
 
+#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
 	void SendUnallocatedPacket(SocketInfo* pClient, char* pOriginData)
 	{
 		UnallocatedMemoryUnit* pUnallocatedMemoryUnit
@@ -60,6 +61,7 @@ namespace NETWORK_UTIL
 			ERROR_HANDLING::ERROR_DISPLAY("SendUnallocatedPacket()");
 		}
 	}
+#endif
 
 	/*
 		RecvPacket()
@@ -124,14 +126,15 @@ namespace NETWORK_UTIL
 			
 			SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
 		}
+#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
 		else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND)
 		{
 			UnallocatedMemoryUnit* pMemoryUnit = (reinterpret_cast<UnallocatedMemoryUnit*>(pClient));
 
 			SendMemoryPool::GetInstance()->PushUnallocatedMemory(pMemoryUnit);
 		}
+#endif
 	}
-
 }
 
 namespace BIT_CONVERTER

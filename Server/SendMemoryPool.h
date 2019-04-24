@@ -28,8 +28,10 @@ public:
 	SendMemoryUnit* PopMemory();	// 메모리 제공
 	void PushMemory(SendMemoryUnit*);	// 메모리 반납
 
+#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
 	UnallocatedMemoryUnit* PopUnallocatedMemory();
 	void PushUnallocatedMemory(UnallocatedMemoryUnit*);
+#endif
 
 private:
 	static SendMemoryPool* instance;
@@ -37,5 +39,8 @@ private:
 	~SendMemoryPool();
 
 	Concurrency::concurrent_queue<SendMemoryUnit*> sendMemoryPool;
+
+#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
 	Concurrency::concurrent_queue<UnallocatedMemoryUnit*> sendUnallocatedMemoryPool;
+#endif
 };

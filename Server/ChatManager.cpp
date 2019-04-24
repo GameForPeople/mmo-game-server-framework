@@ -47,12 +47,12 @@ void ChatManager::ChatProcess(SocketInfo* pClient, ZoneContUnit* pZoneContUnit)
 	// 받은 데이터값 그대로 사용합니다.
 	memcpy(retChatUnit->message, pClient->loadedBuf, pClient->loadedBuf[0]);
 
-	pZoneContUnit->wrlock.lock_shared(); //++++++++++++++++++++++++++++++++++1
-	for (auto& iter : pZoneContUnit->clientCont)
-	{
-		NETWORK_UTIL::SendUnallocatedPacket(iter.second, reinterpret_cast<char*>(retChatUnit));
-	}
-	pZoneContUnit->wrlock.unlock_shared(); //--------------------------------0
-
-	sendedMessageCont.push(retChatUnit);
+	//pZoneContUnit->wrlock.lock_shared(); //++++++++++++++++++++++++++++++++++1
+	//for (auto& iter : pZoneContUnit->clientCont)
+	//{
+	//	NETWORK_UTIL::SendUnallocatedPacket(iter.second, reinterpret_cast<char*>(retChatUnit));
+	//}
+	//pZoneContUnit->wrlock.unlock_shared(); //--------------------------------0
+	//
+	//sendedMessageCont.push(retChatUnit);
 }

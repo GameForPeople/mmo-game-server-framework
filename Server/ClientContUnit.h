@@ -17,3 +17,14 @@ struct SectorContUnit
 	//std::list<_ClientKeyType> clientCont;
 	std::shared_mutex wrlock;
 };
+
+struct UrbanSectorContUnit
+{
+	
+};
+
+struct RuralSectorContUnit
+{
+	Concurrency::concurrent_vector <std::pair<std::atomic<bool>, _ClientKeyType>> keyCont;
+	std::mutex onlyWriteLock;
+};

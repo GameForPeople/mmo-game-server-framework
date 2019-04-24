@@ -10,15 +10,6 @@ namespace PACKET_DATA
 			size(sizeof(Move)), type(PACKET_TYPE::CS::MOVE),
 			direction(inDirection)
 		{}
-
-		//Chat::Chat(const char* inRecvBuffer) noexcept :
-		//	size(inRecvBuffer[0]), type(PACKET_TYPE::CS::CHAT),
-		//	characterType(inRecvBuffer[2]),
-		//	messageLength(inRecvBuffer[3]),
-		//	chatMessage()
-		//{
-		//	memcpy(chatMessage, inRecvBuffer + 4, messageLength);
-		//}
 	}
 
 	namespace SERVER_TO_CLIENT
@@ -28,7 +19,7 @@ namespace PACKET_DATA
 			id(inNewId)
 		{}
 
-		PutPlayer::PutPlayer(const char inPutClientId, const char inX, const char inY) noexcept	:
+		PutPlayer::PutPlayer(const char inPutClientId, const char inX, const char inY) noexcept :
 			size(sizeof(PutPlayer)), type(PACKET_TYPE::SC::PUT_PLAYER),
 			id(inPutClientId),
 			x(inX),
@@ -46,6 +37,20 @@ namespace PACKET_DATA
 			x(inX),
 			y(inY)
 		{}
+
+		Chat::Chat(const char* inRecvBuffer) :
+			size(inRecvBuffer[0]), type(PACKET_TYPE::CS::CHAT),
+			nickNameLength(inRecvBuffer[2]),
+			nickName(),
+			message()
+		{
+			std::string stringNickname(inRecvBuffer[3], inRecvBuffer[3 + nickNameLength]);
+			nickName = std::move(UNICODE_UTIL::StringToWString(stringNickname));
+
+			std::string stringMessage(inRecvBuffer[3 + nickNameLength + 1],
+				inRecvBuffer[size - 1]);
+			message = std::move(UNICODE_UTIL::StringToWString(stringMessage));
+		}
 	}
 }
 

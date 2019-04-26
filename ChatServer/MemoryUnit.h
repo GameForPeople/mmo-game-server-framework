@@ -49,7 +49,7 @@ struct MemoryUnit
 	
 	const MEMORY_UNIT_TYPE memoryUnitType;	// 해당 변수는 생성 시에 정의되고 변하지 않음.
 	
-	char *dataBuf;
+	char dataBuf[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
 
 public:
 	MemoryUnit(const MEMORY_UNIT_TYPE InMemoryUnitType);
@@ -63,19 +63,12 @@ public:
 /*
 	SendMemoryUnit
 		- Send 시, 사용되는 MemoryUnit입니다.
-
-	#0. pOwner는 해당 Send에 대상이 되는 Socket Info 구조체입니다.
-		- 이는 Send 실패 시, 예외처리를 위해 사용됩니다.
-
-	?0. POwner의 쓰임에 의문이 생겻습니다. 이거 필요가 없는 걸?
-		- 관련 코드 모드 주석 처리하고, 확정 시, 전부 삭제.
 */
 //struct SocketInfo;
 
 struct SendMemoryUnit
 {
 	MemoryUnit memoryUnit;
-	//SocketInfo* pOwner;	// Send 예외처리 제외 -> 추후 삭제 확정 시 pOwner로 Search!
 
 	SendMemoryUnit();
 	~SendMemoryUnit();
@@ -85,17 +78,11 @@ struct SendMemoryUnit
 	SendMemoryUnit& operator=(SendMemoryUnit&& other) noexcept;
 };
 
-
 /*
 	SocketInfo
 		- 소켓정보구조체 입니다.
 
 	!0. 멤버 변수 가장 상위에는 MemoryUnit가 있어야합니다. 절대로 보장되야합니다.
-*/
-class UserData;
-class Zone;
-/*
-	4바이트 정렬 짓 해야합니다 여기.
 */
 
 struct SocketInfo
@@ -108,21 +95,11 @@ public:
 	MemoryUnit memoryUnit;
 
 	int loadedSize;
-	//char *loadedBuf;
 	char loadedBuf[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
 
 	SOCKET sock;
-	UserData* userData;
-	//std::unique_ptr<UserData> userData;
-
-	_ClientKeyType clientKey;
 	
-	Zone* pZone;		// 현재 입장한 존.
-
-	BYTE sectorIndexX;	// 자신의 섹터로 슥~
-	BYTE sectorIndexY;	// 자신의 섹터로 슥~
-
-	BYTE possibleSectorCount;	// 검사해야하는 섹터 개수, 최대 3을 초과할 수 없음.
-	std::array<std::pair<BYTE, BYTE>, 3> sectorArr;
-	Concurrency::concurrent_unordered_set<_ClientKeyType> viewList;
+	BYTE zoneIndex;
+	std::wstring nickname;
+	USHORT contIndex;
 };

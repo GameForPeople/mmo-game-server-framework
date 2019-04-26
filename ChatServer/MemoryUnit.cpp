@@ -2,9 +2,6 @@
 #include "Define.h"
 #include "ServerDefine.h"
 
-#include "UserData.h"
-#include "Zone.h"
-
 #include "MemoryUnit.h"
 
 //---------------------------------------------------------------------------
@@ -15,18 +12,12 @@ MemoryUnit::MemoryUnit(const MEMORY_UNIT_TYPE inMemoryUnitType) :
 	overlapped(),
 	wsaBuf(),
 	memoryUnitType(inMemoryUnitType),
-	dataBuf(nullptr)
+	dataBuf()
 {
 #ifdef _DEV_MODE_
 	std::cout << " MemoryUnit의 기본생성자가 호출되었습니다. \n";
 #endif
-	if (MEMORY_UNIT_TYPE::RECV == inMemoryUnitType)
-	{
-		dataBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV];
-		wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
-	}
-	else dataBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_SEND];
-
+	wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET;
 	wsaBuf.buf = dataBuf;
 }
 
@@ -35,15 +26,16 @@ MemoryUnit::~MemoryUnit()
 #ifdef _DEV_MODE_
 	//std::cout << "MemoryUnit의 소멸자가 호출되었습니다. \n";
 #endif
-	delete[] dataBuf;
 }
 
 MemoryUnit::MemoryUnit(const MemoryUnit& other) :
 	overlapped(),
 	wsaBuf(other.wsaBuf),
-	dataBuf(other.dataBuf),
+	dataBuf(),
 	memoryUnitType(other.memoryUnitType)
 {
+	memcpy(dataBuf, other.dataBuf, GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET);
+
 #ifdef _DEV_MODE_
 	std::cout << " MemoryUnit의 복사생성자가 호출되었습니다. \n";
 #endif
@@ -52,7 +44,7 @@ MemoryUnit::MemoryUnit(const MemoryUnit& other) :
 MemoryUnit::MemoryUnit(MemoryUnit&& other) noexcept :
 	overlapped(),
 	wsaBuf(),
-	dataBuf(nullptr),
+	dataBuf(),
 	memoryUnitType(other.memoryUnitType)
 {
 	*this = std::move(other);
@@ -65,12 +57,8 @@ MemoryUnit& MemoryUnit::operator=(MemoryUnit&& other) noexcept
 #endif
 	if (this != &other)
 	{
-		// 아니 원성연님, 생각을 해봐 이거 지워도 되는거 맞아요? ㅎㅎㅎ모르겠어욯ㅎㅎㅎㅎ
-		delete[] dataBuf;
-
-		dataBuf = other.dataBuf;
-		wsaBuf = other.wsaBuf;
-		other.dataBuf = nullptr;
+		memcpy(dataBuf, other.dataBuf, GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET);
+		wsaBuf = std::move(other.wsaBuf);
 	}
 	return *this;
 }
@@ -124,23 +112,12 @@ SocketInfo::SocketInfo() /*noexcept*/ :
 	sock(),
 	loadedSize(),
 	loadedBuf(),
-	userData(new UserData(GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y)/*std::make_unique<UserData>(0, 0)*/),
-	clientKey(-1),
-	pZone(nullptr),
-	viewList(),
-	sectorArr(),
-	sectorIndexX(),
-	sectorIndexY(),
-	possibleSectorCount()
+	zoneIndex(),
+	nickname(),
+	contIndex()
 {
-	//loadedBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
-	viewList.clear();
 }
 
 SocketInfo::~SocketInfo()
 {
-	viewList.clear();
-
-	//delete[] loadedBuf;
-	delete userData;
 }

@@ -39,19 +39,7 @@ namespace ERROR_HANDLING {
 	inline void NotError(void) {};
 	void HandleRecvOrSendError(void);
 
-	_NORETURN void ERROR_QUIT(const CHAR *msg);
-	/*_DEPRECATED*/ void ERROR_DISPLAY(const CHAR *msg);
+	_NORETURN void ERROR_QUIT(const WCHAR *msg);
+	/*_DEPRECATED*/ void ERROR_DISPLAY(const WCHAR *msg);
 }
 
- namespace GLOBAL_DEFINE
-{
-	constexpr BYTE START_POSITION_X = 50;
-	constexpr BYTE START_POSITION_Y = 50;
-
-	constexpr BYTE SECTOR_DISTANCE = 10;	// 씐 전체 크기와 viewDistance를 고려해야함!
-	constexpr BYTE SECTOR_HALF_DISTANCE = SECTOR_DISTANCE / 2;
-
-	constexpr BYTE VIEW_DISTANCE = 3;
-
-	//---------
-}

@@ -39,7 +39,7 @@ namespace PACKET_DATA
 		{}
 
 		Chat::Chat(const char* inRecvBuffer) :
-			size(inRecvBuffer[0]), type(PACKET_TYPE::CS::CHAT),
+			size(inRecvBuffer[0]), type(PACKET_TYPE::CS::CHAT_SERVER_CHAT),
 			nickNameLength(inRecvBuffer[2]),
 			nickName(),
 			message()

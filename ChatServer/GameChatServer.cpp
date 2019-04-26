@@ -2,11 +2,8 @@
 #include "Define.h"
 #include "ServerDefine.h"
 
-#include "Zone.h"
 #include "MemoryUnit.h"
 #include "SendMemoryPool.h"
-
-#include "UserData.h"
 
 #include "GameChatServer.h"
 
@@ -17,18 +14,15 @@ GameChatServer::GameChatServer(bool inNotUse)
 	, serverAddr()
 	, workerThreadCont()
 	, zoneCont()
+	, chatManager(std::make_unique<ChatManager>())
+	, connectManager(std::make_unique<ConnectManager>())
 {
 	ServerIntegrityCheck();
 	
 	SendMemoryPool::MakeInstance();
 
 	PrintServerInfoUI();
-	InitZones();
-	InitFunctions();
 	InitNetwork();
-
-	ERROR_HANDLING::errorRecvOrSendArr[0] = ERROR_HANDLING::HandleRecvOrSendError;
-	ERROR_HANDLING::errorRecvOrSendArr[1] = ERROR_HANDLING::NotError;
 };
 
 GameChatServer::~GameChatServer()
@@ -36,7 +30,6 @@ GameChatServer::~GameChatServer()
 	SendMemoryPool::DeleteInstance();
 
 	workerThreadCont.clear();
-	zoneCont.clear();
 
 	closesocket(listenSocket);
 	CloseHandle(hIOCP);
@@ -45,14 +38,7 @@ GameChatServer::~GameChatServer()
 void GameChatServer::ServerIntegrityCheck()
 {
 	//무결성 검사
-	static_assert(GLOBAL_DEFINE::MAX_HEIGHT == GLOBAL_DEFINE::MAX_WIDTH,
-		"MAX_HEIGHT와 MAX_WIDTH가 다르며, 이는 Sector 계산에서 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
-
-	static_assert((int)((GLOBAL_DEFINE::MAX_HEIGHT - 1) / GLOBAL_DEFINE::SECTOR_DISTANCE)
-		!= (int)((GLOBAL_DEFINE::MAX_HEIGHT + 1) / GLOBAL_DEFINE::SECTOR_DISTANCE),
-		"MAX_HEIGHT(그리고 MAX_WIDTH)는 SECTOR_DISTANCE의 배수가 아닐 경우, 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
-
-	static_assert(PACKET_TYPE::CLIENT_TO_SERVER::CHAT == PACKET_TYPE::SERVER_TO_CLIENT::CHAT,
+	static_assert(PACKET_TYPE::CLIENT_TO_SERVER::CHAT_SERVER_CHAT == PACKET_TYPE::SERVER_TO_CLIENT::CHAT_SERVER_CHAT,
 		"CS::CHAT와 SC::CHAT의 값이 다르며, 이는 클라이언트에 치명적인 오류를 발생시킵니다. 서버 실행을 거절하였습니다.");
 }
 
@@ -69,32 +55,8 @@ void GameChatServer::PrintServerInfoUI()
 	
 	// 추후 퍼블릭 IP로 변경.
 	printf("■ IP : LocalHost(127.0.0.1)\n");
-	printf("■ Listen Port : 9000\n");
+	printf("■ Listen Port : 9001\n");
 	printf("■■■■■■■■■■■■■■■■■■■■■■■■■\n");
-}
-
-/*
-	GameServer::InitZone()
-		- GamsServer의 생성자에서 호출되며, 씐들의 초기화를 담당합니다.
-*/
-void GameChatServer::InitZones()
-{
-	zoneCont.reserve(1);
-	zoneCont.emplace_back(std::make_unique<Zone>());
-}
-
-/*
-	GameServer::InitFunctions()
-		- GamsServer의 생성자에서 호출되며, 함수 포인터들의 초기화를 담당합니다.
-*/
-void GameChatServer::InitFunctions()
-{
-#ifdef DISABLED_FUNCTION_POINTER
-#else
-	recvOrSendArr = new std::function <void(GameServer&, LPVOID)>[NETWORK_TYPE::ENUM_SIZE];
-	recvOrSendArr[NETWORK_TYPE::RECV] = &GameServer::AfterRecv;
-	recvOrSendArr[NETWORK_TYPE::SEND] = &GameServer::AfterSend;
-#endif
 }
 
 /*
@@ -106,7 +68,7 @@ void GameChatServer::InitNetwork()
 	using namespace ERROR_HANDLING;
 
 	// 1. 윈속 초기화
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) ERROR_QUIT(TEXT("WSAStartup()"));
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) ERROR_QUIT(L"WSAStartup()");
 
 	// 2. 입출력 완료 포트 생성
 	if (hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)
@@ -186,38 +148,26 @@ void GameChatServer::AcceptThreadFunction()
 			ERROR_HANDLING::ERROR_QUIT(TEXT("accept()"));
 			break;
 		}
+		
+		SocketInfo* pClient = new SocketInfo();
+		pClient->sock = clientSocket;
+		pClient->memoryUnit.wsaBuf.buf = pClient->memoryUnit.dataBuf;
+		pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
 
-		if (auto [isTrueAdd, pClient] = zoneCont[0]->TryToEnter()
-			; isTrueAdd)
-		{
-			// 소켓과 입출력 완료 포트 연결
-			CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->clientKey, 0);
+		// 소켓과 입출력 완료 포트 연결
+		CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->sock, 0);
 
-			pClient->sock = clientSocket;
-			pClient->memoryUnit.wsaBuf.buf = pClient->memoryUnit.dataBuf;
-			pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
-
-			// 클라이언트에게 서버에 접속(Accept) 함을 알림
-			PACKET_DATA::SC::LoginOk loginPacket(pClient->clientKey);
-			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&loginPacket));
-
-			// 자신의 캐릭터를 넣어줌.
-			PACKET_DATA::SC::PutPlayer putPacket( pClient->clientKey, pClient->userData->GetPosition().x, pClient->userData->GetPosition().y);
-			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
-
-			//printf("[TCP 서버] 클라이언트 접속 : IP 주소 =%s, Port 번호 = %d \n", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
-			std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
+		//printf("[TCP 서버] 클라이언트 접속 : IP 주소 =%s, Port 번호 = %d \n", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
+		std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
 			
-			// 최초 위치에서 처음 뷰리스트와 섹터 갱신.
-			pClient->pZone->InitViewAndSector(pClient);
+		// 비동기 입출력의 시작.
+		NETWORK_UTIL::RecvPacket(pClient);
 
-			// 비동기 입출력의 시작.
-			NETWORK_UTIL::RecvPacket(pClient);
-		}
-		else {
-			closesocket(clientSocket);
-			//delete pClient;	// if nullptr;
-		}
+		// 접속을 받지 못하는 경우는, 염두에 두지 않음.
+		//else {
+		//	closesocket(clientSocket);
+		//	//delete pClient;	// if nullptr;
+		//}
 	}
 }
 
@@ -244,7 +194,6 @@ void GameChatServer::WorkerThreadFunction()
 	DWORD cbTransferred;
 	unsigned long long clientKey;
 	
-	//MemoryUnit* pMemoryUnit;
 	LPVOID pMemoryUnit;
 
 	while (7)
@@ -265,12 +214,10 @@ void GameChatServer::WorkerThreadFunction()
 		if (retVal == 0 || cbTransferred == 0)
 		{
 			NETWORK_UTIL::LogOutProcess(pMemoryUnit);
-			/*break;*/
 			continue;
 		}
 #pragma endregion
 
-#ifdef DISABLED_FUNCTION_POINTER
 		reinterpret_cast<MemoryUnit *>(pMemoryUnit)->memoryUnitType == MEMORY_UNIT_TYPE::RECV
 			? AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred)
 			: AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
@@ -289,10 +236,6 @@ void GameChatServer::WorkerThreadFunction()
 		//	break;
 		//}
 #endif // ! DISABLED_FUNCTION_POINTER
-
-#else
-		recvOrSendArr[GLOBAL_UTIL::BIT_CONVERTER::GetRecvOrSend(pClient->buf[0])](*this, pClient);
-#endif
 	}
 }
 
@@ -336,7 +279,7 @@ void GameChatServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 			memcpy(pClient->loadedBuf + pClient->loadedSize, pBuf, required);
 			
 			//-------------------------------------------------------------------------------
-			zoneCont[0]->ProcessPacket(pClient); //== pClient->pZone->ProcessPacket(pClient); // 패킷처리 가가가가아아아아즈즈즈즞즈아아아아앗!!!!!!
+			ProcessPacket(pClient); //== pClient->pZone->ProcessPacket(pClient); // 패킷처리 가가가가아아아아즈즈즈즞즈아아아아앗!!!!!!
 			//-------------------------------------------------------------------------------
 
 			pClient->loadedSize = 0;
@@ -350,7 +293,6 @@ void GameChatServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 			memcpy(pClient->loadedBuf + pClient->loadedSize , pBuf, restSize);
 			pClient->loadedSize += restSize;
 			break;
-			//restSize = 0; 
 		}
 	}
 }
@@ -365,9 +307,25 @@ void GameChatServer::AfterSend(SendMemoryUnit* pMemoryUnit)
 	SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
 }
 
-#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
-void GameServer::AfterUnallocatedSend(UnallocatedMemoryUnit* pUnit)
+void GameChatServer::ProcessPacket(SocketInfo* pClient)
 {
-	SendMemoryPool::GetInstance()->PushUnallocatedMemory(pUnit);
+	using namespace PACKET_TYPE;
+
+	switch (pClient->loadedBuf[1])
+	{
+	case CS::CHAT_SERVER_CHAT:
+		break;
+	case CS::CHAT_SERVER_CONNECT:
+		ProcessConnect(pClient);
+		break;
+	case CS::CHAT_SERVER_CHANGE:
+		break;
+	default:
+		break;
+	}
 }
-#endif
+
+void GameChatServer::ProcessConnect(SocketInfo* pClient)
+{
+
+}

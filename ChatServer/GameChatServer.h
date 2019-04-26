@@ -1,12 +1,12 @@
 #pragma once
 
-#define DISABLED_FUNCTION_POINTER
 
-struct UnallocatedMemoryUnit;
 struct MemoryUnit;
 struct SendMemoryUnit;
 struct SocketInfo;
-class Zone;
+
+class ZoneContUnit;
+class ChatManager;
 
 /*
 	GameChatServer
@@ -28,8 +28,6 @@ public:
 private:	// for Init
 	void ServerIntegrityCheck();
 	void PrintServerInfoUI();
-	void InitZones();
-	void InitFunctions();
 	void InitNetwork();
 
 private:	// for Worker Thread
@@ -41,20 +39,14 @@ private:	// for Aceept Thread
 	void AcceptThreadFunction();
 
 private:
-#ifdef DISABLED_FUNCTION_POINTER
 	void AfterRecv(SocketInfo* pClient, int cbTransferred);
 	void AfterSend(SendMemoryUnit* pUnit);
 
-#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
-	void AfterUnallocatedSend(UnallocatedMemoryUnit* pUnit);
-#endif
-
-#else
-	std::function <void(GameServer&, LPVOID)>* recvOrSendArr;
-	void AfterRecv(LPVOID pClient);
-	void AfterSend(LPVOID pClient);
-#endif
 	void ProcessRecvData(SocketInfo* pClient, int restSize);
+
+	void ProcessPacket(SocketInfo* pClient);
+
+	void ProcessConnect(SocketInfo* pClient);
 
 private:
 	WSADATA								wsa;
@@ -64,5 +56,7 @@ private:
 	SOCKADDR_IN							serverAddr;
 
 	std::vector<std::thread>			workerThreadCont;
-	std::vector<std::unique_ptr<Zone>>	zoneCont;
+
+	std::unique_ptr<ZoneContUnit>		zoneCont;	// 나중에는 존 개수에 따라 확장해야혀
+	std::unique_ptr<ChatManager>		chatManager;	
 };

@@ -3,7 +3,6 @@
 
 #include "MemoryUnit.h"
 #include "SendMemoryPool.h"
-#include "Zone.h"
 #include "ServerDefine.h"
 
 namespace NETWORK_UTIL
@@ -38,7 +37,7 @@ namespace NETWORK_UTIL
 			WSASend(pClient->sock, &(sendMemoryUnit->memoryUnit.wsaBuf), 1, NULL, 0, &(sendMemoryUnit->memoryUnit.overlapped), NULL)
 			)
 		{
-			ERROR_HANDLING::ERROR_DISPLAY("SendPacket()");
+			ERROR_HANDLING::ERROR_DISPLAY(L"SendPacket()");
 		}
 			//]();
 	}
@@ -195,7 +194,7 @@ namespace ERROR_HANDLING
 		ERROR_QUIT
 			- 서버에 심각한 오류가 발생할 경우, 메세지 박스를 활용해 에러를 출력하고, 서버를 종료합니다.
 	*/
-	_NORETURN void ERROR_QUIT(const CHAR *msg)
+	_NORETURN void ERROR_QUIT(const WCHAR *msg)
 	{
 		LPVOID lpMsgBuf;
 		FormatMessage(
@@ -217,7 +216,7 @@ namespace ERROR_HANDLING
 		ERROR_DISPLAY
 			- 서버에 오류가 발생할 경우, 에러 로그를 출력합니다.
 	*/
-	/*_DEPRECATED*/ void ERROR_DISPLAY(const CHAR *msg)
+	/*_DEPRECATED*/ void ERROR_DISPLAY(const WCHAR *msg)
 	{
 		LPVOID lpMsgBuf;
 		FormatMessage(
@@ -225,14 +224,14 @@ namespace ERROR_HANDLING
 			NULL,
 			WSAGetLastError(),
 			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			(LPSTR)&lpMsgBuf,
+			(LPWSTR)&lpMsgBuf,
 			0,
 			NULL
 		);
 
 		//C603 형식 문자열이 일치하지 않습니다. 와이드 문자열이 _Param_(3)으로 전달되었습니다.
 		//printf(" [%s]  %s", msg, (LPTSTR)&lpMsgBuf);
-		std::cout << " Error no." << msg << " - " << lpMsgBuf;
+		std::wcout << L" Error no." << msg << L" - " << lpMsgBuf;
 		LocalFree(lpMsgBuf);
 	};
 

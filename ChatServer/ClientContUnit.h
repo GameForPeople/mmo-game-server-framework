@@ -4,27 +4,23 @@
 
 struct SocketInfo;
 
-struct ZoneContUnit
+class ZoneContUnit
 {
-	std::vector<_ClientNode> clientCont;
-	std::shared_mutex wrlock;
+	static constexpr BYTE HASH_SIZE = 10;
+
+	std::array<std::vector<SocketInfo*>, HASH_SIZE> clientContArr;
+	std::array<std::shared_mutex, HASH_SIZE> wrLockArr;
+
+public:
+	ZoneContUnit();
+	~ZoneContUnit();
+
+	void Enter(SocketInfo*);
+	void Exit(SocketInfo*);
+
+	inline BYTE GetContHashKey(WCHAR inKeyValue) noexcept
+	{
+		return static_cast<BYTE>(inKeyValue) % HASH_SIZE;
+	}
 };
 
-struct SectorContUnit
-{
-	std::unordered_set<_ClientKeyType> clientCont;
-	//Concurrency::concurrent_unordered_set<_ClientKeyType> clientCont;
-	//std::list<_ClientKeyType> clientCont;
-	std::shared_mutex wrlock;
-};
-
-struct UrbanSectorContUnit
-{
-	
-};
-
-struct RuralSectorContUnit
-{
-	Concurrency::concurrent_vector <std::pair<std::atomic<bool>, _ClientKeyType>> keyCont;
-	std::mutex onlyWriteLock;
-};

@@ -34,7 +34,9 @@ namespace PACKET_TYPE
 		enum
 		{
 			MOVE, 	//LEFT, //UP, //RIGHT, //DOWN,
-			CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
+			CHAT_SERVER_CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
+			CHAT_SERVER_CONNECT,	// 채팅 서버에 해당 클라이언트를 등록합니다.
+			CHAT_SERVER_CHANGE,		// 해당 클라이언트의 존이 변경되었습니다.
 			ENUM_SIZE
 		};
 	}
@@ -44,7 +46,7 @@ namespace PACKET_TYPE
 		enum
 		{
 			POSITION,
-			CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
+			CHAT_SERVER_CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
 			LOGIN_OK,
 			PUT_PLAYER,
 			REMOVE_PLAYER,
@@ -159,6 +161,7 @@ namespace UNICODE_UTIL
 namespace GLOBAL_DEFINE
 {
 	constexpr USHORT SERVER_PORT = 9000;
+	constexpr USHORT CHAT_SERVER_PORT = 9001;
 
 	constexpr BYTE MAX_HEIGHT = 100;
 	constexpr BYTE MAX_WIDTH = 100;

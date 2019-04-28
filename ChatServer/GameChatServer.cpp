@@ -5,6 +5,8 @@
 #include "MemoryUnit.h"
 #include "SendMemoryPool.h"
 
+#include "ChatManager.h"
+
 #include "GameChatServer.h"
 
 GameChatServer::GameChatServer(bool inNotUse)
@@ -15,7 +17,6 @@ GameChatServer::GameChatServer(bool inNotUse)
 	, workerThreadCont()
 	, zoneCont()
 	, chatManager(std::make_unique<ChatManager>())
-	, connectManager(std::make_unique<ConnectManager>())
 {
 	ServerIntegrityCheck();
 	
@@ -314,18 +315,30 @@ void GameChatServer::ProcessPacket(SocketInfo* pClient)
 	switch (pClient->loadedBuf[1])
 	{
 	case CS::CHAT_SERVER_CHAT:
+		ProcessChat(pClient);
 		break;
 	case CS::CHAT_SERVER_CONNECT:
 		ProcessConnect(pClient);
 		break;
 	case CS::CHAT_SERVER_CHANGE:
+		ProcessChat(pClient);
 		break;
 	default:
 		break;
 	}
 }
 
+void GameChatServer::ProcessChat(SocketInfo* pClient)
+{
+	chatManager->ChatProcess(pClient, zoneCont);
+}
+
 void GameChatServer::ProcessConnect(SocketInfo* pClient)
+{
+
+}
+
+void GameChatServer::ProcessChange(SocketInfo* pClient)
 {
 
 }

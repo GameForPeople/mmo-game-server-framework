@@ -1,6 +1,5 @@
 #pragma once
 
-
 struct MemoryUnit;
 struct SendMemoryUnit;
 struct SocketInfo;
@@ -43,10 +42,11 @@ private:
 	void AfterSend(SendMemoryUnit* pUnit);
 
 	void ProcessRecvData(SocketInfo* pClient, int restSize);
-
 	void ProcessPacket(SocketInfo* pClient);
 
+	void ProcessChat(SocketInfo* pClient);
 	void ProcessConnect(SocketInfo* pClient);
+	void ProcessChange(SocketInfo* pClient);
 
 private:
 	WSADATA								wsa;
@@ -57,6 +57,7 @@ private:
 
 	std::vector<std::thread>			workerThreadCont;
 
-	std::unique_ptr<ZoneContUnit>		zoneCont;	// 나중에는 존 개수에 따라 확장해야혀
+	ZoneContUnit*						zoneCont;	// 나중에는 존 개수에 따라 확장해야혀
+
 	std::unique_ptr<ChatManager>		chatManager;	
 };

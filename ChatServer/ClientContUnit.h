@@ -8,8 +8,10 @@ class ZoneContUnit
 {
 	static constexpr BYTE HASH_SIZE = 10;
 
-	std::array<std::vector<SocketInfo*>, HASH_SIZE> clientContArr;
+public:
+	std::array</*concurrency::concurrent_vector*/std::vector<SocketInfo*>, HASH_SIZE> clientContArr;
 	std::array<std::shared_mutex, HASH_SIZE> wrLockArr;
+	std::array<std::atomic_int, HASH_SIZE> indexArr;
 
 public:
 	ZoneContUnit();

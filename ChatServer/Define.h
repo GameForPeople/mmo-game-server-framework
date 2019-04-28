@@ -71,9 +71,32 @@ namespace PACKET_DATA
 
 			Move(char inDirection) noexcept;
 		};
+
+		struct Chat {
+#ifdef NOT_USE
+			char size;	// Fixed - 1	0
+			const char type;	// Fixed - 1	1
+			char nickNameLength;	// 1	2
+			char messageLength;	// 1	2	// 패딩비트역활좀할쯤 여기1바이트넣자고냥
+			std::wstring nickName;	// 1	
+			std::wstring message;
+
+			//message[0] = Length;				//Fixed
+			//message[1] = type;					//Fixed
+			//message[2] = nickNameLength;
+			//message[3] = messageLength;
+
+			//message[4] ~message[4 + nickNameLength * 2] = Nickname;
+			//message[5 + nickNameLength * 2 + 1] ~message[Length] = ChatMessage;
+
+			Chat(const char* pBufferStart);	
+#endif
+			char message[80];
+			Chat(const std::wstring& inNickName, const std::wstring& inMessage);	// 레퍼런스가 아닌, Copy합니다.
+		};
 	}
 
-	namespace SERVER_TO_CLIENT
+	namespace MAIN_SERVER_TO_CLIENT
 	{
 		struct LoginOk
 		{
@@ -115,27 +138,22 @@ namespace PACKET_DATA
 			Position(const char inMovedClientId, const char inX, const char inY) noexcept;
 		};
 
-		struct Chat {	// 해당 구조체는 서버 코드에서 사용되지 않습니다.
-			char size;	// Fixed - 1	0
-			const char type;	// Fixed - 1	1
-			char nickNameLength;	// 1	2
-			std::wstring nickName;	// 1	
-			std::wstring message;
+	}
 
-			//message[0] = Length;				//Fixed
-			//message[1] = type;					//Fixed
-			//message[2] = nickNameLength;
-			//message[3] ~message[3 + nickNameLength * 2] = Nickname;
-			//message[3 + nickNameLength * 2 + 1] ~message[Length] = ChatMessage;
-
-			Chat(const char* pBufferStart);
+	namespace CHAT_SERVER_TO_CLIENT
+	{
+		struct Chat 
+		{
+			// 부하를 줄이기 위해, 채팅은 릴레이 방식으로 활용
+			char message[80];
+			Chat(char* );
 		};
 	}
 
 #pragma pack(pop)
 
-	namespace CS = CLIENT_TO_SERVER;
-	namespace SC = SERVER_TO_CLIENT;
+	namespace CS = CLIENT_TO_SERVER;	// 각 서버 모두 동일함.
+	// namespace SC = SERVER_TO_CLIENT;	// 이거는 각 서버에서 자신의 패킷데이터를 사용하는 것으로 변경.
 }
 
 namespace DIRECTION
@@ -154,8 +172,8 @@ namespace UNICODE_UTIL
 {
 	void SetLocaleToKorean();
 
-	_NODISCARD std::string WStringToString(std::wstring& InWstring);
-	_NODISCARD std::wstring StringToWString(std::string& InString);
+	_NODISCARD std::string WStringToString(const std::wstring& InWstring);
+	_NODISCARD std::wstring StringToWString(const std::string& InString);
 }
 
 namespace GLOBAL_DEFINE

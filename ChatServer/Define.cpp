@@ -4,13 +4,16 @@
 
 namespace PACKET_DATA
 {
-	namespace CLIENT_TO_SERVER
+	namespace CLIENT_TO_MAIN
 	{
 		Move::Move(char inDirection) noexcept :
-			size(sizeof(Move)), type(PACKET_TYPE::CS::MOVE),
+			size(sizeof(Move)), type(PACKET_TYPE::CLIENT_TO_MAIN::MOVE),
 			direction(inDirection)
 		{}
+	}
 
+	namespace CLIENT_TO_CHAT
+	{
 #ifdef NOT_USE
 		Chat::Chat(const char* inRecvBuffer) :
 			size(inRecvBuffer[0]), type(PACKET_TYPE::CS::CHAT_SERVER_CHAT),
@@ -33,7 +36,7 @@ namespace PACKET_DATA
 			const BYTE messageLength = inMessage.size() * 2;	//BYTE
 
 			message[0] = nickNameLength + messageLength + 4;
-			message[1] = PACKET_TYPE::CLIENT_TO_SERVER::CHAT_SERVER_CHAT;
+			message[1] = PACKET_TYPE::CLIENT_TO_CHAT::CHAT;
 			message[2] = nickNameLength;
 			message[3] = messageLength;
 
@@ -41,35 +44,35 @@ namespace PACKET_DATA
 			memcpy(message + (4 + nickNameLength), UNICODE_UTIL::WStringToString(inMessage).c_str(), messageLength);
 		}
 	}
-
-	namespace MAIN_SERVER_TO_CLIENT
+	
+	namespace MAIN_TO_CLIENT
 	{
 		LoginOk::LoginOk(const char inNewId) noexcept :
-			size(sizeof(LoginOk)), type(PACKET_TYPE::SC::LOGIN_OK),
+			size(sizeof(LoginOk)), type(PACKET_TYPE::MAIN_TO_CLIENT::LOGIN_OK),
 			id(inNewId)
 		{}
 
 		PutPlayer::PutPlayer(const char inPutClientId, const char inX, const char inY) noexcept :
-			size(sizeof(PutPlayer)), type(PACKET_TYPE::SC::PUT_PLAYER),
+			size(sizeof(PutPlayer)), type(PACKET_TYPE::MAIN_TO_CLIENT::PUT_PLAYER),
 			id(inPutClientId),
 			x(inX),
 			y(inY)
 		{}
 
 		RemovePlayer::RemovePlayer(const char inRemovedClientID) noexcept :
-			size(sizeof(RemovePlayer)), type(PACKET_TYPE::SC::REMOVE_PLAYER),
+			size(sizeof(RemovePlayer)), type(PACKET_TYPE::MAIN_TO_CLIENT::REMOVE_PLAYER),
 			id(inRemovedClientID)
 		{}
 
 		Position::Position(const char inMovedClientId, const char inX, const char inY) noexcept :
-			size(sizeof(Position)), type(PACKET_TYPE::SC::POSITION),
+			size(sizeof(Position)), type(PACKET_TYPE::MAIN_TO_CLIENT::POSITION),
 			id(inMovedClientId),
 			x(inX),
 			y(inY)
 		{}
 	}
 
-	namespace CHAT_SERVER_TO_CLIENT
+	namespace CHAT_TO_CLIENT
 	{
 		Chat::Chat(char* inPtr)
 		{

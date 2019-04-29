@@ -21,16 +21,19 @@ namespace NETWORK_TYPE
 {
 	enum /*class NETWORK_TYPE : BYTE */
 	{
-		CLIENT_RECV_FROM_MAIN_SERVER,/* = 0*/
-		CLIENT_RECV_FROM_CHAT_SERVER,
-		CLIENT_SEND_TO_MAIN_SERVER,
-		CLIENT_SEND_TO_CHAT_SERVER,
+		CLIENT_RECV_FROM_MAIN,/* = 0*/
+		CLIENT_RECV_FROM_CHAT,
+		CLIENT_SEND_TO_MAIN,
+		CLIENT_SEND_TO_CHAT,
 		
-		MAIN_SERVER_RECV_FROM_CLIENT,
-		MAIN_SERVER_SEND_TO_CLIENT,
+		MAIN_RECV_FROM_CLIENT,
+		MAIN_SEND_TO_CLIENT,
 
-		CHAT_SERVER_RECV_FROM_CLIENT,
-		CHAT_SERVER_SEND_TO_CLIENT,
+		CHAT_RECV_FROM_CLIENT,
+		CHAT_SEND_TO_CLIENT,
+
+		COMMAND_SEND_TO_CHAT,
+		COMMAND_SEND_TO_MAIN,
 
 		ENUM_SIZE
 	};
@@ -38,51 +41,63 @@ namespace NETWORK_TYPE
 
 namespace PACKET_TYPE
 {
-	namespace CLIENT_TO_MAIN_SERVER
+	namespace CLIENT_TO_MAIN
 	{
 		enum
 		{
 			MOVE, 	//LEFT, //UP, //RIGHT, //DOWN,
-			CHAT_SERVER_URGENT_NOTICE,	// CommandServer에서 ChatServer로 긴급공지 요청을 보냄.
 			ENUM_SIZE
 		};
 	}
 
-	namespace CLIENT_TO_CHAT_SERVER
+	namespace CLIENT_TO_CHAT
 	{
 		enum
 		{
-			CHAT_SERVER_CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
-			CHAT_SERVER_CONNECT,	// 채팅 서버에 해당 클라이언트를 등록합니다.
-			CHAT_SERVER_CHANGE,		// 해당 클라이언트의 존이 변경되었습니다.
+			CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
+			CONNECT,	// 채팅 서버에 해당 클라이언트를 등록합니다.
+			CHANGE,		// 해당 클라이언트의 존이 변경되었습니다.
 			ENUM_SIZE
 		};
 	}
 
-	namespace SERVER_TO_CLIENT
+	namespace MAIN_TO_CLIENT
 	{
 		enum
 		{
 			POSITION,
-			CHAT_SERVER_CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
 			LOGIN_OK,
 			PUT_PLAYER,
 			REMOVE_PLAYER,
-			COMMAND_SERVER_URGENT_NOTICE,	// CommandServer에서 ChatServer로 보낸거를, ChatServer가 받을 때.
-			CHAT_SERVER_URGENT_NOTICE,		// ChatServer에서 Client로 긴급 공지를 보낼때.
 			ENUM_SIZE
 		};
 	}
 
-	namespace CS = CLIENT_TO_SERVER;
-	namespace SC = SERVER_TO_CLIENT;
+	namespace CHAT_TO_CLIENT
+	{
+		enum
+		{
+			CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
+			URGENT_NOTICE,		// ChatServer에서 Client로 긴급 공지를 보낼때.
+			ENUM_SIZE
+		};
+	}
+
+	namespace COMMAND_TO_CHAT
+	{
+		enum
+		{
+			URGENT_NOTICE,	// CommandServer에서 ChatServer로 긴급공지 요청을 보냄.
+			ENUM_SIZE
+		};
+	}
 }
 
 namespace PACKET_DATA
 {
 #pragma pack(push, 1)
 
-	namespace CLIENT_TO_SERVER
+	namespace CLIENT_TO_MAIN
 	{
 		struct Move {
 			const char size;
@@ -91,7 +106,10 @@ namespace PACKET_DATA
 
 			Move(char inDirection) noexcept;
 		};
+	}
 
+	namespace CLIENT_TO_CHAT
+	{
 		struct Chat {
 #ifdef NOT_USE
 			char size;	// Fixed - 1	0
@@ -116,7 +134,7 @@ namespace PACKET_DATA
 		};
 	}
 
-	namespace MAIN_SERVER_TO_CLIENT
+	namespace MAIN_TO_CLIENT
 	{
 		struct LoginOk
 		{
@@ -157,12 +175,11 @@ namespace PACKET_DATA
 
 			Position(const char inMovedClientId, const char inX, const char inY) noexcept;
 		};
-
 	}
 
-	namespace CHAT_SERVER_TO_CLIENT
+	namespace CHAT_TO_CLIENT
 	{
-		struct Chat 
+		struct Chat
 		{
 			// 부하를 줄이기 위해, 채팅은 릴레이 방식으로 활용
 			char message[80];
@@ -170,18 +187,7 @@ namespace PACKET_DATA
 		};
 	}
 
-	namespace COMMAND_SERVER_TO_OTHER_SERVER
-	{
-		struct UrgentNotice
-		{
-
-		};
-	}
-
 #pragma pack(pop)
-
-	namespace CS = CLIENT_TO_SERVER;	// 각 서버 모두 동일함.
-	// namespace SC = SERVER_TO_CLIENT;	// 이거는 각 서버에서 자신의 패킷데이터를 사용하는 것으로 변경.
 }
 
 namespace DIRECTION

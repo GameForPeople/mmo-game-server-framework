@@ -21,19 +21,37 @@ namespace NETWORK_TYPE
 {
 	enum /*class NETWORK_TYPE : BYTE */
 	{
-		RECV /* = 0*/,
-		SEND,
+		CLIENT_RECV_FROM_MAIN_SERVER,/* = 0*/
+		CLIENT_RECV_FROM_CHAT_SERVER,
+		CLIENT_SEND_TO_MAIN_SERVER,
+		CLIENT_SEND_TO_CHAT_SERVER,
+		
+		MAIN_SERVER_RECV_FROM_CLIENT,
+		MAIN_SERVER_SEND_TO_CLIENT,
+
+		CHAT_SERVER_RECV_FROM_CLIENT,
+		CHAT_SERVER_SEND_TO_CLIENT,
+
 		ENUM_SIZE
 	};
 }
 
 namespace PACKET_TYPE
 {
-	namespace CLIENT_TO_SERVER
+	namespace CLIENT_TO_MAIN_SERVER
 	{
 		enum
 		{
 			MOVE, 	//LEFT, //UP, //RIGHT, //DOWN,
+			CHAT_SERVER_URGENT_NOTICE,	// CommandServer에서 ChatServer로 긴급공지 요청을 보냄.
+			ENUM_SIZE
+		};
+	}
+
+	namespace CLIENT_TO_CHAT_SERVER
+	{
+		enum
+		{
 			CHAT_SERVER_CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
 			CHAT_SERVER_CONNECT,	// 채팅 서버에 해당 클라이언트를 등록합니다.
 			CHAT_SERVER_CHANGE,		// 해당 클라이언트의 존이 변경되었습니다.
@@ -50,6 +68,8 @@ namespace PACKET_TYPE
 			LOGIN_OK,
 			PUT_PLAYER,
 			REMOVE_PLAYER,
+			COMMAND_SERVER_URGENT_NOTICE,	// CommandServer에서 ChatServer로 보낸거를, ChatServer가 받을 때.
+			CHAT_SERVER_URGENT_NOTICE,		// ChatServer에서 Client로 긴급 공지를 보낼때.
 			ENUM_SIZE
 		};
 	}
@@ -147,6 +167,14 @@ namespace PACKET_DATA
 			// 부하를 줄이기 위해, 채팅은 릴레이 방식으로 활용
 			char message[80];
 			Chat(char* );
+		};
+	}
+
+	namespace COMMAND_SERVER_TO_OTHER_SERVER
+	{
+		struct UrgentNotice
+		{
+
 		};
 	}
 

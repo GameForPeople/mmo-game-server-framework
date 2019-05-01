@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Define.h"
+#include "../Define.h"
 #include "ServerDefine.h"
 
 #include "ClientContUnit.h"
@@ -137,7 +137,7 @@ bool Sector::IsSeeEachOther(const Position2D& inAPosition, const Position2D& inB
 
 void Sector::SendPutPlayer(SocketInfo* pPutClient, SocketInfo* pRecvClient)
 {
-	PACKET_DATA::SC::PutPlayer packet(
+	PACKET_DATA::MAIN_TO_CLIENT::PutPlayer packet(
 		pPutClient->clientKey,
 		pPutClient->userData->GetPosition().x,
 		pPutClient->userData->GetPosition().y
@@ -148,14 +148,14 @@ void Sector::SendPutPlayer(SocketInfo* pPutClient, SocketInfo* pRecvClient)
 
 void Sector::SendRemovePlayer(const _ClientKeyType pRemoveClientID, SocketInfo* pRecvClient)
 {
-	PACKET_DATA::SC::RemovePlayer packet(pRemoveClientID);
+	PACKET_DATA::MAIN_TO_CLIENT::RemovePlayer packet(pRemoveClientID);
 
 	NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
 }
 
 void Sector::SendMovePlayer(SocketInfo* pMovedClientKey, SocketInfo* pRecvClient) 
 {
-	PACKET_DATA::SC::Position packet(
+	PACKET_DATA::MAIN_TO_CLIENT::Position packet(
 		pMovedClientKey->clientKey,
 		pMovedClientKey->userData->GetPosition().x,
 		pMovedClientKey->userData->GetPosition().y

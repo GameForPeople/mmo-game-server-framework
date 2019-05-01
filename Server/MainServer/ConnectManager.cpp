@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Define.h"
+#include "../Define.h"
 #include "ServerDefine.h"
 
 #include "MemoryUnit.h"
@@ -98,7 +98,7 @@ void ConnectManager::LogOutToZone(SocketInfo* pOutClient, ZoneContUnit* inClient
 //
 void ConnectManager::SendRemovePlayerInOuttedClientViewList(SocketInfo* pOutClient, ZoneContUnit* inClientCont)
 {
-	PACKET_DATA::SC::RemovePlayer packet(
+	PACKET_DATA::MAIN_TO_CLIENT::RemovePlayer packet(
 		pOutClient->clientKey
 	);
 

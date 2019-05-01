@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Define.h"
+#include "../Define.h"
 #include "ServerDefine.h"
 
 #include "ConnectManager.h"
@@ -67,9 +67,8 @@ void Zone::InitClientCont()
 */
 void Zone::InitFunctions()
 {
-	recvFunctionArr = new std::function<void(Zone&, SocketInfo*)>[PACKET_TYPE::CS::ENUM_SIZE];
-	recvFunctionArr[PACKET_TYPE::CS::MOVE] = &Zone::RecvCharacterMove;
-	recvFunctionArr[PACKET_TYPE::CS::CHAT] = &Zone::RecvChat;
+	recvFunctionArr = new std::function<void(Zone&, SocketInfo*)>[PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE];
+	recvFunctionArr[PACKET_TYPE::CLIENT_TO_MAIN::MOVE] = &Zone::RecvCharacterMove;
 }
 
 /*
@@ -106,7 +105,7 @@ void Zone::InitSector()
 */
 void Zone::ProcessPacket(SocketInfo* pClient)
 {
-	recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CS::ENUM_SIZE)](*this, pClient);
+	recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE)](*this, pClient);
 }
 
 /*
@@ -419,7 +418,7 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 	moveManager->MoveCharacter(pClient);
 
 	// 스스로에게 전송.
-	PACKET_DATA::SC::Position packet(
+	PACKET_DATA::MAIN_TO_CLIENT::Position packet(
 		pClient->clientKey,
 		pClient->userData->GetPosition().x,
 		pClient->userData->GetPosition().y

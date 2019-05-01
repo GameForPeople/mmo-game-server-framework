@@ -20,11 +20,11 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{C33B9EB0-9763-4522-9862-6CDB4423ECA0}</ProjectGuid>
+    <ProjectGuid>{D60AA702-D49D-4CA4-94A4-7F66517E8645}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Server</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
-    <ProjectName>ChatServer</ProjectName>
+    <ProjectName>MainServer</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -43,15 +43,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -154,31 +154,43 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\Define.h" />
     <ClInclude Include="ChatManager.h" />
     <ClInclude Include="ClientContUnit.h" />
-    <ClInclude Include="Define.h" />
-    <ClInclude Include="GameChatServer.h" />
+    <ClInclude Include="ConnectManager.h" />
+    <ClInclude Include="GameServer.h" />
     <ClInclude Include="MemoryUnit.h" />
+    <ClInclude Include="MoveManager.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Zone.h" />
+    <ClInclude Include="Sector.h" />
     <ClInclude Include="SendMemoryPool.h" />
     <ClInclude Include="ServerDefine.h" />
+    <ClInclude Include="SocketInfo.h" />
+    <ClInclude Include="UserData.h" />
     <ClInclude Include="ToDo.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Define.cpp" />
     <ClCompile Include="ChatManager.cpp" />
     <ClCompile Include="ClientContUnit.cpp" />
-    <ClCompile Include="Define.cpp" />
-    <ClCompile Include="GameChatServer.cpp" />
+    <ClCompile Include="ConnectManager.cpp" />
+    <ClCompile Include="GameServer.cpp" />
     <ClCompile Include="MemoryUnit.cpp" />
+    <ClCompile Include="MoveManager.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Zone.cpp" />
+    <ClCompile Include="Sector.cpp" />
     <ClCompile Include="SendMemoryPool.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="ServerDefine.cpp" />
+    <ClCompile Include="SocketInfo.cpp" />
+    <ClCompile Include="UserData.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="InHeaderDefine.hh" />

@@ -66,9 +66,6 @@
     <ClCompile Include="ServerDefine.cpp">
       <Filter>Define</Filter>
     </ClCompile>
-    <ClCompile Include="Define.cpp">
-      <Filter>Define</Filter>
-    </ClCompile>
     <ClCompile Include="SocketInfo.cpp">
       <Filter>Others\SocketInfo</Filter>
     </ClCompile>
@@ -93,6 +90,9 @@
     <ClCompile Include="ChatManager.cpp">
       <Filter>GameServer\Zone\ChatManager</Filter>
     </ClCompile>
+    <ClCompile Include="..\Define.cpp">
+      <Filter>Define</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -109,9 +109,6 @@
     </ClInclude>
     <ClInclude Include="MoveManager.h">
       <Filter>GameServer\Zone\MoveManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Define.h">
-      <Filter>Define</Filter>
     </ClInclude>
     <ClInclude Include="ServerDefine.h">
       <Filter>Define</Filter>
@@ -137,6 +134,9 @@
     <ClInclude Include="ToDo.hpp" />
     <ClInclude Include="ChatManager.h">
       <Filter>GameServer\Zone\ChatManager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Define.h">
+      <Filter>Define</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Define.h"
+#include "../Define.h"
 
 #include "MemoryUnit.h"
 #include "SendMemoryPool.h"
@@ -114,7 +114,7 @@ namespace NETWORK_UTIL
 			std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
 			
 			// 애초에 존에 접속도 못했는데, 로그아웃 할 경우를 방지.
-			if (pOutClient->clientKey != -1) pOutClient->pZone->Exit(pOutClient);
+			//if (pOutClient->clientKey != -1) pOutClient->pZone->Exit(pOutClient);
 
 			closesocket(pOutClient->sock);
 			delete pOutClient;
@@ -243,7 +243,7 @@ namespace ERROR_HANDLING
 	{
 		if (WSAGetLastError() != ERROR_IO_PENDING)
 		{
-			ERROR_DISPLAY(("RecvOrSend()"));
+			ERROR_DISPLAY((L"RecvOrSend()"));
 		}
 	}
 }

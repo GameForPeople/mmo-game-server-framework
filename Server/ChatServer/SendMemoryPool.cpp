@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Define.h"
+#include "../Define.h"
 #include "ServerDefine.h"
 
 #include "MemoryUnit.h"
@@ -41,7 +41,7 @@ SendMemoryUnit* SendMemoryPool::PopMemory()
 	// 역참조되었지만 여전히 NULL 포인터 일 수 있습니다.
 	while (!sendMemoryPool.try_pop(retMemoryUnit))
 	{
-		ERROR_HANDLING::ERROR_DISPLAY("[ERROR]SendPool의 메모리가 부족합니다.");
+		ERROR_HANDLING::ERROR_DISPLAY(L"[ERROR]SendPool의 메모리가 부족합니다.");
 		/*
 			원래는 여기서 메모리 추가로 할당해서, 넘겨줘야함. 기다리면 안됨.
 		*/

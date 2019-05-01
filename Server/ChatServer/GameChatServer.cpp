@@ -1,112 +1,75 @@
 ﻿#include "pch.h"
-#include "Define.h"
+#include "../Define.h"
 #include "ServerDefine.h"
 
-#include "Zone.h"
 #include "MemoryUnit.h"
 #include "SendMemoryPool.h"
 
-#include "UserData.h"
+#include "ChatManager.h"
 
-#include "GameServer.h"
+#include "GameChatServer.h"
 
-GameServer::GameServer(bool inNotUse)
+GameChatServer::GameChatServer(bool inNotUse)
 	: wsa()
 	, hIOCP()
 	, listenSocket()
 	, serverAddr()
 	, workerThreadCont()
 	, zoneCont()
+	, chatManager(std::make_unique<ChatManager>())
 {
 	ServerIntegrityCheck();
 	
 	SendMemoryPool::MakeInstance();
 
 	PrintServerInfoUI();
-	InitZones();
-	InitFunctions();
 	InitNetwork();
-
-	ERROR_HANDLING::errorRecvOrSendArr[0] = ERROR_HANDLING::HandleRecvOrSendError;
-	ERROR_HANDLING::errorRecvOrSendArr[1] = ERROR_HANDLING::NotError;
 };
 
-GameServer::~GameServer()
+GameChatServer::~GameChatServer()
 {
 	SendMemoryPool::DeleteInstance();
 
 	workerThreadCont.clear();
-	zoneCont.clear();
 
 	closesocket(listenSocket);
 	CloseHandle(hIOCP);
 }
 
-void GameServer::ServerIntegrityCheck()
+void GameChatServer::ServerIntegrityCheck()
 {
 	//무결성 검사
-	static_assert(GLOBAL_DEFINE::MAX_HEIGHT == GLOBAL_DEFINE::MAX_WIDTH,
-		"MAX_HEIGHT와 MAX_WIDTH가 다르며, 이는 Sector 계산에서 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
-
-	static_assert((int)((GLOBAL_DEFINE::MAX_HEIGHT - 1) / GLOBAL_DEFINE::SECTOR_DISTANCE)
-		!= (int)((GLOBAL_DEFINE::MAX_HEIGHT + 1) / GLOBAL_DEFINE::SECTOR_DISTANCE),
-		"MAX_HEIGHT(그리고 MAX_WIDTH)는 SECTOR_DISTANCE의 배수가 아닐 경우, 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
-
-	static_assert(PACKET_TYPE::CLIENT_TO_SERVER::CHAT == PACKET_TYPE::SERVER_TO_CLIENT::CHAT,
-		"CS::CHAT와 SC::CHAT의 값이 다르며, 이는 클라이언트에 치명적인 오류를 발생시킵니다. 서버 실행을 거절하였습니다.");
+	static_assert(PACKET_TYPE::CHAT_TO_CLIENT::CHAT == PACKET_TYPE::CLIENT_TO_CHAT::CHAT,
+		"CS::CHAT와 SC::CHAT의 값이 다르며, 이는 클라이언트의 채팅기능에 치명적인 오류를 발생시킵니다. 채팅 서버 실행을 거절하였습니다.");
 }
 
 /*
 	GameServer::PrintServerInfoUI()
 		- GamsServer의 생성자에서 호출되며, 서버의 UI들을 출력합니다.
 */
-void GameServer::PrintServerInfoUI()
+void GameChatServer::PrintServerInfoUI()
 {
 	printf("\n■■■■■■■■■■■■■■■■■■■■■■■■■\n");
-	printf("■ 게임서버프로그래밍 숙제 2번   \n");
+	printf("■ 게임서버프로그래밍 - 채팅 서버 \n");
 	printf("■                   게임공학과 원성연 2013182027\n");
 	printf("■\n");
 	
 	// 추후 퍼블릭 IP로 변경.
 	printf("■ IP : LocalHost(127.0.0.1)\n");
-	printf("■ Listen Port : 9000\n");
+	printf("■ Listen Port : 9001\n");
 	printf("■■■■■■■■■■■■■■■■■■■■■■■■■\n");
-}
-
-/*
-	GameServer::InitZone()
-		- GamsServer의 생성자에서 호출되며, 씐들의 초기화를 담당합니다.
-*/
-void GameServer::InitZones()
-{
-	zoneCont.reserve(1);
-	zoneCont.emplace_back(std::make_unique<Zone>());
-}
-
-/*
-	GameServer::InitFunctions()
-		- GamsServer의 생성자에서 호출되며, 함수 포인터들의 초기화를 담당합니다.
-*/
-void GameServer::InitFunctions()
-{
-#ifdef DISABLED_FUNCTION_POINTER
-#else
-	recvOrSendArr = new std::function <void(GameServer&, LPVOID)>[NETWORK_TYPE::ENUM_SIZE];
-	recvOrSendArr[NETWORK_TYPE::RECV] = &GameServer::AfterRecv;
-	recvOrSendArr[NETWORK_TYPE::SEND] = &GameServer::AfterSend;
-#endif
 }
 
 /*
 	GameServer::InitNetwork()
 		- GamsServer의 생성자에서 호출되며, 네트워크 통신과 관련된 초기화를 담당합니다.
 */
-void GameServer::InitNetwork()
+void GameChatServer::InitNetwork()
 {
 	using namespace ERROR_HANDLING;
 
 	// 1. 윈속 초기화
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) ERROR_QUIT(TEXT("WSAStartup()"));
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) ERROR_QUIT(L"WSAStartup()");
 
 	// 2. 입출력 완료 포트 생성
 	if (hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)
@@ -131,7 +94,7 @@ void GameServer::InitNetwork()
 	ZeroMemory(&serverAddr, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serverAddr.sin_port = htons(GLOBAL_DEFINE::SERVER_PORT);
+	serverAddr.sin_port = htons(GLOBAL_DEFINE::CHAT_SERVER_PORT);
 
 	// 6. 소켓 설정
 	if (::bind(listenSocket, (SOCKADDR *)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) ERROR_QUIT(TEXT("bind()"));
@@ -144,7 +107,7 @@ void GameServer::InitNetwork()
 	GameServer::Run()
 		- Accept Process 실행 및 Worker Thread join!
 */
-void GameServer::Run()
+void GameChatServer::Run()
 {
 	std::thread acceptThread{ StartAcceptThread, (LPVOID)this };
 	printf("Game Server activated!\n\n");
@@ -157,9 +120,9 @@ void GameServer::Run()
 	GameServer::StartAcceptThread(LPVOID arg)
 		- 쓰레드에서 멤버 변수를 사용하기 위해, 클래스 내부에서 엑셉트 쓰레드에 필요한 함수를 호출.
 */
-DWORD WINAPI GameServer::StartAcceptThread(LPVOID arg)
+DWORD WINAPI GameChatServer::StartAcceptThread(LPVOID arg)
 {
-	GameServer* pServer = static_cast<GameServer*>(arg);
+	GameChatServer* pServer = static_cast<GameChatServer*>(arg);
 	pServer->AcceptThreadFunction();
 
 	return 0;
@@ -172,7 +135,7 @@ DWORD WINAPI GameServer::StartAcceptThread(LPVOID arg)
 		#0. InNewClient에서 SocketInfo 할당이 이루어집니다.
 		#1. InNewClient의 first가 false일 경우는, 동접보다 많은 수의 플레이어가 접속하려할 때 입니다. 
 */
-void GameServer::AcceptThreadFunction()
+void GameChatServer::AcceptThreadFunction()
 {
 	SOCKET clientSocket{};
 	SOCKADDR_IN clientAddr{};
@@ -186,38 +149,26 @@ void GameServer::AcceptThreadFunction()
 			ERROR_HANDLING::ERROR_QUIT(TEXT("accept()"));
 			break;
 		}
+		
+		SocketInfo* pClient = new SocketInfo();
+		pClient->sock = clientSocket;
+		pClient->memoryUnit.wsaBuf.buf = pClient->memoryUnit.dataBuf;
+		pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
 
-		if (auto [isTrueAdd, pClient] = zoneCont[0]->TryToEnter()
-			; isTrueAdd)
-		{
-			// 소켓과 입출력 완료 포트 연결
-			CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->clientKey, 0);
+		// 소켓과 입출력 완료 포트 연결
+		CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->sock, 0);
 
-			pClient->sock = clientSocket;
-			pClient->memoryUnit.wsaBuf.buf = pClient->memoryUnit.dataBuf;
-			pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
-
-			// 클라이언트에게 서버에 접속(Accept) 함을 알림
-			PACKET_DATA::SC::LoginOk loginPacket(pClient->clientKey);
-			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&loginPacket));
-
-			// 자신의 캐릭터를 넣어줌.
-			PACKET_DATA::SC::PutPlayer putPacket( pClient->clientKey, pClient->userData->GetPosition().x, pClient->userData->GetPosition().y);
-			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
-
-			//printf("[TCP 서버] 클라이언트 접속 : IP 주소 =%s, Port 번호 = %d \n", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
-			std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
+		//printf("[TCP 서버] 클라이언트 접속 : IP 주소 =%s, Port 번호 = %d \n", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
+		std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
 			
-			// 최초 위치에서 처음 뷰리스트와 섹터 갱신.
-			pClient->pZone->InitViewAndSector(pClient);
+		// 비동기 입출력의 시작.
+		NETWORK_UTIL::RecvPacket(pClient);
 
-			// 비동기 입출력의 시작.
-			NETWORK_UTIL::RecvPacket(pClient);
-		}
-		else {
-			closesocket(clientSocket);
-			//delete pClient;	// if nullptr;
-		}
+		// 접속을 받지 못하는 경우는, 염두에 두지 않음.
+		//else {
+		//	closesocket(clientSocket);
+		//	//delete pClient;	// if nullptr;
+		//}
 	}
 }
 
@@ -225,9 +176,9 @@ void GameServer::AcceptThreadFunction()
 	GameServer::StartWorkerThread(LPVOID arg)
 		- 쓰레드에서 멤버 변수를 사용하기 위해, 클래스 내부에서 워커쓰레드에 필요한 함수를 호출.
 */
-DWORD WINAPI GameServer::StartWorkerThread(LPVOID arg)
+DWORD WINAPI GameChatServer::StartWorkerThread(LPVOID arg)
 {
-	GameServer* pServer = static_cast<GameServer*>(arg);
+	GameChatServer* pServer = static_cast<GameChatServer*>(arg);
 	pServer->WorkerThreadFunction();
 
 	return 0;
@@ -237,14 +188,13 @@ DWORD WINAPI GameServer::StartWorkerThread(LPVOID arg)
 	GameServer::WorkerThreadFunction()
 		- 워커 쓰레드 함수.
 */
-void GameServer::WorkerThreadFunction()
+void GameChatServer::WorkerThreadFunction()
 {
 	// 한 번만 선언해서 여러번 씁시다. 아껴써야지...
 	int retVal{};
 	DWORD cbTransferred;
 	unsigned long long clientKey;
 	
-	//MemoryUnit* pMemoryUnit;
 	LPVOID pMemoryUnit;
 
 	while (7)
@@ -265,12 +215,10 @@ void GameServer::WorkerThreadFunction()
 		if (retVal == 0 || cbTransferred == 0)
 		{
 			NETWORK_UTIL::LogOutProcess(pMemoryUnit);
-			/*break;*/
 			continue;
 		}
 #pragma endregion
 
-#ifdef DISABLED_FUNCTION_POINTER
 		reinterpret_cast<MemoryUnit *>(pMemoryUnit)->memoryUnitType == MEMORY_UNIT_TYPE::RECV
 			? AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred)
 			: AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
@@ -289,10 +237,6 @@ void GameServer::WorkerThreadFunction()
 		//	break;
 		//}
 #endif // ! DISABLED_FUNCTION_POINTER
-
-#else
-		recvOrSendArr[GLOBAL_UTIL::BIT_CONVERTER::GetRecvOrSend(pClient->buf[0])](*this, pClient);
-#endif
 	}
 }
 
@@ -300,7 +244,7 @@ void GameServer::WorkerThreadFunction()
 	GameServer::AfterRecv(SocketInfo* pClient)
 		- 리시브 함수 호출 후, 클라이언트의 데이터를 실제로 받았을 때, 호출되는 함수.
 */
-void GameServer::AfterRecv(SocketInfo* pClient, int cbTransferred)
+void GameChatServer::AfterRecv(SocketInfo* pClient, int cbTransferred)
 {
 	// 받은 데이터 처리
 	ProcessRecvData(pClient, cbTransferred);
@@ -313,7 +257,7 @@ void GameServer::AfterRecv(SocketInfo* pClient, int cbTransferred)
 	GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 		- 받은 데이터들을 패킷화하여 처리하는 함수.
 */
-void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
+void GameChatServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 {
 	char *pBuf = pClient->memoryUnit.dataBuf; // pBuf -> 처리하는 문자열의 시작 위치
 	char packetSize{ 0 }; // 처리해야할 패킷의 크기
@@ -336,7 +280,7 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 			memcpy(pClient->loadedBuf + pClient->loadedSize, pBuf, required);
 			
 			//-------------------------------------------------------------------------------
-			zoneCont[0]->ProcessPacket(pClient); //== pClient->pZone->ProcessPacket(pClient); // 패킷처리 가가가가아아아아즈즈즈즞즈아아아아앗!!!!!!
+			ProcessPacket(pClient); //== pClient->pZone->ProcessPacket(pClient); // 패킷처리 가가가가아아아아즈즈즈즞즈아아아아앗!!!!!!
 			//-------------------------------------------------------------------------------
 
 			pClient->loadedSize = 0;
@@ -350,7 +294,6 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 			memcpy(pClient->loadedBuf + pClient->loadedSize , pBuf, restSize);
 			pClient->loadedSize += restSize;
 			break;
-			//restSize = 0; 
 		}
 	}
 }
@@ -359,15 +302,43 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 	GameServer::AfterSend(SocketInfo* pClient)
 		- WSASend 함수 호출 후, 데이터 전송이 끝났을 때, 호출되는 함수.
 */
-void GameServer::AfterSend(SendMemoryUnit* pMemoryUnit)
+void GameChatServer::AfterSend(SendMemoryUnit* pMemoryUnit)
 {
 	// 보낼 때 사용한 버퍼 후처리하고 끝! ( 오버랩 초기화는 보낼떄 처리)
 	SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
 }
 
-#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
-void GameServer::AfterUnallocatedSend(UnallocatedMemoryUnit* pUnit)
+void GameChatServer::ProcessPacket(SocketInfo* pClient)
 {
-	SendMemoryPool::GetInstance()->PushUnallocatedMemory(pUnit);
+	using namespace PACKET_TYPE;
+
+	switch (pClient->loadedBuf[1])
+	{
+	case CLIENT_TO_CHAT::CHAT:
+		ProcessChat(pClient);
+		break;
+	case CLIENT_TO_CHAT::CONNECT:
+		ProcessConnect(pClient);
+		break;
+	case CLIENT_TO_CHAT::CHANGE:
+		ProcessChat(pClient);
+		break;
+	default:
+		break;
+	}
 }
-#endif
+
+void GameChatServer::ProcessChat(SocketInfo* pClient)
+{
+	//chatManager->ChatProcess(pClient, zoneCont);
+}
+
+void GameChatServer::ProcessConnect(SocketInfo* pClient)
+{
+
+}
+
+void GameChatServer::ProcessChange(SocketInfo* pClient)
+{
+
+}

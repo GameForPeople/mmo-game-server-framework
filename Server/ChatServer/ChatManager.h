@@ -28,7 +28,7 @@ public:
 class ChatManager
 {
 public:
-	void ChatProcess(SocketInfo*, ZoneContUnit*);
+	//void ChatProcess(SocketInfo*, ZoneContUnit*);
 
 public:
 	ChatManager();

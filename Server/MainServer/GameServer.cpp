@@ -4,7 +4,9 @@
 
 #include "Zone.h"
 #include "MemoryUnit.h"
+
 #include "SendMemoryPool.h"
+#include "TimerManager.h"
 
 #include "UserData.h"
 
@@ -21,6 +23,7 @@ GameServer::GameServer(bool inNotUse)
 	ServerIntegrityCheck();
 	
 	SendMemoryPool::MakeInstance();
+	TimerManager::MakeInstance(hIOCP);
 
 	PrintServerInfoUI();
 	InitZones();
@@ -34,6 +37,7 @@ GameServer::GameServer(bool inNotUse)
 GameServer::~GameServer()
 {
 	SendMemoryPool::DeleteInstance();
+	TimerManager::DeleteInstance();
 
 	workerThreadCont.clear();
 	zoneCont.clear();
@@ -147,9 +151,12 @@ void GameServer::InitNetwork()
 */
 void GameServer::Run()
 {
+	std::thread timerThread{ TimerManager::GetInstance()->TimerThread };
+
 	std::thread acceptThread{ StartAcceptThread, (LPVOID)this };
 	printf("Game Server activated!\n\n");
 	
+	timerThread.join();
 	acceptThread.join();
 	for (auto& thread : workerThreadCont) thread.join();
 }

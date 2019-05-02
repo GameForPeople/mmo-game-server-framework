@@ -211,6 +211,6 @@ namespace GLOBAL_DEFINE
 	constexpr USHORT CHAT_SERVER_PORT = 9001;
 	constexpr USHORT MANAGER_SERVER_PORT = 9002;
 
-	constexpr BYTE MAX_HEIGHT = 100;
-	constexpr BYTE MAX_WIDTH = 100;
+	constexpr USHORT MAX_HEIGHT = 800;
+	constexpr USHORT MAX_WIDTH = 800;
 }

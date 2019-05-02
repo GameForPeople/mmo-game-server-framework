@@ -210,14 +210,14 @@ void Zone::RenewPossibleSectors(SocketInfo* pClient)
 		9		  |				  |
 	*/
 
-	if (pTempUserData->GetPosition().x > nowSectorCenterX + 1) { xDir = 1; }
-	else if (pTempUserData->GetPosition().x < nowSectorCenterX - 2) { xDir = -1; }
+	if (pTempUserData->GetPosition().x > nowSectorCenterX + GLOBAL_DEFINE::SECTOR_PLUS_LIMIT_DISTANCE) { xDir = 1; }
+	else if (pTempUserData->GetPosition().x < nowSectorCenterX - GLOBAL_DEFINE::SECTOR_MINUS_LIMIT_DISTANCE) { xDir = -1; }
 
-	if (pTempUserData->GetPosition().y > nowSectorCenterY + 1) { yDir = 1; }
-	else if (pTempUserData->GetPosition().y < nowSectorCenterY - 2) { yDir = -1; }
+	if (pTempUserData->GetPosition().y > nowSectorCenterY + GLOBAL_DEFINE::SECTOR_PLUS_LIMIT_DISTANCE) { yDir = 1; }
+	else if (pTempUserData->GetPosition().y < nowSectorCenterY - GLOBAL_DEFINE::SECTOR_MINUS_LIMIT_DISTANCE) { yDir = -1; }
 
 	const bool isYZero = pClient->sectorIndexY == 0 ? true : false;
-	const bool isYMax = pClient->sectorIndexY == 9 ? true : false;
+	const bool isYMax = pClient->sectorIndexY == (GLOBAL_DEFINE::SECTOR_END_POSITION) ? true : false;
 
 	pClient->possibleSectorCount = 0;
 
@@ -246,7 +246,7 @@ void Zone::RenewPossibleSectors(SocketInfo* pClient)
 	}
 	else if (xDir == 1)
 	{
-		if (pClient->sectorIndexX == 9)	// X狼 场老 锭,
+		if (pClient->sectorIndexX == GLOBAL_DEFINE::SECTOR_END_POSITION)	// X狼 场老 锭,
 		{
 			if (yDir == -1) 
 			{ 
@@ -264,7 +264,6 @@ void Zone::RenewPossibleSectors(SocketInfo* pClient)
 					pClient->possibleSectorCount = 1;
 					pClient->sectorArr[0] = { pClient->sectorIndexX, pClient->sectorIndexY + 1 };
 					//retVector.emplace_back(std::make_pair(pClient->sectorIndexX, pClient->sectorIndexY + 1));
-
 				}
 			}
 		}
@@ -392,8 +391,8 @@ void Zone::RenewClientSector(SocketInfo* pClient)
 {
 	bool isNeedToChangeSector{ false };
 
-	if (static_cast<BYTE>(pClient->userData->GetPosition().x / 10) != pClient->sectorIndexX) isNeedToChangeSector = true;
-	if (static_cast<BYTE>(pClient->userData->GetPosition().y / 10) != pClient->sectorIndexY) isNeedToChangeSector = true;
+	if (static_cast<BYTE>(pClient->userData->GetPosition().x / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexX) isNeedToChangeSector = true;
+	if (static_cast<BYTE>(pClient->userData->GetPosition().y / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexY) isNeedToChangeSector = true;
 
 	if (isNeedToChangeSector == false) 	return;
 	else

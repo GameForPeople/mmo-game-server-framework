@@ -45,12 +45,17 @@ namespace ERROR_HANDLING {
 
  namespace GLOBAL_DEFINE
 {
-	constexpr BYTE START_POSITION_X = 50;
-	constexpr BYTE START_POSITION_Y = 50;
+	constexpr BYTE START_POSITION_X = 400;
+	constexpr BYTE START_POSITION_Y = 400;
 
-	constexpr BYTE SECTOR_DISTANCE = 10;	// 씐 전체 크기와 viewDistance를 고려해야함!
+	constexpr BYTE SECTOR_DISTANCE = 20;	// 씐 전체 크기와 viewDistance를 고려해야함!
 	constexpr BYTE SECTOR_HALF_DISTANCE = SECTOR_DISTANCE / 2;
+	constexpr BYTE SECTOR_START_POSITION = 0;
+	constexpr BYTE SECTOR_END_POSITION = SECTOR_DISTANCE - 1;
 
-	constexpr BYTE VIEW_DISTANCE = 3;
+	constexpr BYTE VIEW_DISTANCE = 7;
+
+	constexpr BYTE SECTOR_PLUS_LIMIT_DISTANCE = 2;	// 섹터 크기, 뷰 크기 변경에 따라 재설정이 필요합니다.
+	constexpr BYTE SECTOR_MINUS_LIMIT_DISTANCE = 3;	// 섹터 크기, 뷰 크기 변경에 따라 재설정이 필요합니다.
 	//---------
 }

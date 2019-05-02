@@ -33,7 +33,7 @@ private:
 	bool IsSeeEachOther(const Position2D&, const Position2D&) noexcept;
 
 public:
-	Sector(const BYTE X, const BYTE Y);
+	Sector(const BYTE sectorIndeX, const BYTE sectorIndeY);
 	~Sector();
 
 private:

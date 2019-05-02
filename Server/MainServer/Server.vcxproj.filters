@@ -48,6 +48,9 @@
     <Filter Include="GameServer\Zone\ChatManager">
       <UniqueIdentifier>{dc3146ed-3cd0-44e8-a9f4-60aee3c5305d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameServer\Zone\TimerManager">
+      <UniqueIdentifier>{df8006a5-cdab-40be-afcd-161c100d62bd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -93,6 +96,9 @@
     <ClCompile Include="..\Define.cpp">
       <Filter>Define</Filter>
     </ClCompile>
+    <ClCompile Include="TimerManager.cpp">
+      <Filter>GameServer\Zone\TimerManager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -137,6 +143,9 @@
     </ClInclude>
     <ClInclude Include="..\Define.h">
       <Filter>Define</Filter>
+    </ClInclude>
+    <ClInclude Include="TimerManager.h">
+      <Filter>GameServer\Zone\TimerManager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

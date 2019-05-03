@@ -3,10 +3,12 @@
 #include "ServerDefine.h"
 
 #include "Zone.h"
+
 #include "MemoryUnit.h"
 
-#include "SendMemoryPool.h"
 #include "TimerManager.h"
+
+#include "SendMemoryPool.h"
 
 #include "UserData.h"
 
@@ -55,7 +57,6 @@ void GameServer::ServerIntegrityCheck()
 	static_assert((int)((GLOBAL_DEFINE::MAX_HEIGHT - 1) / GLOBAL_DEFINE::SECTOR_DISTANCE)
 		!= (int)((GLOBAL_DEFINE::MAX_HEIGHT + 1) / GLOBAL_DEFINE::SECTOR_DISTANCE),
 		"MAX_HEIGHT(그리고 MAX_WIDTH)는 SECTOR_DISTANCE의 배수가 아닐 경우, 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
-
 	// 채팅서버에서 해당 내용을 검사합니다.
 	//static_assert(PACKET_TYPE::CLIENT_TO_SERVER::CHAT == PACKET_TYPE::SERVER_TO_CLIENT::CHAT,
 	//	"CS::CHAT와 SC::CHAT의 값이 다르며, 이는 클라이언트에 치명적인 오류를 발생시킵니다. 서버 실행을 거절하였습니다.");
@@ -123,6 +124,7 @@ void GameServer::InitNetwork()
 
 	// 3. 워커 쓰레드 생성 및 IOCP 등록.
 	workerThreadCont.reserve(2);
+	printf("워커쓰레드 개수는 2개로 제한, 생성되었습니다. \n");
 	for (int i = 0; i < /* (int)si.dwNumberOfProcessors * 2 */ 2; ++i)
 	{
 		workerThreadCont.emplace_back(std::thread{ StartWorkerThread, (LPVOID)this });
@@ -151,7 +153,7 @@ void GameServer::InitNetwork()
 */
 void GameServer::Run()
 {
-	std::thread timerThread{ TimerManager::GetInstance()->TimerThread };
+	std::thread timerThread{ TimerManager::GetInstance()->StartTimerThread };
 
 	std::thread acceptThread{ StartAcceptThread, (LPVOID)this };
 	printf("Game Server activated!\n\n");
@@ -202,8 +204,10 @@ void GameServer::AcceptThreadFunction()
 			CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->clientKey, 0);
 
 			pClient->sock = clientSocket;
-			pClient->memoryUnit.wsaBuf.buf = pClient->memoryUnit.dataBuf;
-			pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
+			
+			// MemoryUnit 생성자에서 보장함.
+			//pClient->memoryUnit.wsaBuf.buf = pClient->memoryUnit.dataBuf;
+			//pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
 
 			// 클라이언트에게 서버에 접속(Accept) 함을 알림
 			PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(pClient->clientKey);
@@ -213,7 +217,6 @@ void GameServer::AcceptThreadFunction()
 			PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket( pClient->clientKey, pClient->userData->GetPosition().x, pClient->userData->GetPosition().y);
 			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
 
-			//printf("[TCP 서버] 클라이언트 접속 : IP 주소 =%s, Port 번호 = %d \n", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
 			std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
 			
 			// 최초 위치에서 처음 뷰리스트와 섹터 갱신.
@@ -252,7 +255,7 @@ void GameServer::WorkerThreadFunction()
 	DWORD cbTransferred;
 	unsigned long long clientKey;
 	
-	//MemoryUnit* pMemoryUnit;
+	BYTE* pReturnPointer;
 	LPVOID pMemoryUnit;
 
 	while (7)
@@ -263,10 +266,12 @@ void GameServer::WorkerThreadFunction()
 			hIOCP, //입출력 완료 포트 핸들
 			&cbTransferred, //비동기 입출력 작업으로, 전송된 바이트 수가 여기에 저장된다.
 			&clientKey, //함수 호출 시 전달한 세번째 인자(32비트) 가 여기에 저장된다.
-			reinterpret_cast<LPOVERLAPPED *>(&pMemoryUnit), //Overlapped 구조체의 주소값
+			reinterpret_cast<LPOVERLAPPED *>(&pReturnPointer), //Overlapped 구조체의 주소값
 			INFINITE // 대기 시간 -> 깨울 까지 무한대
 		);
 #pragma endregion
+
+		pMemoryUnit = pReturnPointer - sizeof(MEMORY_UNIT_TYPE);
 
 #pragma region [ Error Exception ]
 	//ERROR_CLIENT_DISCONNECT:
@@ -279,26 +284,26 @@ void GameServer::WorkerThreadFunction()
 #pragma endregion
 
 #ifdef DISABLED_FUNCTION_POINTER
+		switch (reinterpret_cast<MemoryUnit*>(pMemoryUnit)->memoryUnitType)
+		{
+		case MEMORY_UNIT_TYPE::SEND_TO_CLIENT:
+			AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
+			break;
+		case MEMORY_UNIT_TYPE::RECV_FROM_CLIENT:
+			AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
+			break;
+		case MEMORY_UNIT_TYPE::TIMER_FUNCTION:
+			ProcessTimerUnit(reinterpret_cast<TimerUnit*>(pMemoryUnit));
+			break;
+		default:
+			std::cout << "마! 니 뭐여?" << std::endl;
+			break;
+		}
+#else
 		reinterpret_cast<MemoryUnit *>(pMemoryUnit)->memoryUnitType == MEMORY_UNIT_TYPE::RECV
 			? AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred)
 			: AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
-		
-#ifndef  DISABLED_FUNCTION_POINTER
-		//switch (reinterpret_cast<UnallocatedMemoryUnit*>(pMemoryUnit)->memoryUnitType)
-		//{
-		//case MEMORY_UNIT_TYPE::SEND:
-		//	AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
-		//	break;
-		//case MEMORY_UNIT_TYPE::RECV:
-		//	AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
-		//	break;
-		//case MEMORY_UNIT_TYPE::UNALLOCATED_SEND:
-		//	AfterUnallocatedSend(reinterpret_cast<UnallocatedMemoryUnit*>(pMemoryUnit));
-		//	break;
-		//}
-#endif // ! DISABLED_FUNCTION_POINTER
 
-#else
 		recvOrSendArr[GLOBAL_UTIL::BIT_CONVERTER::GetRecvOrSend(pClient->buf[0])](*this, pClient);
 #endif
 	}
@@ -371,6 +376,12 @@ void GameServer::AfterSend(SendMemoryUnit* pMemoryUnit)
 {
 	// 보낼 때 사용한 버퍼 후처리하고 끝! ( 오버랩 초기화는 보낼떄 처리)
 	SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
+}
+
+void GameServer::ProcessTimerUnit(TimerUnit* pUnit)
+{
+	zoneCont[0]->ProcessTimerUnit(pUnit);
+	TimerManager::GetInstance()->PushTimerUnit(pUnit);
 }
 
 #ifndef DISABLED_UNALLOCATED_MEMORY_SEND

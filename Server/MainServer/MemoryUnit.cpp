@@ -20,12 +20,20 @@ MemoryUnit::MemoryUnit(const MEMORY_UNIT_TYPE inMemoryUnitType) :
 #ifdef _DEV_MODE_
 	std::cout << " MemoryUnit의 기본생성자가 호출되었습니다. \n";
 #endif
-	if (MEMORY_UNIT_TYPE::RECV == inMemoryUnitType)
+	if (MEMORY_UNIT_TYPE::RECV_FROM_CLIENT == inMemoryUnitType)
 	{
 		dataBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV];
 		wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
 	}
-	else dataBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_SEND];
+	else if (MEMORY_UNIT_TYPE::SEND_TO_CLIENT == inMemoryUnitType)
+	{
+		dataBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_SEND];
+	}
+	//else if(TIMER_UNIT)
+	else if (MEMORY_UNIT_TYPE::RECV_FROM_COMMAND == inMemoryUnitType)
+	{
+		// 아직 사용되지 않음.
+	}
 
 	wsaBuf.buf = dataBuf;
 }
@@ -80,7 +88,7 @@ MemoryUnit& MemoryUnit::operator=(MemoryUnit&& other) noexcept
 //---------------------------------------------------------------------------
 
 SendMemoryUnit::SendMemoryUnit() 
-	: memoryUnit(MEMORY_UNIT_TYPE::SEND)
+	: memoryUnit(MEMORY_UNIT_TYPE::SEND_TO_CLIENT)
 	//, pOwner(nullptr)
 {
 }
@@ -120,7 +128,7 @@ SendMemoryUnit& SendMemoryUnit::operator=(SendMemoryUnit&& other) noexcept
 // SocketInfo
 //---------------------------------------------------------------------------
 SocketInfo::SocketInfo() /*noexcept*/ :
-	memoryUnit(MEMORY_UNIT_TYPE::RECV),
+	memoryUnit(MEMORY_UNIT_TYPE::RECV_FROM_CLIENT),
 	sock(),
 	loadedSize(),
 	loadedBuf(),
@@ -143,4 +151,16 @@ SocketInfo::~SocketInfo()
 
 	//delete[] loadedBuf;
 	delete userData;
+}
+
+//---------------------------------------------------------------------------
+// TimerUnit
+//---------------------------------------------------------------------------
+TimerUnit::TimerUnit()
+	: memoryUnitType(MEMORY_UNIT_TYPE::TIMER_FUNCTION)
+{
+}
+
+TimerUnit::~TimerUnit()
+{
 }

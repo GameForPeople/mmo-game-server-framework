@@ -70,35 +70,34 @@ void Sector::Exit(SocketInfo* pInClient)
 */
 void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneContUnit)
 {
-	// 이부분 나중에 동접 오지면 오버헤드 왕 오집니다. 다른 방안을 생각해야합니다.
-	pZoneContUnit->wrlock.lock_shared();	//++++++++++++++++++++++++++++1 Zone : Read Lock!
-	auto oldZoneCont = pZoneContUnit->clientCont;
-	pZoneContUnit->wrlock.unlock_shared();	//----------------------------0 Zone : Read unLock!
-
 	sectorContUnit->wrlock.lock_shared();	//++++++++++++++++++++++++++++1	Sector : Read Lock!
 	for (auto& otherKey : sectorContUnit->clientCont)
 	{
 		if (otherKey == pClient->clientKey) continue;
 
-		if (IsSeeEachOther(pClient->userData->GetPosition(), oldZoneCont[otherKey].second->userData->GetPosition()))
+		auto[isOn, pOtherClient] = pZoneContUnit->FindClient(otherKey);
+
+		if (!isOn) continue;
+
+		if (IsSeeEachOther(pClient->userData->GetPosition(), pOtherClient->userData->GetPosition()))
 		{
 			// 서로 보입니다.
 			if (pClient->viewList.find(otherKey) == pClient->viewList.end())
 			{
 				// 서로 보이고, 서로 모르는 사이였을 때.
-				SendPutPlayer(pClient, oldZoneCont[otherKey].second);
-				SendPutPlayer(oldZoneCont[otherKey].second, pClient);
+				SendPutPlayer(pClient, pOtherClient);
+				SendPutPlayer(pOtherClient, pClient);
 
 				// 서로의 뷰 리스트에 추가할 때... 문제가 될 수 있습니다.
 				pClient->viewList.insert(otherKey);
-				oldZoneCont[otherKey].second->viewList.insert(pClient->clientKey);
+				pOtherClient->viewList.insert(pClient->clientKey);
 			}
 			else
 			{
 				//서로 보이고, 서로 아는 사이였을 때,
 
 				// 나는 내가 알아서 할게 너 나 바뀐거 받아라 얌마!
-				SendMovePlayer(pClient, oldZoneCont[otherKey].second);
+				SendMovePlayer(pClient, pOtherClient);
 			}
 		}
 		else
@@ -107,13 +106,13 @@ void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneCon
 			if (pClient->viewList.find(otherKey) != pClient->viewList.end())
 			{
 				// 서로 안 보이고, 서로 원래 알던 클라이언트였을 때.
-				SendRemovePlayer(pClient->clientKey, oldZoneCont[otherKey].second);
+				SendRemovePlayer(pClient->clientKey, pOtherClient);
 				SendRemovePlayer(otherKey, pClient);
 
 				// 서로의 뷰 리스트에서 삭제할 때... 문제가 될 수 있습니다.
 				// 언세이프 보이지?? 살벌하다살벌해
 				pClient->viewList.unsafe_erase(otherKey);
-				oldZoneCont[otherKey].second->viewList.unsafe_erase(pClient->clientKey);
+				pOtherClient->viewList.unsafe_erase(pClient->clientKey);
 			}
 			//else
 			//{

@@ -103,7 +103,7 @@ namespace NETWORK_UTIL
 	*/
 	void LogOutProcess(LPVOID pClient)
 	{
-		if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::RECV)
+		if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::RECV_FROM_CLIENT)
 		{
 			SocketInfo* pOutClient = reinterpret_cast<SocketInfo*>(pClient);
 
@@ -120,7 +120,7 @@ namespace NETWORK_UTIL
 			closesocket(pOutClient->sock);
 			delete pOutClient;
 		}
-		else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND)
+		else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND_TO_CLIENT)
 		{
 			SendMemoryUnit* pMemoryUnit = (reinterpret_cast<SendMemoryUnit*>(pClient));
 			

@@ -1,6 +1,9 @@
 #include "pch.h"
 
+#include "MemoryUnit.h"
 #include "TimerManager.h"
+
+TimerManager* TimerManager::instance = nullptr;
 
 TimerManager::TimerManager(HANDLE hIOCP) :
 	hIOCP(hIOCP),
@@ -26,6 +29,13 @@ TimerManager::~TimerManager()
 	}
 }
 
+DWORD WINAPI TimerManager::StartTimerThread()
+{
+	TimerManager::GetInstance()->TimerThread();
+
+	return 0;
+};
+
 void TimerManager::TimerThread()
 {
 	while (7)
@@ -40,10 +50,8 @@ void TimerManager::TimerThread()
 		while (timerCont[nowTime].try_pop(retTimerUnit))
 		{
 		//----- 꺼낸 타이머 유닛 처리.
-			PostQueuedCompletionStatus(hIOCP, 0, retTimerUnit->objectKey, );
+			PostQueuedCompletionStatus(hIOCP, 0, 0, reinterpret_cast<LPOVERLAPPED>(retTimerUnit));
 		//-----
-			// 푸시 여기서 하지말고, Worker Thread에서 하는게 맞아.
-			timerMemoryPool.push(retTimerUnit);
 		}
 	}
 }
@@ -57,12 +65,17 @@ void TimerManager::AddTimerEvent(TimerUnit* inTimerUnit, int waitTime)
 	timerCont[waitTime].push(inTimerUnit);
 }
 
-TimerUnit* TimerManager::GetTimerUnit()
+TimerUnit* TimerManager::PopTimerUnit()
 {
 	TimerUnit* retTimerUnit = nullptr;
 	
 	return timerMemoryPool.try_pop(retTimerUnit)
 		? retTimerUnit
-		: []()->TimerUnit* { std::cout << "TimerUnit 이 부족해서 추가 할당을 하였습니다. " << std::endl; new TimerUnit(); }();
+		: []()->TimerUnit* { std::cout << "TimerUnit 이 부족해서 추가 할당을 하였습니다. " << std::endl; return new TimerUnit(); }();
+}
+
+void TimerManager::PushTimerUnit(TimerUnit* inTimerUnit)
+{
+	timerMemoryPool.push(inTimerUnit);
 }
 

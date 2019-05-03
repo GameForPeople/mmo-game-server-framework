@@ -53,12 +53,6 @@ void Zone::InitManagers()
 void Zone::InitClientCont()
 {
 	zoneContUnit = new ZoneContUnit;
-	zoneContUnit->clientCont.reserve(GLOBAL_DEFINE::MAX_CLIENT);
-
-	for (int i = 0; i < GLOBAL_DEFINE::MAX_CLIENT; ++i)
-	{
-		zoneContUnit->clientCont.emplace_back(false, nullptr);
-	}
 }
 
 /*
@@ -108,6 +102,11 @@ void Zone::ProcessPacket(SocketInfo* pClient)
 	recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE)](*this, pClient);
 }
 
+void Zone::ProcessTimerUnit(TimerUnit* pUnit)
+{
+
+}
+
 /*
 	Zone::TryToEnter()
 		- 해당 존으로의 입장을 시도합니다.
@@ -117,13 +116,13 @@ void Zone::ProcessPacket(SocketInfo* pClient)
 	#2.	입장 실패 시, 아무런 짓도 하지 않음
 */
 /*std::optional<SocketInfo*>*/ 
-_ClientNode /* == std::pair<bool, SocketInfo*>*/ Zone::TryToEnter()
+std::pair<bool, SocketInfo*> /* == std::pair<bool, SocketInfo*>*/ Zone::TryToEnter()
 {
 	if (auto retNode = connectManager->LogInToZone(zoneContUnit, this)
 		; retNode.first)
 	{
 		//최초 Sector에 클라이언트 삽입.
-		sectorCont[5][5].Join(retNode.second);
+		sectorCont[GLOBAL_DEFINE::START_SECTOR_Y][GLOBAL_DEFINE::START_SECTOR_X].Join(retNode.second);
 
 		// InitViewAndSector에서 래핑되며, Accept Process에서 해당 클라이언트 소켓을 IOCP 등록 후, 호출함
 		//{
@@ -133,6 +132,7 @@ _ClientNode /* == std::pair<bool, SocketInfo*>*/ Zone::TryToEnter()
 			// 친구들 새로 사귀고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
 			//RenewViewListInSectors(retNode.second);
 		//}
+
 		return retNode;
 	}
 	else return retNode;

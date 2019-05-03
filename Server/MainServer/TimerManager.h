@@ -2,12 +2,7 @@
 
 #include "InHeaderDefine.hh"
 
-struct TimerUnit
-{
-	_KeyType objectKey;
-	BYTE commandType;
-	OBJECT_TYPE objectType;
-};
+struct TimerUnit;
 
 class TimerManager /*: ╫л╠шео */
 {
@@ -24,9 +19,12 @@ public:
 
 public:
 	void TimerThread();
+	static DWORD WINAPI StartTimerThread();
+
 	void AddTimerEvent(TimerUnit*, int);
 
-	_NODISCARD TimerUnit* GetTimerUnit();
+	_NODISCARD TimerUnit* PopTimerUnit();
+	void PushTimerUnit(TimerUnit*);
 
 private:
 	HANDLE hIOCP;

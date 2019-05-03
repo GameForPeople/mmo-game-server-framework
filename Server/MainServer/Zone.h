@@ -4,6 +4,7 @@
 
 struct SocketInfo;
 struct MemoryUnit;
+struct TimerUnit;
 
 class ConnectManager;
 class MoveManager;
@@ -25,12 +26,13 @@ class Zone
 {
 public:
 	void ProcessPacket(SocketInfo* pClient);
+	void ProcessTimerUnit(TimerUnit* pUnit);
 
 	Zone();
 	~Zone();
 
 public: // ConnectManager
-	_ClientNode /*std::optional<SocketInfo*>*/ TryToEnter();
+	std::pair<bool, SocketInfo*> /*std::optional<SocketInfo*>*/ TryToEnter();
 	void Exit(SocketInfo*);
 	void InitViewAndSector(SocketInfo* );
 

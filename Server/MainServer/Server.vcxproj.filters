@@ -51,6 +51,9 @@
     <Filter Include="GameServer\Zone\TimerManager">
       <UniqueIdentifier>{df8006a5-cdab-40be-afcd-161c100d62bd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Others\Object">
+      <UniqueIdentifier>{69d06361-c939-46f1-aa85-d52c7f9fd466}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

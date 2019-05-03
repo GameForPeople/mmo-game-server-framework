@@ -10,6 +10,15 @@
 
 #include "ConnectManager.h"
 
+ConnectManager::ConnectManager()
+{
+	USHORT tempPushKey{ 0 };
+	while (tempPushKey < GLOBAL_DEFINE::MAX_CLIENT)
+	{
+		uniqueKeyPool.push(tempPushKey++);
+	}
+}
+
 /*
 	ConnectManager::LogInToZone()
 		- 새로운 클라이언트가 접속했을 떄, 이를 컨테이너에 넣어줍니다.
@@ -17,45 +26,26 @@
 	#!?0. 하나의 물리 서버에서 하나의 씐을 가질 경우, 지금처럼하는게 맞음.
 	#!?1. 다만 하나의 서버에서 여러 씐을 가질 경우, 애초에 SocketInfo를 갖고 있고, InNewCliet에 인자로 넣어주는 게맞음.
 */
-_ClientNode ConnectManager::LogInToZone(ZoneContUnit* inClientContUnit, Zone* zone)
+std::pair<bool, SocketInfo*> ConnectManager::LogInToZone(ZoneContUnit* inClientContUnit, Zone* zone)
 {
-	//std::lock_guard<std::mutex> localLock(addLock);
-	//connectLock.lock();
-	inClientContUnit->wrlock.lock();
-	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++1
-
-	for (int index = 0; index < inClientContUnit->clientCont.size(); ++index)
+	if (USHORT retClientKey; uniqueKeyPool.try_pop(retClientKey))
 	{
-		if (inClientContUnit->clientCont[index].first == false)
+		// 소켓 정보 구조체 할당
+		SocketInfo* pInClient = new SocketInfo;
+		if (pInClient == nullptr)
 		{
-			inClientContUnit->clientCont[index].first = true;
-
-			inClientContUnit->wrlock.unlock();
-			//------------------------------------------------------------0
-
-			// 소켓 정보 구조체 할당
-			SocketInfo* pInClient = new SocketInfo;
-			if (pInClient == nullptr)
-			{
-				ERROR_HANDLING::ERROR_QUIT(TEXT("Make_SocketInfo()"));
-				break;
-			}
-
-			inClientContUnit->clientCont[index].second = pInClient;
-			pInClient->clientKey = index;
-			pInClient->pZone = zone;
-
-			//SendPutPlayer(pInClient, inClientContUnit);
-
-			return std::make_pair(true, pInClient);
-			//return pClient;
+			ERROR_HANDLING::ERROR_QUIT(TEXT("Make_SocketInfo()"));
 		}
-	}
 
-	inClientContUnit->wrlock.unlock();
+		inClientContUnit->Enter(pInClient);
+
+		pInClient->clientKey = retClientKey;
+		pInClient->pZone = zone;
+
+		return std::make_pair(true, pInClient);
+	}
 	//-------------------------------------------------------------------0
 	return std::make_pair(false, nullptr);
-	//return {};
 }
 
 /*
@@ -69,7 +59,7 @@ void ConnectManager::LogOutToZone(SocketInfo* pOutClient, ZoneContUnit* inClient
 	// 사실 벡터면 굳이 Lock 걸 필요 없지 않나. -> 그래도 걸자........나는 찐따니까...
 	SendRemovePlayerInOuttedClientViewList(pOutClient, inClientContUnit);
 
-	inClientContUnit->clientCont[pOutClient->clientKey].first = false;
+	inClientContUnit->Exit(pOutClient);
 	// second는 초기화 할 필요 없음.
 
 	// 다만 이부분에서, 비용이 조금 더 나가더라도, 안정성을 보장하기 위해 처리해주도록 합시다.
@@ -102,16 +92,18 @@ void ConnectManager::SendRemovePlayerInOuttedClientViewList(SocketInfo* pOutClie
 		pOutClient->clientKey
 	);
 
-	inClientCont->wrlock.lock_shared(); // +++++++++++++++++++++++++++++++++++++++++++++++++++1 read
+	//inClientCont->wrlock.lock_shared(); // +++++++++++++++++++++++++++++++++++++++++++++++++++1 read
 	for (auto otherKey : pOutClient->viewList)
 	{
-		NETWORK_UTIL::SendPacket(inClientCont->clientCont[otherKey].second, reinterpret_cast<char*>(&packet));
-		
-		// 상대방 viewList 수정.
-		inClientCont->clientCont[otherKey].second->viewList.unsafe_erase(pOutClient->clientKey);
-		// 나의 viewList는 건들필요 없음.
+		if (auto [isConnect, pOtherClient] = inClientCont->FindClient(otherKey); isConnect)
+		{
+			NETWORK_UTIL::SendPacket(pOtherClient, reinterpret_cast<char*>(&packet));
+
+			// 상대방 viewList 수정.
+			pOtherClient->viewList.unsafe_erase(pOutClient->clientKey);
+		}
 	}
-	inClientCont->wrlock.unlock_shared(); //--------------------------------------------------0 read
+	//inClientCont->wrlock.unlock_shared(); //--------------------------------------------------0 read
 
 	//for (std::pair<bool, SocketInfo*>& pRecvedClient : inClientCont)
 	//{

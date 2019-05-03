@@ -10,14 +10,14 @@ class Zone;
 class ConnectManager
 {
 public:
-	ConnectManager() = default;
+	ConnectManager();
 	~ConnectManager() = default;
 
 	ConnectManager(const ConnectManager&) = delete;
 	ConnectManager& operator=(const ConnectManager&) = delete;
 
 public:
-	_ClientNode LogInToZone(ZoneContUnit* inClientContUnit, Zone*);
+	std::pair<bool, SocketInfo*> LogInToZone(ZoneContUnit* inClientContUnit, Zone*);
 	void LogOutToZone(SocketInfo*, ZoneContUnit* inClientContUnit);
 
 private:
@@ -27,4 +27,5 @@ private:
 	//void SendPutPlayer(SocketInfo* pPutClient, ZoneContUnit* inClientCont);
 private:
 	//std::shared_mutex connectLock;
+	concurrency::concurrent_queue<USHORT> uniqueKeyPool;
 };

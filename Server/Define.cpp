@@ -118,3 +118,69 @@ namespace UNICODE_UTIL
 		return retString;
 	}
 }
+
+
+namespace BIT_CONVERTER
+{
+	std::pair<OBJECT_TYPE, unsigned int> WhatIsYourTypeAndRealKey(unsigned int inKey) noexcept
+	{
+		std::pair<OBJECT_TYPE, unsigned int> retPair;
+
+		if ((inKey | NOT_PLAYER_INT) == inKey) retPair.first = OBJECT_TYPE::PLAYER;
+		else if ((inKey | NPC_INT) == inKey) retPair.first = OBJECT_TYPE::MONSTER;
+		else retPair.first = OBJECT_TYPE::NPC;
+
+		retPair.second = inKey & REAL_INT;
+
+		return retPair;
+	}
+
+	/*
+		MakeByteFromLeftAndRightByte()
+			- 인자로 들어온 패킷 타입(바이트)의 최상위 비트를 1로 바꾼후 반환합니다.
+
+		!0. 패킷 타입 개수가, ox7f보다 클 경우, 해당 함수 및 현재 서버 로직은 오류가 발생합니다.
+	*/
+	BYTE MakeSendPacket(const BYTE inPacketType) noexcept { return inPacketType | SEND_BYTE; }
+
+	/*
+		MakeByteFromLeftAndRightByte()
+			- 인자로 들어온 패킷 타입(바이트)의 최상위 비트를 검사합니다.
+
+		#0. 최상위 비트가 1일 경우, true를, 0일 경우 false를 반환합니다. (형변환을 통한 Array Overflow 방지 )
+
+		!0. 패킷 타입 개수가, ox7f보다 클 경우, 해당 함수 및 현재 서버 로직은 오류가 발생합니다.
+	*/
+	bool GetRecvOrSend(const char inChar) noexcept { return (inChar >> 7) & (0x01); }
+
+	/*
+		MakeByteFromLeftAndRightByte
+			- 0x10보다 작은 바이트 두개를 인자로 받아(Left, Right) 상위 4개비트는 Left, 하위 4개 비트는 Right를 담아반환합니다.
+
+		!0. 인자로 들어오는 두 바이트 모두, 0x10보다 작은 값이 들어와야합니다.
+			- 인자로 들어오는 Left 바이트가 0x0f보다 큰 값이 들어올 경우, 오버플로우되어 비정상적인 값이 반횐될 수 있음.
+			- 인자로 들어오는 Right 바이트가 0x0f보다 큰 값이 들어올 경우, LeftByte의 | 연산에서 비정상적인 값을 반환할 수 있음.
+	*/
+	BYTE MakeByteFromLeftAndRightByte(const BYTE inLeftByte, const BYTE inRightByte) noexcept
+	{
+		return (inLeftByte << 4) | (inRightByte);
+	}
+
+	/*
+		GetLeft4Bit
+			- HIWORD(?)와 유사하게 동작합니다. 하나의 바이트를 받아서 상위(좌측) 4개의 비트를 바이트로 변환해서 반환합니다.
+	*/
+	BYTE GetLeft4Bit(const BYTE inByte) noexcept
+	{
+		return (inByte >> 4) & (0x0f);
+	}
+
+	/*
+		GetRight4Bit
+			- LOWORD(?)와 유사하게 동작합니다. 하나의 바이트를 받아서 하위(우측) 4개의 비트를 바이트로 변환해서 반환합니다.
+	*/
+	BYTE GetRight4Bit(const BYTE inByte) noexcept
+	{
+		return (inByte) & (0x0f);
+	}
+}

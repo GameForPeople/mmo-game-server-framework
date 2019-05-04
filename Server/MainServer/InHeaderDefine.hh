@@ -15,9 +15,9 @@ namespace std {
 //using _ClientNode = std::pair<bool, SocketInfo*>;
 //using _ClientCont = std::vector<_ClientNode>;
 
-using _ClientKeyType = USHORT;
-using _MonsterKeyType = int;
-using _NpcKeyType = int;
+using _ClientKeyType = unsigned int;
+using _MonsterKeyType = unsigned int;
+using _NpcKeyType = unsigned int;
 
 namespace GLOBAL_DEFINE
 {
@@ -29,10 +29,3 @@ namespace GLOBAL_DEFINE
 	//---
 	constexpr unsigned char MAX_CHAT_MASSAGE_SIZE { 80 };
 }
-
-enum class OBJECT_TYPE : BYTE
-{
-	PLAYER,
-	MONSTER,
-	NPC
-};

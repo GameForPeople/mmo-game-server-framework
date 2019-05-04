@@ -214,3 +214,27 @@ namespace GLOBAL_DEFINE
 	constexpr USHORT MAX_HEIGHT = 800;
 	constexpr USHORT MAX_WIDTH = 800;
 }
+
+enum class OBJECT_TYPE : BYTE
+{
+	PLAYER,
+	MONSTER,
+	NPC
+};
+
+namespace BIT_CONVERTER
+{
+	constexpr BYTE SEND_BYTE = (1 << 7);
+	constexpr unsigned int NOT_PLAYER_INT = (1 << 31);	// 0일때는 플레이어 바이트, 1일때는 2차검사 필요.
+	constexpr unsigned int NPC_INT = (1 << 30);	// 0일 때는 몬스터, 1일 때는 NPC
+	constexpr unsigned int REAL_INT = 0x3fffffff;	// 0일 때는 몬스터, 1일 때는 NPC
+
+	std::pair<OBJECT_TYPE, unsigned int> WhatIsYourTypeAndRealKey(unsigned int) noexcept;
+
+	/*_NODISCARD*/ BYTE MakeSendPacket(const BYTE inPacketType) noexcept;
+	/*_NODISCARD*/ bool GetRecvOrSend(const char inChar) noexcept;
+
+	/*_NODISCARD*/ BYTE MakeByteFromLeftAndRightByte(const BYTE inLeftByte, const BYTE inRightByte) noexcept;
+	/*_NODISCARD*/ BYTE GetLeft4Bit(const BYTE inByte) noexcept;
+	/*_NODISCARD*/ BYTE GetRight4Bit(const BYTE inByte) noexcept;
+}

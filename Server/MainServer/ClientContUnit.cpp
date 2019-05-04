@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "MemoryUnit.h"
+#include "ServerDefine.h"
 
 #include "ClientContUnit.h"
 
@@ -25,6 +26,7 @@ ZoneContUnit::ZoneContUnit() :
 	{
 		iter.clear(std::memory_order_release);
 	}
+
 }
 
 ZoneContUnit::~ZoneContUnit()

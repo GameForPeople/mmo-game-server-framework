@@ -30,7 +30,8 @@ public:
 	void SendMovePlayer(SocketInfo* pPutClient, SocketInfo* pRecvClient);
 
 private:
-	bool IsSeeEachOther(const Position2D&, const Position2D&) noexcept;
+	bool IsSeeEachOther(const _PosType, const _PosType, const _PosType, const _PosType) const noexcept;
+	bool IsSeeEachOther(const std::pair<_PosType, _PosType>&, const std::pair<_PosType, _PosType>&) const noexcept;
 
 public:
 	Sector(const BYTE sectorIndeX, const BYTE sectorIndeY);
@@ -45,6 +46,6 @@ private:
 	SectorContUnit* sectorContUnit;
 
 public:
-	inline constexpr BYTE GetCenterX() noexcept { return centerX; }
-	inline constexpr BYTE GetCenterY() noexcept { return centerY; }
+	inline constexpr BYTE GetCenterX() const noexcept { return centerX; }
+	inline constexpr BYTE GetCenterY() const noexcept { return centerY; }
 };

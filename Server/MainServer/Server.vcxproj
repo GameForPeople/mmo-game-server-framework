@@ -155,6 +155,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Define.h" />
+    <ClInclude Include="BaseMonster.h" />
+    <ClInclude Include="BaseNPC.h" />
     <ClInclude Include="ChatManager.h" />
     <ClInclude Include="ClientContUnit.h" />
     <ClInclude Include="ConnectManager.h" />
@@ -173,6 +175,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Define.cpp" />
+    <ClCompile Include="BaseMonster.cpp" />
+    <ClCompile Include="BaseNPC.cpp" />
     <ClCompile Include="ChatManager.cpp" />
     <ClCompile Include="ClientContUnit.cpp" />
     <ClCompile Include="ConnectManager.cpp" />

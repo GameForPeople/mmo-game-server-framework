@@ -214,7 +214,7 @@ void GameServer::AcceptThreadFunction()
 			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&loginPacket));
 
 			// 자신의 캐릭터를 넣어줌.
-			PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket( pClient->clientKey, pClient->userData->GetPosition().x, pClient->userData->GetPosition().y);
+			PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket( pClient->clientKey, pClient->posX, pClient->posY);
 			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
 
 			std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";

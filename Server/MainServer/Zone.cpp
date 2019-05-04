@@ -10,6 +10,8 @@
 
 #include "UserData.h"
 
+#include "BaseMonster.h"
+
 #include "MemoryUnit.h"
 #include "SendMemoryPool.h"
 
@@ -53,6 +55,13 @@ void Zone::InitManagers()
 void Zone::InitClientCont()
 {
 	zoneContUnit = new ZoneContUnit;
+	unsigned int tempIndex = BIT_CONVERTER::NOT_PLAYER_INT;
+
+	//생성
+	for (auto& monster : zoneContUnit->monsterCont)
+	{
+		monster = new BaseMonster(tempIndex++, rand() % GLOBAL_DEFINE::MAX_WIDTH, rand() % GLOBAL_DEFINE::MAX_HEIGHT);
+	}
 }
 
 /*
@@ -91,7 +100,6 @@ void Zone::InitSector()
 		}
 	}
 }
-
 
 /*
 	Zone::ProcessRecvData()
@@ -179,8 +187,6 @@ void Zone::RenewPossibleSectors(SocketInfo* pClient)
 	const BYTE nowSectorCenterX = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterX();
 	const BYTE nowSectorCenterY = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterY();
 
-	UserData* pTempUserData = pClient->userData;
-
 	char xDir = 0;	// x 섹터의 판단 방향
 	char yDir = 0;	// y 섹터의 판단 방향
 
@@ -210,11 +216,11 @@ void Zone::RenewPossibleSectors(SocketInfo* pClient)
 		9		  |				  |
 	*/
 
-	if (pTempUserData->GetPosition().x > nowSectorCenterX + GLOBAL_DEFINE::SECTOR_PLUS_LIMIT_DISTANCE) { xDir = 1; }
-	else if (pTempUserData->GetPosition().x < nowSectorCenterX - GLOBAL_DEFINE::SECTOR_MINUS_LIMIT_DISTANCE) { xDir = -1; }
+	if (pClient->posX > nowSectorCenterX + GLOBAL_DEFINE::SECTOR_PLUS_LIMIT_DISTANCE) { xDir = 1; }
+	else if (pClient->posX < nowSectorCenterX - GLOBAL_DEFINE::SECTOR_MINUS_LIMIT_DISTANCE) { xDir = -1; }
 
-	if (pTempUserData->GetPosition().y > nowSectorCenterY + GLOBAL_DEFINE::SECTOR_PLUS_LIMIT_DISTANCE) { yDir = 1; }
-	else if (pTempUserData->GetPosition().y < nowSectorCenterY - GLOBAL_DEFINE::SECTOR_MINUS_LIMIT_DISTANCE) { yDir = -1; }
+	if (pClient->posY > nowSectorCenterY + GLOBAL_DEFINE::SECTOR_PLUS_LIMIT_DISTANCE) { yDir = 1; }
+	else if (pClient->posY < nowSectorCenterY - GLOBAL_DEFINE::SECTOR_MINUS_LIMIT_DISTANCE) { yDir = -1; }
 
 	const bool isYZero = pClient->sectorIndexY == 0 ? true : false;
 	const bool isYMax = pClient->sectorIndexY == (GLOBAL_DEFINE::SECTOR_END_POSITION) ? true : false;
@@ -391,8 +397,8 @@ void Zone::RenewClientSector(SocketInfo* pClient)
 {
 	bool isNeedToChangeSector{ false };
 
-	if (static_cast<BYTE>(pClient->userData->GetPosition().x / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexX) isNeedToChangeSector = true;
-	if (static_cast<BYTE>(pClient->userData->GetPosition().y / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexY) isNeedToChangeSector = true;
+	if (static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexX) isNeedToChangeSector = true;
+	if (static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexY) isNeedToChangeSector = true;
 
 	if (isNeedToChangeSector == false) 	return;
 	else
@@ -419,8 +425,8 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 	// 스스로에게 전송.
 	PACKET_DATA::MAIN_TO_CLIENT::Position packet(
 		pClient->clientKey,
-		pClient->userData->GetPosition().x,
-		pClient->userData->GetPosition().y
+		pClient->posX,
+		pClient->posY
 	);
 	NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&packet));
 

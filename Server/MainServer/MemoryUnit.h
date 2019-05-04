@@ -99,7 +99,6 @@ struct SendMemoryUnit
 
 	!0. 멤버 변수 가장 상위에는 MemoryUnit가 있어야합니다. 절대로 보장되야합니다.
 */
-class UserData;
 class Zone;
 /*
 	4바이트 정렬 짓 해야합니다 여기.
@@ -118,11 +117,14 @@ public:
 	int loadedSize;
 
 	SOCKET sock;
-	UserData* userData;
 	std::wstring nickname;
 	_ClientKeyType clientKey;
 	BYTE contIndex;
-	
+
+	// UserData* userdata
+	_PosType posX;	// 성능상의 이슈로 유저데이터 결국 분리. posX, posY 모두 socketInfo에 직접
+	_PosType posY;
+
 	Zone* pZone;		// 현재 입장한 존.
 
 	BYTE sectorIndexX;	// 자신의 섹터로 슥~

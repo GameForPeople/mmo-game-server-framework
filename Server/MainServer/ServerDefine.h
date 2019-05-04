@@ -34,6 +34,7 @@ namespace ERROR_HANDLING {
  namespace GLOBAL_DEFINE
 {
 	constexpr USHORT MAX_CLIENT = 400;
+	constexpr UINT MAX_MONSTER = 200000;
 
 	constexpr BYTE START_POSITION_X = 400;
 	constexpr BYTE START_POSITION_Y = 400;

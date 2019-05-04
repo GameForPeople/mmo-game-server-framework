@@ -79,7 +79,7 @@ void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneCon
 
 		if (!isOn) continue;
 
-		if (IsSeeEachOther(pClient->userData->GetPosition(), pOtherClient->userData->GetPosition()))
+		if (IsSeeEachOther(pClient->posX, pClient->posY, pOtherClient->posX, pOtherClient->posY))
 		{
 			// 서로 보입니다.
 			if (pClient->viewList.find(otherKey) == pClient->viewList.end())
@@ -127,10 +127,17 @@ void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneCon
 	IsSeeEachOther
 		- 마! 서로 볼수 있나 없나! 위치값 둘다 내나 봐라 마!
 */
-bool Sector::IsSeeEachOther(const Position2D& inAPosition, const Position2D& inBPosition) noexcept
+bool Sector::IsSeeEachOther(const _PosType aPosX, const _PosType aPosY, const _PosType bPosX, const _PosType bPosY) const noexcept
 {
-	if (GLOBAL_DEFINE::VIEW_DISTANCE < abs(inAPosition.x - inBPosition.x)) return false;
-	if (GLOBAL_DEFINE::VIEW_DISTANCE < abs(inAPosition.y - inBPosition.y)) return false;
+	if (GLOBAL_DEFINE::VIEW_DISTANCE < abs(aPosX - bPosX)) return false;
+	if (GLOBAL_DEFINE::VIEW_DISTANCE < abs(aPosY - bPosY)) return false;
+	return true;
+}
+
+bool Sector::IsSeeEachOther(const std::pair<_PosType, _PosType>& inAPosition, const std::pair<_PosType, _PosType>& inBPosition) const noexcept
+{
+	if (GLOBAL_DEFINE::VIEW_DISTANCE < abs(inAPosition.first - inBPosition.first)) return false;
+	if (GLOBAL_DEFINE::VIEW_DISTANCE < abs(inAPosition.second - inBPosition.second)) return false;
 	return true;
 }
 
@@ -138,8 +145,10 @@ void Sector::SendPutPlayer(SocketInfo* pPutClient, SocketInfo* pRecvClient)
 {
 	PACKET_DATA::MAIN_TO_CLIENT::PutPlayer packet(
 		pPutClient->clientKey,
-		pPutClient->userData->GetPosition().x,
-		pPutClient->userData->GetPosition().y
+		//pPutClient->userData->GetPosition().x,
+		//pPutClient->userData->GetPosition().y
+		pPutClient->posX,
+		pPutClient->posY
 	);
 
 	NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
@@ -156,8 +165,10 @@ void Sector::SendMovePlayer(SocketInfo* pMovedClientKey, SocketInfo* pRecvClient
 {
 	PACKET_DATA::MAIN_TO_CLIENT::Position packet(
 		pMovedClientKey->clientKey,
-		pMovedClientKey->userData->GetPosition().x,
-		pMovedClientKey->userData->GetPosition().y
+		//pMovedClientKey->userData->GetPosition().x,
+		//pMovedClientKey->userData->GetPosition().y
+		pMovedClientKey->posX,
+		pMovedClientKey->posY
 	);
 
 	NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));

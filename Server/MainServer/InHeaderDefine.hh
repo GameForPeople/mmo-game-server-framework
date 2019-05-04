@@ -18,6 +18,14 @@ namespace std {
 using _ClientKeyType = unsigned int;
 using _MonsterKeyType = unsigned int;
 using _NpcKeyType = unsigned int;
+using _PosType = unsigned short;
+
+enum class OBJECT_TYPE : BYTE
+{
+	PLAYER,
+	MONSTER,
+	NPC
+};
 
 namespace GLOBAL_DEFINE
 {

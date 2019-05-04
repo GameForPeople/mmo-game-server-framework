@@ -19,7 +19,7 @@ struct ZoneContUnit
 	//tbb::concurrent_hash_map<_ClientNode> clientCont;
 	//std::vector<_ClientNode> clientCont;
 
-	std::vector<BaseMonster*> monsterCont;
+	std::array<BaseMonster*, GLOBAL_DEFINE::MAX_MONSTER> monsterCont;
 	std::vector<BaseNpc*> npcCont;
 
 public:

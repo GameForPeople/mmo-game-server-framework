@@ -132,7 +132,9 @@ SocketInfo::SocketInfo() /*noexcept*/ :
 	sock(),
 	loadedSize(),
 	loadedBuf(),
-	userData(new UserData(GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y)/*std::make_unique<UserData>(0, 0)*/),
+	posX(),
+	posY(),
+	//userData(new UserData(GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y)/*std::make_unique<UserData>(0, 0)*/),
 	clientKey(-1),
 	pZone(nullptr),
 	viewList(),
@@ -150,7 +152,7 @@ SocketInfo::~SocketInfo()
 	viewList.clear();
 
 	//delete[] loadedBuf;
-	delete userData;
+	//delete userData;
 }
 
 //---------------------------------------------------------------------------

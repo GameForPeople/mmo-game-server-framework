@@ -119,7 +119,6 @@ namespace UNICODE_UTIL
 	}
 }
 
-
 namespace BIT_CONVERTER
 {
 	std::pair<OBJECT_TYPE, unsigned int> WhatIsYourTypeAndRealKey(unsigned int inKey) noexcept
@@ -133,6 +132,11 @@ namespace BIT_CONVERTER
 		retPair.second = inKey & REAL_INT;
 
 		return retPair;
+	}
+
+	unsigned int MakeMonsterKey(unsigned int inOnlyIndex) noexcept
+	{
+		return (inOnlyIndex | NOT_PLAYER_INT);
 	}
 
 	/*

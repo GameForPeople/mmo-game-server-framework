@@ -8,6 +8,8 @@
 
 #include "ClientContUnit.h"
 
+#include "ObjectInfo.h"
+
 #include "ConnectManager.h"
 
 ConnectManager::ConnectManager()
@@ -31,15 +33,13 @@ std::pair<bool, SocketInfo*> ConnectManager::LogInToZone(ZoneContUnit* inClientC
 	if (USHORT retClientKey; uniqueKeyPool.try_pop(retClientKey))
 	{
 		// 소켓 정보 구조체 할당
-		SocketInfo* pInClient = new SocketInfo;
+		SocketInfo* pInClient = new SocketInfo(retClientKey);
 		if (pInClient == nullptr)
 		{
 			ERROR_HANDLING::ERROR_QUIT(TEXT("Make_SocketInfo()"));
 		}
-
 		inClientContUnit->Enter(pInClient);
 
-		pInClient->clientKey = retClientKey;
 		pInClient->pZone = zone;
 
 		return std::make_pair(true, pInClient);
@@ -65,7 +65,6 @@ void ConnectManager::LogOutToZone(SocketInfo* pOutClient, ZoneContUnit* inClient
 	// 다만 이부분에서, 비용이 조금 더 나가더라도, 안정성을 보장하기 위해 처리해주도록 합시다.
 	// 사실 pZone을 nullptr하고, LogOutProcess에서, 해당 여부만 검사하는 것도 날 듯 한데;
 	pOutClient->pZone = nullptr;
-	pOutClient->clientKey = -1;
 }
 
 // 더 이상 해당 함수는 ConnectManager에서 실행되지 않습니다. Sector로 변경.
@@ -89,7 +88,7 @@ void ConnectManager::LogOutToZone(SocketInfo* pOutClient, ZoneContUnit* inClient
 void ConnectManager::SendRemovePlayerInOuttedClientViewList(SocketInfo* pOutClient, ZoneContUnit* inClientCont)
 {
 	PACKET_DATA::MAIN_TO_CLIENT::RemovePlayer packet(
-		pOutClient->clientKey
+		pOutClient->objectInfo->key
 	);
 
 	//inClientCont->wrlock.lock_shared(); // +++++++++++++++++++++++++++++++++++++++++++++++++++1 read
@@ -100,7 +99,7 @@ void ConnectManager::SendRemovePlayerInOuttedClientViewList(SocketInfo* pOutClie
 			NETWORK_UTIL::SendPacket(pOtherClient, reinterpret_cast<char*>(&packet));
 
 			// 상대방 viewList 수정.
-			pOtherClient->viewList.unsafe_erase(pOutClient->clientKey);
+			pOtherClient->viewList.unsafe_erase(pOutClient->objectInfo->key);
 		}
 	}
 	//inClientCont->wrlock.unlock_shared(); //--------------------------------------------------0 read

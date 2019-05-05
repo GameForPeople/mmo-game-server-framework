@@ -108,11 +108,14 @@
     <ClCompile Include="TimerManager.cpp">
       <Filter>GameServer\Zone\TimerManager</Filter>
     </ClCompile>
+    <ClCompile Include="BaseNPC.cpp">
+      <Filter>Others\Object\NPC</Filter>
+    </ClCompile>
     <ClCompile Include="BaseMonster.cpp">
       <Filter>Others\Object\Monster</Filter>
     </ClCompile>
-    <ClCompile Include="BaseNPC.cpp">
-      <Filter>Others\Object\NPC</Filter>
+    <ClCompile Include="ObjectInfo.cpp">
+      <Filter>Others\Object</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -162,11 +165,14 @@
     <ClInclude Include="TimerManager.h">
       <Filter>GameServer\Zone\TimerManager</Filter>
     </ClInclude>
+    <ClInclude Include="BaseNPC.h">
+      <Filter>Others\Object\NPC</Filter>
+    </ClInclude>
     <ClInclude Include="BaseMonster.h">
       <Filter>Others\Object\Monster</Filter>
     </ClInclude>
-    <ClInclude Include="BaseNPC.h">
-      <Filter>Others\Object\NPC</Filter>
+    <ClInclude Include="ObjectInfo.h">
+      <Filter>Others\Object</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -15,9 +15,11 @@ namespace std {
 //using _ClientNode = std::pair<bool, SocketInfo*>;
 //using _ClientCont = std::vector<_ClientNode>;
 
-using _ClientKeyType = unsigned int;
-using _MonsterKeyType = unsigned int;
-using _NpcKeyType = unsigned int;
+using _KeyType = unsigned int;
+using _ClientKeyType = _KeyType;
+using _MonsterKeyType = _KeyType;
+using _NpcKeyType = _KeyType;
+
 using _PosType = unsigned short;
 
 enum class OBJECT_TYPE : BYTE

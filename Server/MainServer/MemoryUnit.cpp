@@ -6,6 +6,7 @@
 #include "Zone.h"
 
 #include "MemoryUnit.h"
+#include "ObjectInfo.h"
 
 //---------------------------------------------------------------------------
 // MemoryUnit
@@ -18,7 +19,7 @@ MemoryUnit::MemoryUnit(const MEMORY_UNIT_TYPE inMemoryUnitType) :
 	dataBuf(nullptr)
 {
 #ifdef _DEV_MODE_
-	std::cout << " MemoryUnit의 기본생성자가 호출되었습니다. \n";
+//	std::cout << " MemoryUnit의 기본생성자가 호출되었습니다. \n";
 #endif
 	if (MEMORY_UNIT_TYPE::RECV_FROM_CLIENT == inMemoryUnitType)
 	{
@@ -29,7 +30,10 @@ MemoryUnit::MemoryUnit(const MEMORY_UNIT_TYPE inMemoryUnitType) :
 	{
 		dataBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_SEND];
 	}
-	//else if(TIMER_UNIT)
+	else if (MEMORY_UNIT_TYPE::TIMER_FUNCTION == inMemoryUnitType)
+	{
+		wsaBuf.len = 0;
+	}
 	else if (MEMORY_UNIT_TYPE::RECV_FROM_COMMAND == inMemoryUnitType)
 	{
 		// 아직 사용되지 않음.
@@ -127,22 +131,24 @@ SendMemoryUnit& SendMemoryUnit::operator=(SendMemoryUnit&& other) noexcept
 //---------------------------------------------------------------------------
 // SocketInfo
 //---------------------------------------------------------------------------
-SocketInfo::SocketInfo() /*noexcept*/ :
+SocketInfo::SocketInfo(_KeyType inKey) /*noexcept*/ :
 	memoryUnit(MEMORY_UNIT_TYPE::RECV_FROM_CLIENT),
 	sock(),
 	loadedSize(),
 	loadedBuf(),
-	posX(),
-	posY(),
+	//posX(),
+	//posY(),
 	//userData(new UserData(GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y)/*std::make_unique<UserData>(0, 0)*/),
-	clientKey(-1),
+	//clientKey(-1),
 	pZone(nullptr),
 	viewList(),
-	sectorArr(),
-	sectorIndexX(),
-	sectorIndexY(),
-	possibleSectorCount()
+	contIndex()
+	//sectorArr(),
+	//sectorIndexX(),
+	//sectorIndexY(),
+	//possibleSectorCount()
 {
+	objectInfo = new ObjectInfo(inKey, GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y);
 	//loadedBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
 	viewList.clear();
 }
@@ -159,7 +165,8 @@ SocketInfo::~SocketInfo()
 // TimerUnit
 //---------------------------------------------------------------------------
 TimerUnit::TimerUnit()
-	: memoryUnitType(MEMORY_UNIT_TYPE::TIMER_FUNCTION)
+	: memoryUnit(MEMORY_UNIT_TYPE::TIMER_FUNCTION),
+	objectKey()
 {
 }
 

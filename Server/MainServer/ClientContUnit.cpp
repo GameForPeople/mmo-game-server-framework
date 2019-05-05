@@ -2,6 +2,9 @@
 
 #include "MemoryUnit.h"
 #include "ServerDefine.h"
+#include "ObjectInfo.h"
+#include "BaseMonster.h"
+#include "BaseNPC.h"
 
 #include "ClientContUnit.h"
 
@@ -36,16 +39,16 @@ ZoneContUnit::~ZoneContUnit()
 		iter.clear(std::memory_order_release);
 	}
 
-	for (auto iter : monsterCont)
+	for (auto& iter : monsterCont)
 		delete iter;
 
-	for (auto iter : npcCont)
+	for (auto& iter : npcCont)
 		delete iter;
 }
 
 void ZoneContUnit::Enter(SocketInfo* pClient)
 {
-	const BYTE contHashIndex = GetContHashKey(pClient->clientKey);
+	const BYTE contHashIndex = GetContHashKey(pClient->objectInfo->key);
 
 	while (lockArr[contHashIndex].test_and_set(std::memory_order_acquire))  // acquire lock //++++++++++++++++++++++++++++++++ 1
 		; // spin
@@ -60,12 +63,12 @@ void ZoneContUnit::Enter(SocketInfo* pClient)
 
 void ZoneContUnit::Exit(SocketInfo* pClient)
 {
-	const BYTE contHashIndex = GetContHashKey(pClient->clientKey);
+	const BYTE contHashIndex = GetContHashKey(pClient->objectInfo->key);
 
 	while (lockArr[contHashIndex].test_and_set(std::memory_order_acquire))  // acquire lock //++++++++++++++++++++++++++++++++ 1
 		; // spin
 
-	const USHORT contEndIndex = indexArr[contHashIndex].load();
+	const USHORT contEndIndex = indexArr[contHashIndex].load() - 1;
 
 	// 컨테이너 맨 뒤의 멤버를, 지워지는 멤버의 인덱스로 변경
 	clientContArr[contHashIndex][pClient->contIndex] = clientContArr[contHashIndex][contEndIndex];
@@ -86,7 +89,7 @@ std::pair<bool, SocketInfo*> ZoneContUnit::FindClient(_ClientKeyType inClientKey
 	
 	for (auto iter : clientContArr[contHashIndex])
 	{
-		if (iter->clientKey == inClientKey)
+		if (iter->objectInfo->key == inClientKey)
 		{
 			return std::make_pair(true, iter);
 		}

@@ -12,6 +12,7 @@ class MoveManager;
 class Sector;
 
 struct ZoneContUnit;
+struct ObjectInfo;
 
 /*
 	Zone
@@ -43,9 +44,12 @@ private:
 	void InitSector();
 
 private:
-	void RenewClientSector(SocketInfo* pClient);
-	void RenewPossibleSectors(SocketInfo* pClient);
+	void RenewSelfSector(ObjectInfo* pClient);
+	void RenewSelfSectorForNpc(ObjectInfo* pClient);
+
+	void RenewPossibleSectors(ObjectInfo* pObjectInfo);
 	void RenewViewListInSectors(SocketInfo* pClient);
+	bool RenewViewListInSectorsForNpc(ObjectInfo* pClient);
 
 	// MoveManager
 	void RecvCharacterMove(SocketInfo* pClient);

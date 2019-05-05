@@ -2,7 +2,7 @@
 
 #include "InHeaderDefine.hh"
 
-enum class MEMORY_UNIT_TYPE : BYTE
+enum class MEMORY_UNIT_TYPE : int		/*int*/
 {
 	RECV_FROM_CLIENT = 0x00,
 	SEND_TO_CLIENT = 0x01,
@@ -50,13 +50,12 @@ struct UnallocatedMemoryUnit
 */
 struct MemoryUnit
 {
-	const MEMORY_UNIT_TYPE memoryUnitType;	// 해당 변수는 생성 시에 정의되고 변하지 않음.
-	
 	OVERLAPPED overlapped;
 	WSABUF wsaBuf;
-	
-	char *dataBuf;
 
+	const MEMORY_UNIT_TYPE memoryUnitType;	// 해당 변수는 생성 시에 정의되고 변하지 않음.
+
+	char *dataBuf;
 public:
 	MemoryUnit(const MEMORY_UNIT_TYPE InMemoryUnitType);
 	~MemoryUnit();
@@ -100,6 +99,7 @@ struct SendMemoryUnit
 	!0. 멤버 변수 가장 상위에는 MemoryUnit가 있어야합니다. 절대로 보장되야합니다.
 */
 class Zone;
+struct ObjectInfo;
 /*
 	4바이트 정렬 짓 해야합니다 여기.
 */
@@ -107,7 +107,7 @@ class Zone;
 struct SocketInfo
 {
 public:
-	SocketInfo() /*noexcept*/;
+	SocketInfo(_KeyType) /*noexcept*/;
 	~SocketInfo();
 
 public:
@@ -118,21 +118,14 @@ public:
 
 	SOCKET sock;
 	std::wstring nickname;
-	_ClientKeyType clientKey;
 	BYTE contIndex;
-
-	// UserData* userdata
-	_PosType posX;	// 성능상의 이슈로 유저데이터 결국 분리. posX, posY 모두 socketInfo에 직접
-	_PosType posY;
 
 	Zone* pZone;		// 현재 입장한 존.
 
-	BYTE sectorIndexX;	// 자신의 섹터로 슥~
-	BYTE sectorIndexY;	// 자신의 섹터로 슥~
-
-	BYTE possibleSectorCount;	// 검사해야하는 섹터 개수, 최대 3을 초과할 수 없음.
-	std::array<std::pair<BYTE, BYTE>, 3> sectorArr;
 	Concurrency::concurrent_unordered_set<_ClientKeyType> viewList;
+	Concurrency::concurrent_unordered_set<_MonsterKeyType> monsterViewList;
+
+	ObjectInfo* objectInfo;
 };
 
 /*
@@ -142,8 +135,7 @@ public:
 
 struct TimerUnit
 {
-	const MEMORY_UNIT_TYPE memoryUnitType;	// 해당 변수는 생성 시에 정의되고 변하지 않음.
-	OBJECT_TYPE objectType;
+	MemoryUnit memoryUnit;
 	BYTE commandType;
 	int objectKey;
 

@@ -47,24 +47,24 @@ namespace PACKET_DATA
 	
 	namespace MAIN_TO_CLIENT
 	{
-		LoginOk::LoginOk(const char inNewId) noexcept :
+		LoginOk::LoginOk(const UINT inNewId) noexcept :
 			size(sizeof(LoginOk)), type(PACKET_TYPE::MAIN_TO_CLIENT::LOGIN_OK),
 			id(inNewId)
 		{}
 
-		PutPlayer::PutPlayer(const char inPutClientId, const char inX, const char inY) noexcept :
+		PutPlayer::PutPlayer(const UINT inPutClientId, const USHORT inX, const USHORT inY) noexcept :
 			size(sizeof(PutPlayer)), type(PACKET_TYPE::MAIN_TO_CLIENT::PUT_PLAYER),
 			id(inPutClientId),
 			x(inX),
 			y(inY)
 		{}
 
-		RemovePlayer::RemovePlayer(const char inRemovedClientID) noexcept :
+		RemovePlayer::RemovePlayer(const UINT inRemovedClientID) noexcept :
 			size(sizeof(RemovePlayer)), type(PACKET_TYPE::MAIN_TO_CLIENT::REMOVE_PLAYER),
 			id(inRemovedClientID)
 		{}
 
-		Position::Position(const char inMovedClientId, const char inX, const char inY) noexcept :
+		Position::Position(const UINT inMovedClientId, const USHORT inX, const USHORT inY) noexcept :
 			size(sizeof(Position)), type(PACKET_TYPE::MAIN_TO_CLIENT::POSITION),
 			id(inMovedClientId),
 			x(inX),
@@ -125,9 +125,12 @@ namespace BIT_CONVERTER
 	{
 		std::pair<OBJECT_TYPE, unsigned int> retPair;
 
-		if ((inKey | NOT_PLAYER_INT) == inKey) retPair.first = OBJECT_TYPE::PLAYER;
-		else if ((inKey | NPC_INT) == inKey) retPair.first = OBJECT_TYPE::MONSTER;
-		else retPair.first = OBJECT_TYPE::NPC;
+		//if ((inKey & NOT_PLAYER_INT) == inKey) retPair.first = OBJECT_TYPE::PLAYER;
+		//else if ((inKey & NPC_INT) != inKey) retPair.first = OBJECT_TYPE::MONSTER;
+		//else retPair.first = OBJECT_TYPE::NPC;
+		if (inKey < NOT_PLAYER_INT) retPair.first = OBJECT_TYPE::PLAYER;
+		else  if ((inKey < NOT_PLAYER_INT + NPC_INT)) retPair.first = OBJECT_TYPE::MONSTER;
+		else  retPair.first = OBJECT_TYPE::NPC;
 
 		retPair.second = inKey & REAL_INT;
 

@@ -3,7 +3,7 @@
 #include "InHeaderDefine.hh"
 
 struct SocketInfo;
-struct BaseMonster;
+class BaseMonster;
 struct BaseNpc;
 
 struct ZoneContUnit
@@ -40,6 +40,9 @@ struct SectorContUnit
 	//Concurrency::concurrent_unordered_set<_ClientKeyType> clientCont;
 	//std::list<_ClientKeyType> clientCont;
 	std::shared_mutex wrlock;
+
+	std::unordered_set<_MonsterKeyType> monsterCont;
+	std::shared_mutex monsterlock;
 };
 
 struct UrbanSectorContUnit

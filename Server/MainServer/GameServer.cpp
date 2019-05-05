@@ -12,6 +12,8 @@
 
 #include "UserData.h"
 
+#include "ObjectInfo.h"
+
 #include "GameServer.h"
 
 GameServer::GameServer(bool inNotUse)
@@ -25,12 +27,14 @@ GameServer::GameServer(bool inNotUse)
 	ServerIntegrityCheck();
 	
 	SendMemoryPool::MakeInstance();
+
+	InitNetwork();
+
 	TimerManager::MakeInstance(hIOCP);
 
 	PrintServerInfoUI();
 	InitZones();
 	InitFunctions();
-	InitNetwork();
 
 	ERROR_HANDLING::errorRecvOrSendArr[0] = ERROR_HANDLING::HandleRecvOrSendError;
 	ERROR_HANDLING::errorRecvOrSendArr[1] = ERROR_HANDLING::NotError;
@@ -201,7 +205,7 @@ void GameServer::AcceptThreadFunction()
 			; isTrueAdd)
 		{
 			// 소켓과 입출력 완료 포트 연결
-			CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->clientKey, 0);
+			CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->objectInfo->key, 0);
 
 			pClient->sock = clientSocket;
 			
@@ -210,11 +214,11 @@ void GameServer::AcceptThreadFunction()
 			//pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
 
 			// 클라이언트에게 서버에 접속(Accept) 함을 알림
-			PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(pClient->clientKey);
+			PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(pClient->objectInfo->key);
 			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&loginPacket));
 
 			// 자신의 캐릭터를 넣어줌.
-			PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket( pClient->clientKey, pClient->posX, pClient->posY);
+			PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket( pClient->objectInfo->key, pClient->objectInfo->posX, pClient->objectInfo->posY);
 			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
 
 			std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
@@ -255,8 +259,8 @@ void GameServer::WorkerThreadFunction()
 	DWORD cbTransferred;
 	unsigned long long clientKey;
 	
-	BYTE* pReturnPointer;
-	LPVOID pMemoryUnit;
+	BYTE* pReturnPointer{nullptr};
+	LPVOID pMemoryUnit{nullptr};
 
 	while (7)
 	{
@@ -266,39 +270,56 @@ void GameServer::WorkerThreadFunction()
 			hIOCP, //입출력 완료 포트 핸들
 			&cbTransferred, //비동기 입출력 작업으로, 전송된 바이트 수가 여기에 저장된다.
 			&clientKey, //함수 호출 시 전달한 세번째 인자(32비트) 가 여기에 저장된다.
-			reinterpret_cast<LPOVERLAPPED *>(&pReturnPointer), //Overlapped 구조체의 주소값
+			reinterpret_cast<LPOVERLAPPED *>(&pMemoryUnit /*pReturnPointer*/), //Overlapped 구조체의 주소값
 			INFINITE // 대기 시간 -> 깨울 까지 무한대
 		);
 #pragma endregion
 
-		pMemoryUnit = pReturnPointer - sizeof(MEMORY_UNIT_TYPE);
+		//pMemoryUnit = pReturnPointer - sizeof(MEMORY_UNIT_TYPE);
+		//std::cout << "출력값 : " << (int&)(*(&pReturnPointer - 4)) << std::endl;
 
-#pragma region [ Error Exception ]
-	//ERROR_CLIENT_DISCONNECT:
-		if (retVal == 0 || cbTransferred == 0)
-		{
-			NETWORK_UTIL::LogOutProcess(pMemoryUnit);
-			/*break;*/
-			continue;
-		}
-#pragma endregion
+//#pragma region [ Error Exception ]
+//		//ERROR_CLIENT_DISCONNECT:
+//		if (retVal == 0 || cbTransferred == 0)
+//		{
+//			NETWORK_UTIL::LogOutProcess(pMemoryUnit);
+//			continue;
+//		}
+//#pragma endregion
 
 #ifdef DISABLED_FUNCTION_POINTER
 		switch (reinterpret_cast<MemoryUnit*>(pMemoryUnit)->memoryUnitType)
 		{
 		case MEMORY_UNIT_TYPE::SEND_TO_CLIENT:
+			if (retVal == 0 || cbTransferred == 0)
+			{
+				NETWORK_UTIL::LogOutProcess(pMemoryUnit);
+				continue;
+			}
+			// std::cout << "\n[SEND_TO_CLIENT] \n";
 			AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
 			break;
 		case MEMORY_UNIT_TYPE::RECV_FROM_CLIENT:
+			if (retVal == 0 || cbTransferred == 0)
+			{
+				NETWORK_UTIL::LogOutProcess(pMemoryUnit);
+				continue;
+			}
+			std::cout << "\n[RECV_FROM_CLIENT] \n";
 			AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
 			break;
 		case MEMORY_UNIT_TYPE::TIMER_FUNCTION:
+			//std::cout << "\n[TIMER_FUNCTION] \n";
 			ProcessTimerUnit(reinterpret_cast<TimerUnit*>(pMemoryUnit));
 			break;
 		default:
-			std::cout << "마! 니 뭐여?" << std::endl;
+			std::cout << "\n[Error Memory Unit Type] \n";
+			std::cout << "마! 니 뭐여? -> " <<
+				static_cast<int>(reinterpret_cast<MemoryUnit*>(pMemoryUnit)->memoryUnitType)
+				<< std::endl;
 			break;
 		}
+		//}
 #else
 		reinterpret_cast<MemoryUnit *>(pMemoryUnit)->memoryUnitType == MEMORY_UNIT_TYPE::RECV
 			? AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred)
@@ -381,7 +402,9 @@ void GameServer::AfterSend(SendMemoryUnit* pMemoryUnit)
 void GameServer::ProcessTimerUnit(TimerUnit* pUnit)
 {
 	zoneCont[0]->ProcessTimerUnit(pUnit);
-	TimerManager::GetInstance()->PushTimerUnit(pUnit);
+
+	// 재활용하고 싶은건 재활용하고, 반납할건 반납하게하기 위해, 내부에서 정하도록 변경함.
+	//TimerManager::GetInstance()->PushTimerUnit(pUnit);
 }
 
 #ifndef DISABLED_UNALLOCATED_MEMORY_SEND

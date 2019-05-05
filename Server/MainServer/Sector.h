@@ -6,6 +6,7 @@ struct SectorContUnit;
 struct ZoneContUnit;
 
 struct SocketInfo;
+struct ObjectInfo;
 
 /*
 	Sector
@@ -19,19 +20,24 @@ struct SocketInfo;
 class Sector
 {
 public:
-	void Join(SocketInfo*);
-	void Exit(SocketInfo*);
+	void Join(ObjectInfo*);
+	void Exit(ObjectInfo*);
+
+	void JoinForNpc(ObjectInfo*);
+	void ExitForNpc(ObjectInfo*);
 
 	void JudgeClientWithViewList(SocketInfo*, ZoneContUnit*);
+	bool JudgeClientWithViewListForNpc(ObjectInfo*, ZoneContUnit*);
 
-	void SendPutPlayer(SocketInfo* pPutClient, SocketInfo* pRecvClient);
+	void SendPutPlayer(ObjectInfo* pPutClient, SocketInfo* pRecvClient);
 	void SendRemovePlayer(const _ClientKeyType pRemoveClient, SocketInfo* pRecvClient);
 
-	void SendMovePlayer(SocketInfo* pPutClient, SocketInfo* pRecvClient);
+	void SendMovePlayer(ObjectInfo* pPutClient, SocketInfo* pRecvClient);
 
 private:
 	bool IsSeeEachOther(const _PosType, const _PosType, const _PosType, const _PosType) const noexcept;
 	bool IsSeeEachOther(const std::pair<_PosType, _PosType>&, const std::pair<_PosType, _PosType>&) const noexcept;
+	bool IsSeeEachOther(const ObjectInfo* , const ObjectInfo*) const noexcept;
 
 public:
 	Sector(const BYTE sectorIndeX, const BYTE sectorIndeY);

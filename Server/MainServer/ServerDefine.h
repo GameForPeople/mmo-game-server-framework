@@ -34,10 +34,10 @@ namespace ERROR_HANDLING {
  namespace GLOBAL_DEFINE
 {
 	constexpr USHORT MAX_CLIENT = 400;
-	constexpr UINT MAX_MONSTER = 200000;
+	constexpr UINT MAX_MONSTER = 2000;
 
-	constexpr BYTE START_POSITION_X = 400;
-	constexpr BYTE START_POSITION_Y = 400;
+	constexpr USHORT START_POSITION_X = 400;
+	constexpr USHORT START_POSITION_Y = 400;
 
 	constexpr BYTE SECTOR_DISTANCE = 20;	// 씐 전체 크기와 viewDistance를 고려해야함!
 	constexpr BYTE SECTOR_HALF_DISTANCE = SECTOR_DISTANCE / 2;

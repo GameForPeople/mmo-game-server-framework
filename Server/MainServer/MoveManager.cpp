@@ -9,6 +9,8 @@
 
 #include "ClientContUnit.h"
 
+#include "ObjectInfo.h"
+
 #include "MoveManager.h"
 
 MoveManager::MoveManager() noexcept
@@ -48,11 +50,17 @@ void MoveManager::MoveCharacter(SocketInfo* pClient)
 #endif
 
 #if _USE_STD_FUNCTION_
-	whatIsYourDirection[static_cast<int>(pClient->loadedBuf[2])](*this, pClient);
+	whatIsYourDirection[static_cast<int>(pClient->loadedBuf[2])](*this, pClient->objectInfo);
 #else
 	moveFunctionArr[static_cast<int>(pClient->buf[1])](*this, pClient->userData);
 #endif
 }
+
+void MoveManager::MoveRandom(ObjectInfo* pClient)
+{
+	whatIsYourDirection[static_cast<int>(rand() % 4)](*this, pClient);
+}
+
 /*
 void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, ZoneContUnit* inClientCont)
 {
@@ -79,30 +87,30 @@ void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, ZoneContUnit* inCl
 }
 */
 #if _USE_STD_FUNCTION_
-void MoveManager::LeftMoveTest(SocketInfo* pClient)
+void MoveManager::LeftMoveTest(ObjectInfo* pClient)
 {
 	moveFunctionArr[DIRECTION::LEFT][static_cast<bool>(pClient->posX)](*this, pClient);
 };
 
-void MoveManager::UpMoveTest(SocketInfo* pClient)
+void MoveManager::UpMoveTest(ObjectInfo* pClient)
 {
 	moveFunctionArr[DIRECTION::UP][static_cast<bool>(pClient->posY)](*this, pClient);
 };
 
-void MoveManager::RightMoveTest(SocketInfo* pClient)
+void MoveManager::RightMoveTest(ObjectInfo* pClient)
 {
 	moveFunctionArr[DIRECTION::RIGHT][!(static_cast<bool>(pClient->posX / GLOBAL_DEFINE::MAX_WIDTH))](*this, pClient);
 };
 
-void MoveManager::DownMoveTest(SocketInfo* pClient)
+void MoveManager::DownMoveTest(ObjectInfo* pClient)
 {
 	moveFunctionArr[DIRECTION::DOWN][!(static_cast<bool>(pClient->posY / GLOBAL_DEFINE::MAX_HEIGHT))](*this, pClient);
 };
 
-void MoveManager::MoveFail(SocketInfo* pClient) noexcept
+void MoveManager::MoveFail(ObjectInfo* pClient) noexcept
 {}
 
-void MoveManager::MoveLeft(SocketInfo* pClient) noexcept
+void MoveManager::MoveLeft(ObjectInfo* pClient) noexcept
 {
 	//Position2D newPosition = inUserData->GetPosition();
 	//--newPosition.x;
@@ -112,7 +120,7 @@ void MoveManager::MoveLeft(SocketInfo* pClient) noexcept
 	pClient->posX = pClient->posX - 1;
 }
 
-void MoveManager::MoveUp(SocketInfo* pClient) noexcept
+void MoveManager::MoveUp(ObjectInfo* pClient) noexcept
 {
 	//Position2D newPosition = inUserData->GetPosition();
 	//--newPosition.y;
@@ -122,7 +130,7 @@ void MoveManager::MoveUp(SocketInfo* pClient) noexcept
 	pClient->posY = pClient->posY - 1;
 }
 
-void MoveManager::MoveRight(SocketInfo* pClient) noexcept
+void MoveManager::MoveRight(ObjectInfo* pClient) noexcept
 {
 	//Position2D newPosition = inUserData->GetPosition();
 	//++newPosition.x;
@@ -132,7 +140,7 @@ void MoveManager::MoveRight(SocketInfo* pClient) noexcept
 	pClient->posX = pClient->posX + 1;
 }
 
-void MoveManager::MoveDown(SocketInfo* pClient) noexcept
+void MoveManager::MoveDown(ObjectInfo* pClient) noexcept
 {
 	//Position2D newPosition = inUserData->GetPosition();
 	//++newPosition.y;

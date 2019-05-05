@@ -1,5 +1,7 @@
 #pragma once
 
+#define _DEV_MODE_
+
 /*
 	Define.h
 		- 해당 헤더 파일은, 서버와 클라이언트가 공통으로 사용합니다.
@@ -135,40 +137,40 @@ namespace PACKET_DATA
 		{
 			const char size;
 			const char type;
-			char id;
+			UINT id;
 
-			LoginOk(const char inNewId) noexcept;
+			LoginOk(const UINT inNewId) noexcept;
 		};
 
 		struct PutPlayer
 		{
 			const char size;
 			const char type;
-			char id;
-			char x;
-			char y;
+			UINT id;
+			USHORT x;
+			USHORT y;
 
-			PutPlayer(const char inMovedClientId, const char inX, const char inY) noexcept;
+			PutPlayer(const UINT inMovedClientId, const USHORT inX, const USHORT inY) noexcept;
 		};
 
 		struct RemovePlayer
 		{
 			const char size;
 			const char type;
-			char id;
+			UINT id;
 
-			RemovePlayer(const char inRemovedClientID) noexcept;
+			RemovePlayer(const UINT inRemovedClientID) noexcept;
 		};
 
 		struct Position
 		{
 			const char size;
 			const char type;
-			char id;
-			char x;
-			char y;
+			UINT id;
+			USHORT x;
+			USHORT y;
 
-			Position(const char inMovedClientId, const char inX, const char inY) noexcept;
+			Position(const UINT inMovedClientId, const USHORT inX, const USHORT inY) noexcept;
 		};
 	}
 

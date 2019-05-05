@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "ServerDefine.h"
 #include "MemoryUnit.h"
 #include "TimerManager.h"
 
@@ -50,7 +51,13 @@ void TimerManager::TimerThread()
 		while (timerCont[nowTime].try_pop(retTimerUnit))
 		{
 		//----- ≤®≥Ω ≈∏¿Ã∏” ¿Ø¥÷ √≥∏Æ.
-			PostQueuedCompletionStatus(hIOCP, 0, 0, reinterpret_cast<LPOVERLAPPED>(retTimerUnit));
+			int errnum = PostQueuedCompletionStatus(hIOCP, 0, retTimerUnit->objectKey, reinterpret_cast<LPOVERLAPPED>(retTimerUnit /*+ sizeof(MEMORY_UNIT_TYPE)*/));
+			if (errnum == 0)
+			{
+				errnum = WSAGetLastError();
+				std::cout << errnum << std::endl;
+				ERROR_HANDLING::ERROR_QUIT(L"PostQueuedCompletionStatus()");
+			}
 		//-----
 		}
 	}

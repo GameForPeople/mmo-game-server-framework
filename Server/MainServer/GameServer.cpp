@@ -61,7 +61,8 @@ void GameServer::ServerIntegrityCheck()
 	static_assert((int)((GLOBAL_DEFINE::MAX_HEIGHT - 1) / GLOBAL_DEFINE::SECTOR_DISTANCE)
 		!= (int)((GLOBAL_DEFINE::MAX_HEIGHT + 1) / GLOBAL_DEFINE::SECTOR_DISTANCE),
 		"MAX_HEIGHT(그리고 MAX_WIDTH)는 SECTOR_DISTANCE의 배수가 아닐 경우, 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
-	// 채팅서버에서 해당 내용을 검사합니다.
+	
+	// 이제 채팅서버에서 해당 내용을 검사합니다.
 	//static_assert(PACKET_TYPE::CLIENT_TO_SERVER::CHAT == PACKET_TYPE::SERVER_TO_CLIENT::CHAT,
 	//	"CS::CHAT와 SC::CHAT의 값이 다르며, 이는 클라이언트에 치명적인 오류를 발생시킵니다. 서버 실행을 거절하였습니다.");
 }
@@ -127,9 +128,9 @@ void GameServer::InitNetwork()
 	//GetSystemInfo(&si);
 
 	// 3. 워커 쓰레드 생성 및 IOCP 등록.
-	workerThreadCont.reserve(2);
-	printf("워커쓰레드 개수는 2개로 제한, 생성되었습니다. \n");
-	for (int i = 0; i < /* (int)si.dwNumberOfProcessors * 2 */ 2; ++i)
+	workerThreadCont.reserve(4);
+	printf("!. 현재 워커쓰레드 개수는 코어의 개수와 상관없이 4개로 제한, 생성합니다. \n");
+	for (int i = 0; i < /* (int)si.dwNumberOfProcessors * 2 */ 4; ++i)
 	{
 		workerThreadCont.emplace_back(std::thread{ StartWorkerThread, (LPVOID)this });
 	}
@@ -160,7 +161,8 @@ void GameServer::Run()
 	std::thread timerThread{ TimerManager::GetInstance()->StartTimerThread };
 
 	std::thread acceptThread{ StartAcceptThread, (LPVOID)this };
-	printf("Game Server activated!\n\n");
+
+	printf("\n\n#. Game Server activated!\n\n");
 	
 	timerThread.join();
 	acceptThread.join();
@@ -305,7 +307,7 @@ void GameServer::WorkerThreadFunction()
 				NETWORK_UTIL::LogOutProcess(pMemoryUnit);
 				continue;
 			}
-			std::cout << "\n[RECV_FROM_CLIENT] \n";
+			//std::cout << "\n[RECV_FROM_CLIENT] \n";
 			AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
 			break;
 		case MEMORY_UNIT_TYPE::TIMER_FUNCTION:

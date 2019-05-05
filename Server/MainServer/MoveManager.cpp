@@ -99,12 +99,12 @@ void MoveManager::UpMoveTest(ObjectInfo* pClient)
 
 void MoveManager::RightMoveTest(ObjectInfo* pClient)
 {
-	moveFunctionArr[DIRECTION::RIGHT][!(static_cast<bool>(pClient->posX / GLOBAL_DEFINE::MAX_WIDTH))](*this, pClient);
+	moveFunctionArr[DIRECTION::RIGHT][!(static_cast<bool>(pClient->posX / (GLOBAL_DEFINE::MAX_WIDTH - 1)))](*this, pClient);
 };
 
 void MoveManager::DownMoveTest(ObjectInfo* pClient)
 {
-	moveFunctionArr[DIRECTION::DOWN][!(static_cast<bool>(pClient->posY / GLOBAL_DEFINE::MAX_HEIGHT))](*this, pClient);
+	moveFunctionArr[DIRECTION::DOWN][!(static_cast<bool>(pClient->posY / (GLOBAL_DEFINE::MAX_HEIGHT - 1)))](*this, pClient);
 };
 
 void MoveManager::MoveFail(ObjectInfo* pClient) noexcept

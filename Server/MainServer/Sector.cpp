@@ -15,7 +15,7 @@ Sector::Sector(const BYTE inX, const BYTE inY)
 	: indexX(inX)
 	, indexY(inY)
 	, centerX(inX * GLOBAL_DEFINE::SECTOR_DISTANCE + GLOBAL_DEFINE::SECTOR_HALF_DISTANCE)
-	, centerY(inY* GLOBAL_DEFINE::SECTOR_DISTANCE + GLOBAL_DEFINE::SECTOR_HALF_DISTANCE)
+	, centerY(inY * GLOBAL_DEFINE::SECTOR_DISTANCE + GLOBAL_DEFINE::SECTOR_HALF_DISTANCE)
 	, sectorContUnit(new SectorContUnit)
 {
 }
@@ -64,9 +64,9 @@ void Sector::Exit(ObjectInfo* pInClient)
 
 void Sector::JoinForNpc(ObjectInfo* pClientObject)
 {
-	//sectorContUnit->monsterlock.lock(); //+++++++++++++++++++++++++++++++++++++1
+	sectorContUnit->monsterlock.lock(); //+++++++++++++++++++++++++++++++++++++1
 	sectorContUnit->monsterCont.emplace(pClientObject->key);
-	//sectorContUnit->monsterlock.unlock(); //-----------------------------------0
+	sectorContUnit->monsterlock.unlock(); //-----------------------------------0
 
 	pClientObject->sectorIndexX = indexX;
 	pClientObject->sectorIndexY = indexY;
@@ -74,7 +74,7 @@ void Sector::JoinForNpc(ObjectInfo* pClientObject)
 
 void Sector::ExitForNpc(ObjectInfo* pInClient)
 {
-	//sectorContUnit->monsterlock.lock(); //+++++++++++++++++++++++++++++++++++++1
+	sectorContUnit->monsterlock.lock(); //+++++++++++++++++++++++++++++++++++++1
 
 	for (auto iter = sectorContUnit->monsterCont.begin()
 		; iter != sectorContUnit->monsterCont.end()
@@ -87,7 +87,7 @@ void Sector::ExitForNpc(ObjectInfo* pInClient)
 		}
 	}
 
-	//sectorContUnit->monsterlock.unlock(); //-----------------------------------0
+	sectorContUnit->monsterlock.unlock(); //-----------------------------------0
 }
 
 /*
@@ -168,13 +168,13 @@ void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneCon
 				// 서로의 뷰 리스트에 추가할 때... 문제가 될 수 있습니다.
 				pClient->monsterViewList.insert(otherKey);
 			}
-			//else
-			//{
-			//	//서로 보이고, 서로 아는 사이였을 때,
-			//
-			//	// 나는 내가 알아서 할게 너 나 바뀐거 받아라 얌마!
-			//	SendMovePlayer(pClient->objectInfo, pOtherClient);
-			//}
+			else
+			{
+				//서로 보이고, 서로 아는 사이였을 때,
+			
+				// 나는 내가 알아서 할게 너 나 바뀐거 받아라 얌마!
+				SendMovePlayer(pMonster->objectInfo, pClient);
+			}
 		}
 		else
 		{
@@ -204,7 +204,7 @@ bool Sector::JudgeClientWithViewListForNpc(ObjectInfo* pClient, ZoneContUnit* pZ
 
 	// 대충 0명이느냐 아니느냐 검사
 	if (sectorContUnit->clientCont.size() == 0) {
-		std::cout << "텅비어있습니다!" << std::endl;  return false; //이게 많아야할텐데? }
+		/*std::cout << "텅비어있습니다!" << std::endl; */ return false; //이게 많아야할텐데? }
 	}
 
 	sectorContUnit->wrlock.lock_shared();	//++++++++++++++++++++++++++++1	Sector : Read Lock!

@@ -43,11 +43,12 @@ void TimerManager::TimerThread()
 	{
 		Sleep(100); //0.1초 슬립인데 이부분 보정좀 해줘야해
 
-		nowTime.load() != MAX_COOL_TIME
+		nowTime.load() != MAX_COOL_TIME - 1
 			? nowTime.fetch_add(1)
 			: nowTime = 0;
 
 		TimerUnit* retTimerUnit = nullptr;
+		
 		while (timerCont[nowTime].try_pop(retTimerUnit))
 		{
 		//----- 꺼낸 타이머 유닛 처리.

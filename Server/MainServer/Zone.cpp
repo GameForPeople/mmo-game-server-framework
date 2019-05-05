@@ -60,7 +60,7 @@ void Zone::InitClientCont()
 	zoneContUnit = new ZoneContUnit;
 	unsigned int tempIndex = BIT_CONVERTER::NOT_PLAYER_INT;
 
-	std::cout << "몬스터 할당중!" << std::endl;
+	std::cout << "\n#. 몬스터 할당중입니다." << std::endl;
 
 	//생성
 	for (auto& monster : zoneContUnit->monsterCont)
@@ -73,8 +73,8 @@ void Zone::InitClientCont()
 
 		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY);
 		
-		sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].Join(monster->objectInfo);
-		//RenewSelfSectorForNpc(monster->objectInfo); // 비용이 너무 큼.
+		RenewSelfSectorForNpc(monster->objectInfo); // 비용이 너무 큼.
+		//sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);
 
 		auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
 		timerUnit->commandType = 1;
@@ -146,7 +146,9 @@ void Zone::ProcessTimerUnit(TimerUnit* pUnit)
 
 			RenewViewListInSectorsForNpc(tempObjectInfo)
 				? TimerManager::GetInstance()->AddTimerEvent(pUnit, 10)
-				: TimerManager::GetInstance()->PushTimerUnit(pUnit);
+				: TimerManager::GetInstance()->AddTimerEvent(pUnit, 10);
+				//최적화 안할겨 뭐 어쩔겨
+				//TimerManager::GetInstance()->PushTimerUnit(pUnit);
 		}
 		break;
 	default:
@@ -223,8 +225,8 @@ void Zone::RenewPossibleSectors(ObjectInfo* pClient)
 {
 	// 로컬 변수를 리턴하는 코드에서, 멤버 변수를 활용하여 구현하는 방식으로 변경.
 
-	const BYTE nowSectorCenterX = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterX();
-	const BYTE nowSectorCenterY = sectorCont[pClient->sectorIndexX][pClient->sectorIndexY].GetCenterY();
+	const USHORT nowSectorCenterX = sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].GetCenterX();
+	const USHORT nowSectorCenterY = sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].GetCenterY();
 
 	char xDir = 0;	// x 섹터의 판단 방향
 	char yDir = 0;	// y 섹터의 판단 방향
@@ -466,7 +468,8 @@ void Zone::RenewSelfSector(ObjectInfo* pClient)
 	else
 	{
 		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].Exit(pClient);
-		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].Join(pClient);
+		//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].Join(pClient);
+		sectorCont[static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE)][static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE)].Join(pClient);
 	}
 }
 
@@ -481,8 +484,10 @@ void Zone::RenewSelfSectorForNpc(ObjectInfo* pClient)
 	else
 	{
 		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].ExitForNpc(pClient);
-		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].JoinForNpc(pClient);
+		sectorCont[static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE)][static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE)].JoinForNpc(pClient);
+		//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].JoinForNpc(pClient);
 	}
+
 }
 
 /*

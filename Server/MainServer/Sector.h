@@ -46,12 +46,12 @@ public:
 private:
 	const BYTE indexX;
 	const BYTE indexY;
-	const BYTE centerX;
-	const BYTE centerY;
+	const USHORT centerX;
+	const USHORT centerY;
 
 	SectorContUnit* sectorContUnit;
 
 public:
-	inline constexpr BYTE GetCenterX() const noexcept { return centerX; }
-	inline constexpr BYTE GetCenterY() const noexcept { return centerY; }
+	inline constexpr USHORT GetCenterX() const noexcept { return centerX; }
+	inline constexpr USHORT GetCenterY() const noexcept { return centerY; }
 };

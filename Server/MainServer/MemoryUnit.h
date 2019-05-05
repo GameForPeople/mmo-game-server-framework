@@ -2,11 +2,15 @@
 
 #include "InHeaderDefine.hh"
 
-enum class MEMORY_UNIT_TYPE : BYTE
+enum class MEMORY_UNIT_TYPE : int		/*int*/
 {
-	RECV = 0x00,
-	SEND = 0x01,
-	//UNALLOCATED_SEND = 0x02
+	RECV_FROM_CLIENT = 0x00,
+	SEND_TO_CLIENT = 0x01,
+
+	TIMER_FUNCTION = 0x02,
+	RECV_FROM_COMMAND = 0x03,
+	//UNALLOCATED_SEND = 0x04
+	ENUM_SIZE
 };
 
 #ifndef DISABLED_UNALLOCATED_MEMORY_SEND
@@ -41,16 +45,17 @@ struct UnallocatedMemoryUnit
 		- 따라서 항상, MAX_SIZE_OF_SEND는 전송되는 패킷들 중 가장 큰 사이즈로 정의되야 합니다.
 
 	!1. 해당 구조체는 단독으로 사용되지 않습니다.
+
+	!2. [MAIN] 19/05/03 이후로, 해당 구조체 멤버 변수의 순서가 변경되었습니다.
 */
 struct MemoryUnit
 {
 	OVERLAPPED overlapped;
 	WSABUF wsaBuf;
-	
-	const MEMORY_UNIT_TYPE memoryUnitType;	// 해당 변수는 생성 시에 정의되고 변하지 않음.
-	
-	char *dataBuf;
 
+	const MEMORY_UNIT_TYPE memoryUnitType;	// 해당 변수는 생성 시에 정의되고 변하지 않음.
+
+	char *dataBuf;
 public:
 	MemoryUnit(const MEMORY_UNIT_TYPE InMemoryUnitType);
 	~MemoryUnit();
@@ -66,6 +71,8 @@ public:
 
 	#0. pOwner는 해당 Send에 대상이 되는 Socket Info 구조체입니다.
 		- 이는 Send 실패 시, 예외처리를 위해 사용됩니다.
+
+	!0. 멤버 변수 가장 상위에는 MemoryUnit가 있어야합니다. 절대로 보장되야합니다.
 
 	?0. POwner의 쓰임에 의문이 생겻습니다. 이거 필요가 없는 걸?
 		- 관련 코드 모드 주석 처리하고, 확정 시, 전부 삭제.
@@ -85,15 +92,14 @@ struct SendMemoryUnit
 	SendMemoryUnit& operator=(SendMemoryUnit&& other) noexcept;
 };
 
-
 /*
 	SocketInfo
 		- 소켓정보구조체 입니다.
 
 	!0. 멤버 변수 가장 상위에는 MemoryUnit가 있어야합니다. 절대로 보장되야합니다.
 */
-class UserData;
 class Zone;
+struct ObjectInfo;
 /*
 	4바이트 정렬 짓 해야합니다 여기.
 */
@@ -101,28 +107,39 @@ class Zone;
 struct SocketInfo
 {
 public:
-	SocketInfo() /*noexcept*/;
+	SocketInfo(_KeyType) /*noexcept*/;
 	~SocketInfo();
 
 public:
 	MemoryUnit memoryUnit;
 
-	int loadedSize;
-	//char *loadedBuf;
 	char loadedBuf[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
+	int loadedSize;
 
 	SOCKET sock;
-	UserData* userData;
-	//std::unique_ptr<UserData> userData;
+	std::wstring nickname;
+	BYTE contIndex;
 
-	_ClientKeyType clientKey;
-	
 	Zone* pZone;		// 현재 입장한 존.
 
-	BYTE sectorIndexX;	// 자신의 섹터로 슥~
-	BYTE sectorIndexY;	// 자신의 섹터로 슥~
-
-	BYTE possibleSectorCount;	// 검사해야하는 섹터 개수, 최대 3을 초과할 수 없음.
-	std::array<std::pair<BYTE, BYTE>, 3> sectorArr;
 	Concurrency::concurrent_unordered_set<_ClientKeyType> viewList;
+	Concurrency::concurrent_unordered_set<_MonsterKeyType> monsterViewList;
+
+	ObjectInfo* objectInfo;
+};
+
+/*
+	TimerUnit
+		- 타이머에서 사용되는 메모리 단위입니다.
+*/
+
+struct TimerUnit
+{
+	MemoryUnit memoryUnit;
+	BYTE commandType;
+	int objectKey;
+
+public:
+	TimerUnit();
+	~TimerUnit();
 };

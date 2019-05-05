@@ -9,6 +9,8 @@
 
 #include "ClientContUnit.h"
 
+#include "ObjectInfo.h"
+
 #include "MoveManager.h"
 
 MoveManager::MoveManager() noexcept
@@ -48,11 +50,17 @@ void MoveManager::MoveCharacter(SocketInfo* pClient)
 #endif
 
 #if _USE_STD_FUNCTION_
-	whatIsYourDirection[static_cast<int>(pClient->loadedBuf[2])](*this, pClient->userData);
+	whatIsYourDirection[static_cast<int>(pClient->loadedBuf[2])](*this, pClient->objectInfo);
 #else
 	moveFunctionArr[static_cast<int>(pClient->buf[1])](*this, pClient->userData);
 #endif
 }
+
+void MoveManager::MoveRandom(ObjectInfo* pClient)
+{
+	whatIsYourDirection[static_cast<int>(rand() % 4)](*this, pClient);
+}
+
 /*
 void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, ZoneContUnit* inClientCont)
 {
@@ -79,58 +87,66 @@ void MoveManager::SendMoveCharacter(SocketInfo* pMovedClient, ZoneContUnit* inCl
 }
 */
 #if _USE_STD_FUNCTION_
-void MoveManager::LeftMoveTest(UserData* inUserData)
+void MoveManager::LeftMoveTest(ObjectInfo* pClient)
 {
-	moveFunctionArr[DIRECTION::LEFT][static_cast<bool>(inUserData->GetPosition().x)](*this, inUserData);
+	moveFunctionArr[DIRECTION::LEFT][static_cast<bool>(pClient->posX)](*this, pClient);
 };
 
-void MoveManager::UpMoveTest(UserData* inUserData)
+void MoveManager::UpMoveTest(ObjectInfo* pClient)
 {
-	moveFunctionArr[DIRECTION::UP][static_cast<bool>(inUserData->GetPosition().y)](*this, inUserData);
+	moveFunctionArr[DIRECTION::UP][static_cast<bool>(pClient->posY)](*this, pClient);
 };
 
-void MoveManager::RightMoveTest(UserData* inUserData)
+void MoveManager::RightMoveTest(ObjectInfo* pClient)
 {
-	moveFunctionArr[DIRECTION::RIGHT][!(static_cast<bool>(inUserData->GetPosition().x / GLOBAL_DEFINE::MAX_WIDTH))](*this, inUserData);
+	moveFunctionArr[DIRECTION::RIGHT][!(static_cast<bool>(pClient->posX / (GLOBAL_DEFINE::MAX_WIDTH - 1)))](*this, pClient);
 };
 
-void MoveManager::DownMoveTest(UserData* inUserData)
+void MoveManager::DownMoveTest(ObjectInfo* pClient)
 {
-	moveFunctionArr[DIRECTION::DOWN][!(static_cast<bool>(inUserData->GetPosition().y / GLOBAL_DEFINE::MAX_HEIGHT))](*this, inUserData);
+	moveFunctionArr[DIRECTION::DOWN][!(static_cast<bool>(pClient->posY / (GLOBAL_DEFINE::MAX_HEIGHT - 1)))](*this, pClient);
 };
 
-void MoveManager::MoveFail(UserData* inUserData) noexcept
+void MoveManager::MoveFail(ObjectInfo* pClient) noexcept
 {}
 
-void MoveManager::MoveLeft(UserData* inUserData) noexcept
+void MoveManager::MoveLeft(ObjectInfo* pClient) noexcept
 {
 	//Position2D newPosition = inUserData->GetPosition();
 	//--newPosition.x;
 	//inUserData->SetPosition(newPosition);
-	inUserData->SetPosition(inUserData->GetPosition().x - 1, inUserData->GetPosition().y);
+
+	//inUserData->SetPosition(SocketInfo->GetPosition().x - 1, inUserData->GetPosition().y);
+	pClient->posX = pClient->posX - 1;
 }
 
-void MoveManager::MoveUp(UserData* inUserData) noexcept
+void MoveManager::MoveUp(ObjectInfo* pClient) noexcept
 {
 	//Position2D newPosition = inUserData->GetPosition();
 	//--newPosition.y;
 	//inUserData->SetPosition(newPosition);
-	inUserData->SetPosition(inUserData->GetPosition().x, inUserData->GetPosition().y - 1);
+	
+	//inUserData->SetPosition(inUserData->GetPosition().x, inUserData->GetPosition().y - 1);
+	pClient->posY = pClient->posY - 1;
 }
 
-void MoveManager::MoveRight(UserData* inUserData) noexcept
+void MoveManager::MoveRight(ObjectInfo* pClient) noexcept
 {
 	//Position2D newPosition = inUserData->GetPosition();
 	//++newPosition.x;
 	//inUserData->SetPosition(newPosition);
-	inUserData->SetPosition(inUserData->GetPosition().x + 1, inUserData->GetPosition().y);
+	
+	//inUserData->SetPosition(inUserData->GetPosition().x + 1, inUserData->GetPosition().y);
+	pClient->posX = pClient->posX + 1;
 }
 
-void MoveManager::MoveDown(UserData* inUserData) noexcept
+void MoveManager::MoveDown(ObjectInfo* pClient) noexcept
 {
 	//Position2D newPosition = inUserData->GetPosition();
 	//++newPosition.y;
 	//inUserData->SetPosition(newPosition);
-	inUserData->SetPosition(inUserData->GetPosition().x, inUserData->GetPosition().y + 1);
+	
+	//inUserData->SetPosition(inUserData->GetPosition().x, inUserData->GetPosition().y + 1);
+	pClient->posY = pClient->posY + 1;
 }
 #endif

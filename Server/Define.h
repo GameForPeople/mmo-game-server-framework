@@ -1,5 +1,7 @@
 #pragma once
 
+//#define _DEV_MODE_
+
 /*
 	Define.h
 		- 해당 헤더 파일은, 서버와 클라이언트가 공통으로 사용합니다.
@@ -135,40 +137,40 @@ namespace PACKET_DATA
 		{
 			const char size;
 			const char type;
-			char id;
+			UINT id;
 
-			LoginOk(const char inNewId) noexcept;
+			LoginOk(const UINT inNewId) noexcept;
 		};
 
 		struct PutPlayer
 		{
 			const char size;
 			const char type;
-			char id;
-			char x;
-			char y;
+			UINT id;
+			USHORT x;
+			USHORT y;
 
-			PutPlayer(const char inMovedClientId, const char inX, const char inY) noexcept;
+			PutPlayer(const UINT inMovedClientId, const USHORT inX, const USHORT inY) noexcept;
 		};
 
 		struct RemovePlayer
 		{
 			const char size;
 			const char type;
-			char id;
+			UINT id;
 
-			RemovePlayer(const char inRemovedClientID) noexcept;
+			RemovePlayer(const UINT inRemovedClientID) noexcept;
 		};
 
 		struct Position
 		{
 			const char size;
 			const char type;
-			char id;
-			char x;
-			char y;
+			UINT id;
+			USHORT x;
+			USHORT y;
 
-			Position(const char inMovedClientId, const char inX, const char inY) noexcept;
+			Position(const UINT inMovedClientId, const USHORT inX, const USHORT inY) noexcept;
 		};
 	}
 
@@ -211,6 +213,31 @@ namespace GLOBAL_DEFINE
 	constexpr USHORT CHAT_SERVER_PORT = 9001;
 	constexpr USHORT MANAGER_SERVER_PORT = 9002;
 
-	constexpr BYTE MAX_HEIGHT = 100;
-	constexpr BYTE MAX_WIDTH = 100;
+	constexpr USHORT MAX_HEIGHT = 800;
+	constexpr USHORT MAX_WIDTH = 800;
+}
+
+namespace BIT_CONVERTER
+{
+	constexpr BYTE SEND_BYTE = (1 << 7);
+	constexpr unsigned int NOT_PLAYER_INT = (1 << 31);	// 0일때는 플레이어 바이트, 1일때는 2차검사 필요.
+	constexpr unsigned int NPC_INT = (1 << 30);	// 0일 때는 몬스터, 1일 때는 NPC
+	constexpr unsigned int REAL_INT = 0x3fffffff;	// 0, 1 비트 마스크를 씌울 때 사용하는 변수.
+
+	enum class OBJECT_TYPE : BYTE
+	{
+		PLAYER,
+		MONSTER,
+		NPC
+	};
+
+	std::pair<OBJECT_TYPE, unsigned int> WhatIsYourTypeAndRealKey(unsigned int) noexcept;
+	unsigned int MakeMonsterKey(unsigned int) noexcept;
+
+	/*_NODISCARD*/ BYTE MakeSendPacket(const BYTE inPacketType) noexcept;
+	/*_NODISCARD*/ bool GetRecvOrSend(const char inChar) noexcept;
+
+	/*_NODISCARD*/ BYTE MakeByteFromLeftAndRightByte(const BYTE inLeftByte, const BYTE inRightByte) noexcept;
+	/*_NODISCARD*/ BYTE GetLeft4Bit(const BYTE inByte) noexcept;
+	/*_NODISCARD*/ BYTE GetRight4Bit(const BYTE inByte) noexcept;
 }

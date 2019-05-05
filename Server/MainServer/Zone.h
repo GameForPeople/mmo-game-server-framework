@@ -4,6 +4,7 @@
 
 struct SocketInfo;
 struct MemoryUnit;
+struct TimerUnit;
 
 class ConnectManager;
 class MoveManager;
@@ -11,6 +12,7 @@ class MoveManager;
 class Sector;
 
 struct ZoneContUnit;
+struct ObjectInfo;
 
 /*
 	Zone
@@ -25,12 +27,13 @@ class Zone
 {
 public:
 	void ProcessPacket(SocketInfo* pClient);
+	void ProcessTimerUnit(TimerUnit* pUnit);
 
 	Zone();
 	~Zone();
 
 public: // ConnectManager
-	_ClientNode /*std::optional<SocketInfo*>*/ TryToEnter();
+	std::pair<bool, SocketInfo*> /*std::optional<SocketInfo*>*/ TryToEnter();
 	void Exit(SocketInfo*);
 	void InitViewAndSector(SocketInfo* );
 
@@ -41,9 +44,12 @@ private:
 	void InitSector();
 
 private:
-	void RenewClientSector(SocketInfo* pClient);
-	void RenewPossibleSectors(SocketInfo* pClient);
+	void RenewSelfSector(ObjectInfo* pClient);
+	void RenewSelfSectorForNpc(ObjectInfo* pClient);
+
+	void RenewPossibleSectors(ObjectInfo* pObjectInfo);
 	void RenewViewListInSectors(SocketInfo* pClient);
+	bool RenewViewListInSectorsForNpc(ObjectInfo* pClient);
 
 	// MoveManager
 	void RecvCharacterMove(SocketInfo* pClient);

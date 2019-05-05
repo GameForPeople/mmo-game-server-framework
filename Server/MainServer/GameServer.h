@@ -4,6 +4,7 @@
 
 struct UnallocatedMemoryUnit;
 struct MemoryUnit;
+struct TimerUnit;
 struct SendMemoryUnit;
 struct SocketInfo;
 class Zone;
@@ -44,17 +45,14 @@ private:
 #ifdef DISABLED_FUNCTION_POINTER
 	void AfterRecv(SocketInfo* pClient, int cbTransferred);
 	void AfterSend(SendMemoryUnit* pUnit);
-
-#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
-	void AfterUnallocatedSend(UnallocatedMemoryUnit* pUnit);
-#endif
-
 #else
 	std::function <void(GameServer&, LPVOID)>* recvOrSendArr;
 	void AfterRecv(LPVOID pClient);
 	void AfterSend(LPVOID pClient);
 #endif
+
 	void ProcessRecvData(SocketInfo* pClient, int restSize);
+	void ProcessTimerUnit(TimerUnit* pUnit);
 
 private:
 	WSADATA								wsa;

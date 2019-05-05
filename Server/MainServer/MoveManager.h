@@ -6,7 +6,7 @@
 struct SocketInfo;
 class UserData;
 struct ZoneContUnit;
-
+struct ObjectInfo;
 /*
 	MoveManager
 		- Zone 내부에서, 이동과 관련된 패킷을 처리하는 객체입니다.
@@ -22,32 +22,34 @@ public:
 
 public:
 #if _USE_STD_FUNCTION_
-	std::function<void(MoveManager&, UserData*)> whatIsYourDirection[static_cast<int>(DIRECTION::ENUM_SIZE)];
-	std::function<void(MoveManager&, UserData*)> moveFunctionArr[static_cast<int>(DIRECTION::ENUM_SIZE)][2 /* Fail or Success */];
+	std::function<void(MoveManager&, ObjectInfo*)> whatIsYourDirection[static_cast<int>(DIRECTION::ENUM_SIZE)];
+	std::function<void(MoveManager&, ObjectInfo*)> moveFunctionArr[static_cast<int>(DIRECTION::ENUM_SIZE)][2 /* Fail or Success */];
 #else
 	std::function<void(MoveManager&, UserData* )> moveFunctionArr[static_cast<int>(DIRECTION::DIRECTION_END)];
 #endif
 	void MoveCharacter(SocketInfo* pClient);
+	void MoveRandom(ObjectInfo* pClient);
+
 	//void SendMoveCharacter(SocketInfo* pMovedClient, ZoneContUnit* inClientCont);
 private:
 #if _USE_STD_FUNCTION_
-	/*inline*/ void LeftMoveTest(UserData* inUserData);
+	/*inline*/ void LeftMoveTest(ObjectInfo* );
 
-	/*inline*/ void UpMoveTest(UserData* inUserData);
+	/*inline*/ void UpMoveTest(ObjectInfo* );
 
-	/*inline*/ void RightMoveTest(UserData* inUserData);
+	/*inline*/ void RightMoveTest(ObjectInfo* );
 
-	/*inline*/ void DownMoveTest(UserData* inUserData);
+	/*inline*/ void DownMoveTest(ObjectInfo* );
 
-	/*inline*/ void MoveFail(UserData* inUserData) noexcept;
+	/*inline*/ void MoveFail(ObjectInfo* ) noexcept;
 
-	/*inline*/ void MoveLeft(UserData* inUserData) noexcept;
+	/*inline*/ void MoveLeft(ObjectInfo* ) noexcept;
 
-	/*inline*/ void MoveUp(UserData* inUserData) noexcept;
+	/*inline*/ void MoveUp(ObjectInfo* ) noexcept;
 
-	/*inline*/ void MoveRight(UserData* inUserData) noexcept;
+	/*inline*/ void MoveRight(ObjectInfo* ) noexcept;
 
-	/*inline*/ void MoveDown(UserData* inUserData) noexcept;
+	/*inline*/ void MoveDown(ObjectInfo* ) noexcept;
 
 #else
 	inline void MoveLeft(UserData* inUserData) noexcept

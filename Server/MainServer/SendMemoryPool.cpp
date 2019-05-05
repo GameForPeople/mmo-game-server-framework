@@ -17,7 +17,7 @@ SendMemoryPool::SendMemoryPool()
 		sendMemoryPool.push(new SendMemoryUnit() /* == std::move(SendMemoryUnit())*/);
 
 #ifdef _DEV_MODE_
-	std::cout << "sendMemoryPool의 사이즈는 " << sendMemoryPool.unsafe_size() << std::endl;
+	std::cout << "!. sendMemoryPool의 테스트 사이즈는 " << sendMemoryPool.unsafe_size() << " 입니다." << std::endl;
 #endif
 }
 
@@ -41,7 +41,7 @@ SendMemoryUnit* SendMemoryPool::PopMemory()
 	// 역참조되었지만 여전히 NULL 포인터 일 수 있습니다.
 	while (!sendMemoryPool.try_pop(retMemoryUnit))
 	{
-		ERROR_HANDLING::ERROR_DISPLAY(L"[ERROR]SendPool의 메모리가 부족합니다.");
+		ERROR_HANDLING::ERROR_DISPLAY(L"[ERROR] 의도된 에러입니다. SendPool의 적정 메모리가 부족합니다.");
 		/*
 			원래는 여기서 메모리 추가로 할당해서, 넘겨줘야함. 기다리면 안됨.
 		*/

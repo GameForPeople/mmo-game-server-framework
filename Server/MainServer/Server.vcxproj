@@ -155,6 +155,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Define.h" />
+    <ClInclude Include="BaseMonster.h" />
+    <ClInclude Include="ObjectInfo.h" />
+    <ClInclude Include="BaseNPC.h" />
     <ClInclude Include="ChatManager.h" />
     <ClInclude Include="ClientContUnit.h" />
     <ClInclude Include="ConnectManager.h" />
@@ -162,6 +165,7 @@
     <ClInclude Include="MemoryUnit.h" />
     <ClInclude Include="MoveManager.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="TimerManager.h" />
     <ClInclude Include="Zone.h" />
     <ClInclude Include="Sector.h" />
     <ClInclude Include="SendMemoryPool.h" />
@@ -172,6 +176,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Define.cpp" />
+    <ClCompile Include="BaseMonster.cpp" />
+    <ClCompile Include="ObjectInfo.cpp" />
+    <ClCompile Include="BaseNPC.cpp" />
     <ClCompile Include="ChatManager.cpp" />
     <ClCompile Include="ClientContUnit.cpp" />
     <ClCompile Include="ConnectManager.cpp" />
@@ -184,6 +191,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="TimerManager.cpp" />
     <ClCompile Include="Zone.cpp" />
     <ClCompile Include="Sector.cpp" />
     <ClCompile Include="SendMemoryPool.cpp" />
@@ -196,6 +204,5 @@
     <None Include="InHeaderDefine.hh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

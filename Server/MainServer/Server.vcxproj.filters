@@ -48,6 +48,18 @@
     <Filter Include="GameServer\Zone\ChatManager">
       <UniqueIdentifier>{dc3146ed-3cd0-44e8-a9f4-60aee3c5305d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameServer\Zone\TimerManager">
+      <UniqueIdentifier>{df8006a5-cdab-40be-afcd-161c100d62bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Others\Object">
+      <UniqueIdentifier>{69d06361-c939-46f1-aa85-d52c7f9fd466}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Others\Object\Monster">
+      <UniqueIdentifier>{4176a17f-be8e-4ebd-98db-b8ab663d650a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Others\Object\NPC">
+      <UniqueIdentifier>{28ef59f3-1e89-493c-9609-7f45e8e0012f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -93,6 +105,18 @@
     <ClCompile Include="..\Define.cpp">
       <Filter>Define</Filter>
     </ClCompile>
+    <ClCompile Include="TimerManager.cpp">
+      <Filter>GameServer\Zone\TimerManager</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseNPC.cpp">
+      <Filter>Others\Object\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseMonster.cpp">
+      <Filter>Others\Object\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjectInfo.cpp">
+      <Filter>Others\Object</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -137,6 +161,18 @@
     </ClInclude>
     <ClInclude Include="..\Define.h">
       <Filter>Define</Filter>
+    </ClInclude>
+    <ClInclude Include="TimerManager.h">
+      <Filter>GameServer\Zone\TimerManager</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseNPC.h">
+      <Filter>Others\Object\NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseMonster.h">
+      <Filter>Others\Object\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectInfo.h">
+      <Filter>Others\Object</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

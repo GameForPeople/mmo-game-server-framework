@@ -117,9 +117,7 @@ namespace NETWORK_UTIL
 			
 			// 애초에 존에 접속도 못했는데, 로그아웃 할 경우를 방지.
 			if (pOutClient->objectInfo->key != -1) pOutClient->pZone->Exit(pOutClient);
-
 			closesocket(pOutClient->sock);
-			delete pOutClient;
 		}
 		else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND_TO_CLIENT)
 		{

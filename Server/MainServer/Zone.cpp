@@ -73,7 +73,7 @@ void Zone::InitClientCont()
 
 		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY);
 		
-		sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].Join(monster->objectInfo);
+		sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);
 		//RenewSelfSectorForNpc(monster->objectInfo); // 비용이 너무 큼.
 
 		auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
@@ -169,20 +169,11 @@ std::pair<bool, SocketInfo*> /* == std::pair<bool, SocketInfo*>*/ Zone::TryToEnt
 		; retNode.first)
 	{
 		//최초 Sector에 클라이언트 삽입.
-		sectorCont[GLOBAL_DEFINE::START_SECTOR_Y][GLOBAL_DEFINE::START_SECTOR_X].Join(retNode.second->objectInfo);
+		sectorCont[GLOBAL_DEFINE::START_SECTOR_Y][GLOBAL_DEFINE::START_SECTOR_X].Join(zoneContUnit->clientCont[retNode.second]->objectInfo);
 
-		// InitViewAndSector에서 래핑되며, Accept Process에서 해당 클라이언트 소켓을 IOCP 등록 후, 호출함
-		//{
-			// 둘러볼 지역 결정하고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
-			//RenewPossibleSectors(retNode.second);
-
-		// 친구들 새로 사귀고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
-			//RenewViewListInSectors(retNode.second);
-		//}
-
-		return retNode;
+		return std::make_pair(true, zoneContUnit->clientCont[retNode.second]);
 	}
-	else return retNode;
+	else return  std::make_pair(false, nullptr);
 }
 
 /*
@@ -209,8 +200,8 @@ void Zone::Exit(SocketInfo* pOutClient)
 	// 섹터 컨테이너에서 내 정보를 지워주고
 	sectorCont[pOutClient->objectInfo->sectorIndexY][pOutClient->objectInfo->sectorIndexX].Exit(pOutClient->objectInfo);
 	
-	// 내 ViewList의 Client에게 나 나간다고 알려주고.
-	connectManager->LogOutToZone(pOutClient, zoneContUnit);
+	// 커넥트 매니저에서 나머지 모두 처리.
+	connectManager->LogOutFromZone(pOutClient, zoneContUnit);
 }
 
 /*

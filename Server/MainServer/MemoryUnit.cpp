@@ -141,8 +141,7 @@ SocketInfo::SocketInfo(_KeyType inKey) /*noexcept*/ :
 	//userData(new UserData(GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y)/*std::make_unique<UserData>(0, 0)*/),
 	//clientKey(-1),
 	pZone(nullptr),
-	viewList(),
-	contIndex()
+	viewList()
 	//sectorArr(),
 	//sectorIndexX(),
 	//sectorIndexY(),
@@ -151,6 +150,12 @@ SocketInfo::SocketInfo(_KeyType inKey) /*noexcept*/ :
 	objectInfo = new ObjectInfo(inKey, GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y);
 	//loadedBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
 	viewList.clear();
+}
+
+void SocketInfo::reset()
+{
+	objectInfo->posX = GLOBAL_DEFINE::START_POSITION_X;
+	objectInfo->posY = GLOBAL_DEFINE::START_POSITION_Y;
 }
 
 SocketInfo::~SocketInfo()

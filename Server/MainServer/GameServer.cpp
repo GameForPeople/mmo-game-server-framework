@@ -206,13 +206,8 @@ void GameServer::AcceptThreadFunction()
 		{
 			// 소켓과 입출력 완료 포트 연결
 			CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->objectInfo->key, 0);
-
 			pClient->sock = clientSocket;
 			
-			// MemoryUnit 생성자에서 보장함.
-			//pClient->memoryUnit.wsaBuf.buf = pClient->memoryUnit.dataBuf;
-			//pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
-
 			// 클라이언트에게 서버에 접속(Accept) 함을 알림
 			PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(pClient->objectInfo->key);
 			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&loginPacket));

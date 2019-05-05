@@ -110,7 +110,6 @@ public:
 	SocketInfo(_KeyType) /*noexcept*/;
 	~SocketInfo();
 
-	void reset();
 public:
 	MemoryUnit memoryUnit;
 
@@ -119,6 +118,7 @@ public:
 
 	SOCKET sock;
 	std::wstring nickname;
+	BYTE contIndex;
 
 	Zone* pZone;		// 현재 입장한 존.
 

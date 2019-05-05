@@ -105,7 +105,9 @@ void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneCon
 	{
 		if (otherKey == pClient->objectInfo->key) continue;
 
-		SocketInfo* pOtherClient = pZoneContUnit->clientCont[otherKey];
+		auto[isOn, pOtherClient] = pZoneContUnit->FindClient(otherKey);
+
+		if (!isOn) continue;
 
 		if (IsSeeEachOther(pClient->objectInfo, pOtherClient->objectInfo))
 		{
@@ -209,8 +211,9 @@ bool Sector::JudgeClientWithViewListForNpc(ObjectInfo* pClient, ZoneContUnit* pZ
 	for (auto& otherKey : sectorContUnit->clientCont)
 	{
 		// 섹터에 있는 클라이언트 나온나
-		SocketInfo* pOtherClient = pZoneContUnit->clientCont[otherKey]; //FindClient(otherKey /*- BIT_CONVERTER::NOT_PLAYER_INT*/);
-		//if (!isOn) continue; // ? 왜 없댱
+		auto[isOn, pOtherClient] = pZoneContUnit->FindClient(otherKey /*- BIT_CONVERTER::NOT_PLAYER_INT*/);
+
+		if (!isOn) continue; // ? 왜 없댱
 
 		if (IsSeeEachOther(pClient, pOtherClient->objectInfo))
 		{

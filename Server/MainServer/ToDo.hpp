@@ -18,7 +18,6 @@
 	!1. viewList 동기화 방안 필요함.
 		
 		- 현재 사용하는 컨테이너 : concurrent_unordered_set임.(erase가 unsafe함) -> 락도 안거는데..?
-
 		- 컨테이너 -> 탐색, 삽입, 삭제, 순회 모두 중요함
 		- 워커쓰레드 갯수만큼, 동시에 쓰기 작업이 발생할 수 있음.
 	
@@ -33,4 +32,8 @@
 			1. ChatUnit의 noexcept 이동생성자, 혹은 얉은 복사 생성자 (재)정의
 			2. 포인터 주소 확인
 			3. ?? 뭐 그정도면 충분?
+
+	// 190517
+	!5. MemoryUnit의 TimerUnit의 CommandType이 현재 BYTE인데, enum class 등으로 확장이 필요해보임!
+	!6. SocketInfo의 monsterViewList의 처리가 필요해 보임.
 */

@@ -55,7 +55,7 @@ struct MemoryUnit
 
 	const MEMORY_UNIT_TYPE memoryUnitType;	// 해당 변수는 생성 시에 정의되고 변하지 않음.
 
-	char *dataBuf;
+	_BufferType *dataBuf;
 public:
 	MemoryUnit(const MEMORY_UNIT_TYPE InMemoryUnitType);
 	~MemoryUnit();
@@ -113,11 +113,11 @@ public:
 public:
 	MemoryUnit memoryUnit;
 
-	char loadedBuf[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
+	_BufferType loadedBuf[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
 	int loadedSize;
 
 	SOCKET sock;
-	std::wstring nickname;
+	_NicknameType nickname;
 	BYTE contIndex;
 
 	Zone* pZone;		// 현재 입장한 존.
@@ -137,7 +137,7 @@ struct TimerUnit
 {
 	MemoryUnit memoryUnit;
 	BYTE commandType;
-	int objectKey;
+	_KeyType objectKey;
 
 public:
 	TimerUnit();

@@ -58,7 +58,7 @@ void Zone::InitManagers()
 void Zone::InitClientCont()
 {
 	zoneContUnit = new ZoneContUnit;
-	unsigned int tempIndex = BIT_CONVERTER::NOT_PLAYER_INT;
+	_KeyType tempIndex = BIT_CONVERTER::NOT_PLAYER_INT;
 
 	std::cout << "\n#. 몬스터 할당중입니다." << std::endl;
 
@@ -68,14 +68,15 @@ void Zone::InitClientCont()
 		if((tempIndex - BIT_CONVERTER::NOT_PLAYER_INT) % 1000 == 0)
 			std::cout << tempIndex - BIT_CONVERTER::NOT_PLAYER_INT << " ";
 		
-		USHORT tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
-		USHORT tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
+		const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
+		const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
 
 		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY);
 		
 		RenewSelfSectorForNpc(monster->objectInfo); // 비용이 너무 큼.
 		//sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);
 
+		// 이동 타이머를 등록해줌.
 		auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
 		timerUnit->commandType = 1;
 		timerUnit->objectKey = monster->objectInfo->key;
@@ -225,8 +226,8 @@ void Zone::RenewPossibleSectors(ObjectInfo* pClient)
 {
 	// 로컬 변수를 리턴하는 코드에서, 멤버 변수를 활용하여 구현하는 방식으로 변경.
 
-	const USHORT nowSectorCenterX = sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].GetCenterX();
-	const USHORT nowSectorCenterY = sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].GetCenterY();
+	const _PosType nowSectorCenterX = sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].GetCenterX();
+	const _PosType nowSectorCenterY = sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].GetCenterY();
 
 	char xDir = 0;	// x 섹터의 판단 방향
 	char yDir = 0;	// y 섹터의 판단 방향
@@ -487,7 +488,6 @@ void Zone::RenewSelfSectorForNpc(ObjectInfo* pClient)
 		sectorCont[static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE)][static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE)].JoinForNpc(pClient);
 		//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].JoinForNpc(pClient);
 	}
-
 }
 
 /*

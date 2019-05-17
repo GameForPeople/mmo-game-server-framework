@@ -228,7 +228,7 @@ void GameServer::WorkerThreadFunction()
 	// 한 번만 선언해서 여러번 씁시다. 아껴써야지...
 	int retVal{};
 	DWORD cbTransferred;
-	unsigned long long clientKey;
+	unsigned long long Key;
 	
 	LPVOID pMemoryUnit{nullptr};
 
@@ -239,7 +239,7 @@ void GameServer::WorkerThreadFunction()
 		retVal = GetQueuedCompletionStatus(
 			hIOCP, //입출력 완료 포트 핸들
 			&cbTransferred, //비동기 입출력 작업으로, 전송된 바이트 수가 여기에 저장된다.
-			&clientKey, //함수 호출 시 전달한 세번째 인자(32비트) 가 여기에 저장된다.
+			&Key, //함수 호출 시 전달한 세번째 인자(32비트) 가 여기에 저장된다.
 			reinterpret_cast<LPOVERLAPPED*>(&pMemoryUnit /*pReturnPointer*/), //Overlapped 구조체의 주소값
 			INFINITE // 대기 시간 -> 깨울 까지 무한대
 		);
@@ -275,7 +275,7 @@ void GameServer::WorkerThreadFunction()
 		else if (MEMORY_UNIT_TYPE::TIMER_FUNCTION == pTemp->memoryUnitType)
 		{
 			//std::cout << "\n[TIMER_FUNCTION] \n";
-			ProcessTimerUnit(reinterpret_cast<TimerMemoryHead*>(pMemoryUnit));
+			ProcessTimerUnit(Key);
 		}	
 		else if (MEMORY_UNIT_TYPE::RECV_FROM_CLIENT == pTemp->memoryUnitType)
 		{
@@ -367,9 +367,9 @@ void GameServer::AfterSend(SendMemoryUnit* pMemoryUnit)
 	SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
 }
 
-void GameServer::ProcessTimerUnit(TimerMemoryHead* pUnit)
+void GameServer::ProcessTimerUnit(const int timerManagerContIndex)
 {
-	zone->ProcessTimerUnit(pUnit);
+	zone->ProcessTimerUnit(timerManagerContIndex);
 
 	// 재활용하고 싶은건 재활용하고, 반납할건 반납하게하기 위해, 내부에서 정하도록 변경함.
 	//TimerManager::GetInstance()->PushTimerUnit(pUnit);

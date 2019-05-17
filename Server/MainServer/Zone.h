@@ -28,7 +28,7 @@ class Zone
 {
 public:
 	void ProcessPacket(SocketInfo* pClient);
-	void ProcessTimerUnit(TimerMemoryHead* pUnit);
+	void ProcessTimerUnit(const int timerManagerContIndex);
 
 	Zone();
 	~Zone();

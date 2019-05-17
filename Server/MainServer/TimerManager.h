@@ -2,6 +2,8 @@
 
 #include "InHeaderDefine.hh"
 
+struct TimerMemoryHead;
+
 /*
 	TimerUnit
 		- 타이머에서 사용되는 메모리 단위입니다.
@@ -115,4 +117,5 @@ private:
 	BYTE postQueuedFunctionCallCount;
 public:
 	void SetPostQueuedFunctionCallCountAndTimerMemoryHeadCont(const BYTE inCallCount);
+	concurrency::concurrent_queue<TimerUnit*>* GetTimerContWithIndex(const int inTimerContIndex);
 };

@@ -54,7 +54,7 @@ private:
 	void AfterSend(SendMemoryUnit* pUnit);
 
 	void ProcessRecvData(SocketInfo* pClient, int restSize);
-	void ProcessTimerUnit(TimerMemoryHead* pUnit);
+	void ProcessTimerUnit(const int timerManagerContIndex);
 
 private:
 	WSADATA								wsa;

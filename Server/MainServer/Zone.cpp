@@ -130,35 +130,42 @@ void Zone::ProcessPacket(SocketInfo* pClient)
 	recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE)](*this, pClient);
 }
 
-void Zone::ProcessTimerUnit(TimerMemoryHead* pUnit)
+void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 {
-	switch (auto[objectType, index] = BIT_CONVERTER::WhatIsYourTypeAndRealKey(pUnit->objectKey); objectType)
+	concurrency::concurrent_queue<TimerUnit*>* tempCont = TimerManager::GetInstance()->GetTimerContWithIndex(timerManagerContIndex);
+
+	TimerUnit* pUnit = nullptr;
+	while (tempCont->try_pop(pUnit))
 	{
-	case BIT_CONVERTER::OBJECT_TYPE::PLAYER:
-		break;
-	case BIT_CONVERTER::OBJECT_TYPE::MONSTER:
-		switch (pUnit->timerType)
+		switch (auto[objectType, index] = BIT_CONVERTER::WhatIsYourTypeAndRealKey(pUnit->objectKey); objectType)
 		{
-			case (TIMER_TYPE::NPC_MOVE):
+		case BIT_CONVERTER::OBJECT_TYPE::PLAYER:
+			break;
+		case BIT_CONVERTER::OBJECT_TYPE::MONSTER:
+			switch (pUnit->timerType)
 			{
-				ObjectInfo* tempObjectInfo = zoneContUnit->monsterCont[index]->objectInfo;
+				case (TIMER_TYPE::NPC_MOVE):
+				{
+					ObjectInfo* tempObjectInfo = zoneContUnit->monsterCont[index]->objectInfo;
 
-				moveManager->MoveRandom(tempObjectInfo);	// 랜덤으로 움직이고
-				RenewSelfSectorForNpc(tempObjectInfo);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
-				RenewPossibleSectors(tempObjectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
+					moveManager->MoveRandom(tempObjectInfo);	// 랜덤으로 움직이고
+					RenewSelfSectorForNpc(tempObjectInfo);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
+					RenewPossibleSectors(tempObjectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
 
-				RenewViewListInSectorsForNpc(tempObjectInfo)
-					? TimerManager::GetInstance()->AddTimerEvent(pUnit, 10)
-					: TimerManager::GetInstance()->AddTimerEvent(pUnit, 10);
-				//최적화 안할겨 뭐 어쩔겨
-				//TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					RenewViewListInSectorsForNpc(tempObjectInfo)
+						? TimerManager::GetInstance()->AddTimerEvent(pUnit, 10)
+						: TimerManager::GetInstance()->AddTimerEvent(pUnit, 10);
+					//최적화 안할겨 뭐 어쩔겨
+					
+					//TimerManager::GetInstance()->PushTimerUnit(pUnit);
+				}
+					break;
+				default:
+					break;
 			}
-				break;
-			default:
-				break;
+		default:
+			break;
 		}
-	default:
-		break;
 	}
 }
 

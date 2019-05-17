@@ -124,3 +124,8 @@ void TimerManager::PushTimerUnit(TimerUnit* inTimerUnit)
 	timerMemoryPool.push(inTimerUnit);
 }
 
+concurrency::concurrent_queue<TimerUnit*>*
+TimerManager::GetTimerContWithIndex(const int inTimerContIndex)
+{
+	return &(timerCont[inTimerContIndex]);
+}

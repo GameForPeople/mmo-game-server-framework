@@ -1,7 +1,5 @@
 #pragma once
 
-//#define _DEV_MODE_
-
 /*
 	Define.h
 		- 해당 헤더 파일은, 서버와 클라이언트가 공통으로 사용합니다.

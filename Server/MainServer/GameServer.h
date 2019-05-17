@@ -1,17 +1,27 @@
 #pragma once
 
-#define DISABLED_FUNCTION_POINTER
-
 struct UnallocatedMemoryUnit;
 struct MemoryUnit;
-struct TimerUnit;
+
 struct SendMemoryUnit;
 struct SocketInfo;
+struct TimerMemoryHead;
+
 class Zone;
 
 /*
 	GameServer
 		- 게임서버입니다.
+		
+		&0. Zone을 Vector로 여러개 관리하던 상황에서, 한 물리 서버에 한 개의 Zone만 을 관리하도록 변경(19/05/17)
+			- 함수 : InitZones 
+			- 변수 : zoneCont
+		&1. 함수 배열을 통한 해쉬 기능에서, Switch-case로 변경, 불필요 제거(19/05/18)
+			- 매크로 : DISABLED_FUNCTION_POINTER 
+			- 함수 : InitFunctions
+			- 변수 : recvOrSendArr
+		&2. 쓰레드 함수의 리턴형 변경(19/05/18)
+			- static DWORD WINAPI -> static void
 */
 class GameServer
 {
@@ -29,30 +39,22 @@ public:
 private:	// for Init
 	void ServerIntegrityCheck();
 	void PrintServerInfoUI();
-	void InitZones();
-	void InitFunctions();
 	void InitNetwork();
 
 private:	// for Worker Thread
-	static DWORD WINAPI StartWorkerThread(LPVOID arg);
+	static void StartWorkerThread(LPVOID arg);
 	void WorkerThreadFunction();
 
 private:	// for Aceept Thread
-	static DWORD WINAPI StartAcceptThread(LPVOID arg);
+	static void StartAcceptThread(LPVOID arg);
 	void AcceptThreadFunction();
 
 private:
-#ifdef DISABLED_FUNCTION_POINTER
 	void AfterRecv(SocketInfo* pClient, int cbTransferred);
 	void AfterSend(SendMemoryUnit* pUnit);
-#else
-	std::function <void(GameServer&, LPVOID)>* recvOrSendArr;
-	void AfterRecv(LPVOID pClient);
-	void AfterSend(LPVOID pClient);
-#endif
 
 	void ProcessRecvData(SocketInfo* pClient, int restSize);
-	void ProcessTimerUnit(TimerUnit* pUnit);
+	void ProcessTimerUnit(TimerMemoryHead* pUnit);
 
 private:
 	WSADATA								wsa;
@@ -62,31 +64,5 @@ private:
 	SOCKADDR_IN							serverAddr;
 
 	std::vector<std::thread>			workerThreadCont;
-	std::vector<std::unique_ptr<Zone>>	zoneCont;
+	std::unique_ptr<Zone>				zone;
 };
-
-#pragma region [Legacy]
-/*
-
-struct ServerInitInfomation 
-{
-	enum class SERVER_IP_TYPE : BYTE
-	{
-		LOCAL_HOST = 1
-		, INPUTTED_IP = 2
-		//,	AWS_PUBLIC = 3
-	};
-
-	SERVER_IP_TYPE serverIPType;
-	std::string IPAddress;
-
-public:
-	ServerInitInfomation(const SERVER_IP_TYPE inServerIpType, const std::string_view& inIPAddress) noexcept
-		: serverIPType(inServerIpType)
-		, IPAddress(inIPAddress)
-	{};
-
-	~ServerInitInfomation() = default;
-};
-*/
-#pragma endregion

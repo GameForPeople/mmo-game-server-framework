@@ -130,7 +130,7 @@ void Zone::ProcessPacket(SocketInfo* pClient)
 	recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE)](*this, pClient);
 }
 
-void Zone::ProcessTimerUnit(TimerUnit* pUnit)
+void Zone::ProcessTimerUnit(TimerMemoryHead* pUnit)
 {
 	switch (auto[objectType, index] = BIT_CONVERTER::WhatIsYourTypeAndRealKey(pUnit->objectKey); objectType)
 	{

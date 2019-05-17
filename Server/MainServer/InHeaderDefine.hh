@@ -6,6 +6,8 @@
 	!0. 해당 헤더는, 유일하게 다른 헤더 파일에 포함되는 헤더입니다.
 */
 
+#define _DEV_MODE_
+
 namespace std {
 	template <class _Ty1, class _Ty2> struct pair;
 }

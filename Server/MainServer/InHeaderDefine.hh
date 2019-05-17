@@ -24,8 +24,12 @@ using _NpcKeyType = _KeyType;
 using _NicknameType = std::wstring;
 
 using _PosType = unsigned short;
+using _HpType = unsigned short;
+using _MpType = unsigned short;
 
 using _SectorIndexType = unsigned char;
+
+using _TickCountType = unsigned char;
 
 enum class OBJECT_TYPE : unsigned char
 {

@@ -129,17 +129,14 @@ public:
 };
 
 /*
-	TimerUnit
-		- 타이머에서 사용되는 메모리 단위입니다.
+	TimerMemoryHead
+
 */
 
-struct TimerUnit
+struct TimerMemoryHead
 {
-	MemoryUnit memoryUnit;
-	BYTE commandType;
-	_KeyType objectKey;
-
+	TimerMemoryHead(/*const unsigned short inTimerContIndex*/) noexcept;
 public:
-	TimerUnit();
-	~TimerUnit();
+	MemoryUnit memoryUnit;
+	//const unsigned short timerContIndex;
 };

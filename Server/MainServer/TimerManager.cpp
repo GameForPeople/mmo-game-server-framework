@@ -6,14 +6,30 @@
 
 TimerManager* TimerManager::instance = nullptr;
 
+//---------------------------------------------------------------------------
+// TimerUnit
+//---------------------------------------------------------------------------
+TimerUnit::TimerUnit()
+	: timerType(TIMER_TYPE::NONE_TYPE), objectKey()
+{
+}
+
+TimerUnit::~TimerUnit()
+{
+}
+
+//---------------------------------------------------------------------------
+// TimerManager
+//---------------------------------------------------------------------------
+
 TimerManager::TimerManager(HANDLE hIOCP) :
 	hIOCP(hIOCP),
-	nowTime(0), MAX_COOL_TIME(300 + 100),
+	nowTime(0), MAX_COOL_TIME(600 + 100),
 	timerCont(),
-	timerMemoryPool()
+	timerMemoryPool(),
+	postQueuedFunctionCallCount(0)
 {
 	timerCont.reserve(MAX_COOL_TIME);
-
 	for (int i = 0; i < MAX_COOL_TIME; ++i) { timerCont.emplace_back(); }
 
 	for (int i = 0; i < 500000; ++i) { timerMemoryPool.push(new TimerUnit()); }
@@ -28,6 +44,14 @@ TimerManager::~TimerManager()
 	{
 		while (iter.try_pop(retTimerUnit)) { delete retTimerUnit; }
 	}
+}
+
+void TimerManager::SetPostQueuedFunctionCallCountAndTimerMemoryHeadCont(const BYTE inCallCount)
+{
+	postQueuedFunctionCallCount = inCallCount;
+
+	timerMemoryHeadCont.reserve(inCallCount);
+	for (int i = 0; i < inCallCount; ++i) { timerMemoryHeadCont.emplace_back(); }
 }
 
 DWORD WINAPI TimerManager::StartTimerThread()
@@ -47,20 +71,33 @@ void TimerManager::TimerThread()
 			? nowTime.fetch_add(1)
 			: nowTime = 0;
 
-		TimerUnit* retTimerUnit = nullptr;
-		
-		while (timerCont[nowTime].try_pop(retTimerUnit))
+		const int tempInt = nowTime;
+		const int tempArrIndex = tempInt % 10;
+
+		for (int i = 0; i < postQueuedFunctionCallCount; ++i)
 		{
-		//----- ²¨³½ Å¸ÀÌ¸Ó À¯´Ö Ã³¸®.
-			int errnum = PostQueuedCompletionStatus(hIOCP, 0, retTimerUnit->objectKey, reinterpret_cast<LPOVERLAPPED>(retTimerUnit /*+ sizeof(MEMORY_UNIT_TYPE)*/));
+			int errnum = PostQueuedCompletionStatus(hIOCP, 0, tempInt, reinterpret_cast<LPOVERLAPPED>(&timerMemoryHeadCont[i][tempArrIndex] /*+ sizeof(MEMORY_UNIT_TYPE)*/));
 			if (errnum == 0)
 			{
 				errnum = WSAGetLastError();
 				std::cout << errnum << std::endl;
 				ERROR_HANDLING::ERROR_QUIT(L"PostQueuedCompletionStatus()");
 			}
-		//-----
 		}
+		//TimerUnit* retTimerUnit = nullptr;
+		//
+		//while (timerCont[nowTime].try_pop(retTimerUnit))
+		//{
+		////----- ²¨³½ Å¸ÀÌ¸Ó À¯´Ö Ã³¸®.
+		//	int errnum = PostQueuedCompletionStatus(hIOCP, 0, retTimerUnit->objectKey, reinterpret_cast<LPOVERLAPPED>(retTimerUnit /*+ sizeof(MEMORY_UNIT_TYPE)*/));
+		//	if (errnum == 0)
+		//	{
+		//		errnum = WSAGetLastError();
+		//		std::cout << errnum << std::endl;
+		//		ERROR_HANDLING::ERROR_QUIT(L"PostQueuedCompletionStatus()");
+		//	}
+		////-----
+		//}
 	}
 }
 

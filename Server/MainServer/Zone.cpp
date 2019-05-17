@@ -78,7 +78,7 @@ void Zone::InitClientCont()
 
 		// 이동 타이머를 등록해줌.
 		auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-		timerUnit->commandType = 1;
+		timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
 		timerUnit->objectKey = monster->objectInfo->key;
 		TimerManager::GetInstance()->AddTimerEvent(timerUnit, 10);
 	}
@@ -137,21 +137,26 @@ void Zone::ProcessTimerUnit(TimerUnit* pUnit)
 	case BIT_CONVERTER::OBJECT_TYPE::PLAYER:
 		break;
 	case BIT_CONVERTER::OBJECT_TYPE::MONSTER:
-		if (pUnit->commandType == 1)
+		switch (pUnit->timerType)
 		{
-			ObjectInfo* tempObjectInfo = zoneContUnit->monsterCont[index]->objectInfo;
+			case (TIMER_TYPE::NPC_MOVE):
+			{
+				ObjectInfo* tempObjectInfo = zoneContUnit->monsterCont[index]->objectInfo;
 
-			moveManager->MoveRandom(tempObjectInfo);	// 랜덤으로 움직이고
-			RenewSelfSectorForNpc(tempObjectInfo);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
-			RenewPossibleSectors(tempObjectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
+				moveManager->MoveRandom(tempObjectInfo);	// 랜덤으로 움직이고
+				RenewSelfSectorForNpc(tempObjectInfo);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
+				RenewPossibleSectors(tempObjectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
 
-			RenewViewListInSectorsForNpc(tempObjectInfo)
-				? TimerManager::GetInstance()->AddTimerEvent(pUnit, 10)
-				: TimerManager::GetInstance()->AddTimerEvent(pUnit, 10);
+				RenewViewListInSectorsForNpc(tempObjectInfo)
+					? TimerManager::GetInstance()->AddTimerEvent(pUnit, 10)
+					: TimerManager::GetInstance()->AddTimerEvent(pUnit, 10);
 				//최적화 안할겨 뭐 어쩔겨
 				//TimerManager::GetInstance()->PushTimerUnit(pUnit);
+			}
+				break;
+			default:
+				break;
 		}
-		break;
 	default:
 		break;
 	}

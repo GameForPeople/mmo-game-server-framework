@@ -9,43 +9,45 @@ struct TimerMemoryHead;
 		- 타이머에서 사용되는 메모리 단위입니다.
 */
 
-namespace TIME
+
+enum class TIME : /*unsigned short*/ int
 {
-	enum : unsigned short
-	{
-		SECOND = 10,
-		MINUTE = 600,
+	SECOND = 10,
+	MINUTE = 600,
 
-		SLIME_MOVE = 10,
-		SLIME_ATTACK = 5,
+	SLIME_MOVE = 10,
+	SLIME_ATTACK = 5,
 
-		GOLEM_ATTACK = 20,
+	GOLEM_ATTACK = 20,
 
-		MONSTER_REVIVAL = 300,
+	MONSTER_REVIVAL = 300,
 
-		KNIGHT_SKILL_1 = 300,
-		KNIGHT_SKILL_2 = 600,
+	// 쿨타임
+	KNIGHT_SKILL_1 = 300,
+	KNIGHT_SKILL_2 = 600,
 
-		ARCHER_SKILL_1 = 200,
-		ARCHER_SKILL_2 = 500,
+	ARCHER_SKILL_1 = 200,
+	ARCHER_SKILL_2 = 500,
 
-		WITCH_SKILL_1 = 150,
-		WITCH_SKILL_2 = 400,
+	WITCH_SKILL_1 = 150,
+	WITCH_SKILL_2 = 400,
 
-		// Tick형 동작.
-		ITEM_HP = 10,
-		ITEM_MP = 10,
+	// Tick형 동작.
+	ITEM_HP = 10,
+	ITEM_MP = 10,
 
-		// bool 형 상태 이상 타입들임.
-		KNIGHT_CC_NODAMAGE = 50,
-		KNIGHT_CC_FAINT = 20,
-		ARCHER_CC_FREEZE = 30,
-		WITCH_CC_ELECTRIC = 15,
+	// 이벤트 확인 주기
+	CC_NODAMAGE = 50,
+	CC_FAINT = 20,
+	CC_FREEZE = 30,
+	CC_ELECTRIC = 30,
+	CC_BURN = 50
 
-		// Tick형 동작.
-		WITCH_CC_BURN = 10
-	};
-}
+	//KNIGHT_CC_NODAMAGE_COOLTIME = 50,
+	//KNIGHT_CC_FAINT_COOLTIME = 20,
+	//ARCHER_CC_FREEZE_COOLTIME = 30,
+	//WITCH_CC_ELECTRIC_COOLTIME = 15
+};
 
 enum class TIMER_TYPE
 {
@@ -96,7 +98,7 @@ public:
 	void TimerThread();
 	static DWORD WINAPI StartTimerThread();
 
-	void AddTimerEvent(TimerUnit*, int);
+	void AddTimerEvent(TimerUnit*, TIME);
 
 	_NODISCARD TimerUnit* PopTimerUnit();
 	void PushTimerUnit(TimerUnit*);

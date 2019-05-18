@@ -80,7 +80,7 @@ void Zone::InitClientCont()
 		auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
 		timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
 		timerUnit->objectKey = monster->objectInfo->key;
-		TimerManager::GetInstance()->AddTimerEvent(timerUnit, 10);
+		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SECOND);
 	}
 }
 
@@ -153,16 +153,106 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 					RenewPossibleSectors(tempObjectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
 
 					RenewViewListInSectorsForNpc(tempObjectInfo)
-						? TimerManager::GetInstance()->AddTimerEvent(pUnit, 10)
-						: TimerManager::GetInstance()->AddTimerEvent(pUnit, 10);
+						? TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND)
+						: TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
 					//최적화 안할겨 뭐 어쩔겨
 					
 					//TimerManager::GetInstance()->PushTimerUnit(pUnit);
-				}
 					break;
+				}
+				case (TIMER_TYPE::NPC_ATTACK):
+				{
+					break;
+				}
+				case (TIMER_TYPE::SKILL_1_COOLTIME):
+				{
+					break;
+				}
+				case (TIMER_TYPE::SKILL_2_COOLTIME):
+				{
+					break;
+				}
+				case (TIMER_TYPE::SELF_HEAL):
+				{
+					break;
+				}
+				case (TIMER_TYPE::REVIVAL):
+				{
+					break;
+				}
+				case (TIMER_TYPE::CC_NODAMAGE):
+				{
+					if (zoneContUnit->monsterCont[index]->noDamageTick != 0)
+					{
+						--(zoneContUnit->monsterCont[index]->noDamageTick);
+					}
+					
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_FAINT):
+				{
+					if (zoneContUnit->monsterCont[index]->faintTick != 0)
+					{
+						--(zoneContUnit->monsterCont[index]->faintTick);
+					}
+					
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_FREEZE):
+				{
+					if (zoneContUnit->monsterCont[index]->freezeTick != 0)
+					{
+						--(zoneContUnit->monsterCont[index]->freezeTick);
+					}
+					
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_ELECTRIC):
+				{
+					if (zoneContUnit->monsterCont[index]->electricTick != 0)
+					{
+						--(zoneContUnit->monsterCont[index]->electricTick);
+					}
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_BURN):
+				{
+					if (zoneContUnit->monsterCont[index]->burnTick != 0)
+					{
+						--(zoneContUnit->monsterCont[index]->burnTick);
+						zoneContUnit->monsterCont[index]->hp -= STATE::DAMAGE::BURN_DAMAGE;
+
+						if (zoneContUnit->monsterCont[index]->burnTick != 0)
+						{
+							TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
+						}
+						else
+						{
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						}
+					}
+					else
+					{
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					}
+					break;
+				}
+				case (TIMER_TYPE::ITEM_HP):
+				{
+					break;
+				}
+				case (TIMER_TYPE::ITEM_MP):
+				{
+					break;
+				}
 				default:
 					break;
 			}
+			break;
 		default:
 			break;
 		}

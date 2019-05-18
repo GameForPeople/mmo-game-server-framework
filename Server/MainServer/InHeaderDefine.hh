@@ -28,6 +28,9 @@ using _NicknameType = std::wstring;
 using _PosType = unsigned short;
 using _HpType = unsigned short;
 using _MpType = unsigned short;
+using _LevelType = unsigned char;
+using _DamageType = unsigned short;
+using _StateType = unsigned char;
 
 using _SectorIndexType = unsigned char;
 

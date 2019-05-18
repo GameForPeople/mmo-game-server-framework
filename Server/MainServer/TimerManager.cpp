@@ -122,13 +122,15 @@ void TimerManager::TimerThread()
 	}
 }
 
-void TimerManager::AddTimerEvent(TimerUnit* inTimerUnit, int waitTime)
+// 성능적 단점이 있더라도, 실수 방지 위해, int -> TIME으로 변경.
+void TimerManager::AddTimerEvent(TimerUnit* inTimerUnit, TIME waitTime)
 {
-	waitTime += nowTime;
+	int tempWaitTime = static_cast<int>(waitTime);
+	tempWaitTime += nowTime;
 
-	if (waitTime >= MAX_COOL_TIME) waitTime -= MAX_COOL_TIME;
+	if (tempWaitTime >= MAX_COOL_TIME) tempWaitTime -= MAX_COOL_TIME;
 
-	timerCont[waitTime].push(inTimerUnit);
+	timerCont[tempWaitTime].push(inTimerUnit);
 }
 
 TimerUnit* TimerManager::PopTimerUnit()

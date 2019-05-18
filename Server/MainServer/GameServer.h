@@ -22,6 +22,8 @@ class Zone;
 			- 변수 : recvOrSendArr
 		&2. 쓰레드 함수의 리턴형 변경(19/05/18)
 			- static DWORD WINAPI -> static void
+		&3. 불필요한 함수 단계, 레거시로 설정 후, 직접 인라인. 
+			- 함수명 : AfterSend, AfterRecv, ProcessTimerUnit
 */
 class GameServer
 {
@@ -50,11 +52,8 @@ private:	// for Aceept Thread
 	void AcceptThreadFunction();
 
 private:
-	void AfterRecv(SocketInfo* pClient, int cbTransferred);
-	void AfterSend(SendMemoryUnit* pUnit);
-
 	void ProcessRecvData(SocketInfo* pClient, int restSize);
-	void ProcessTimerUnit(const int timerManagerContIndex);
+
 
 private:
 	WSADATA								wsa;
@@ -66,3 +65,9 @@ private:
 	std::vector<std::thread>			workerThreadCont;
 	std::unique_ptr<Zone>				zone;
 };
+
+#pragma region [Legacy Code]
+	//void AfterRecv(SocketInfo* pClient, int cbTransferred);
+	//void AfterSend(SendMemoryUnit* pUnit);
+	//void ProcessTimerUnit(const int timerManagerContIndex);
+#pragma endregion

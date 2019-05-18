@@ -63,6 +63,8 @@ DWORD WINAPI TimerManager::StartTimerThread()
 
 void TimerManager::TimerThread()
 {
+	assert(timerMemoryHeadCont.size(), L"TimerThread가 실행되었으나, 워커쓰레드 갯수가 할당되지 않았습니다. SetPostQueuedFunctionCallCountAndTimerMemoryHeadCont를 호출해주세요.");
+
 	while (7)
 	{
 		Sleep(100); //0.1초 슬립인데 이부분 보정좀 해줘야해
@@ -72,16 +74,35 @@ void TimerManager::TimerThread()
 			: nowTime = 0;
 
 		const int tempInt = nowTime;
-		const int tempArrIndex = tempInt % 10;
 
-		for (int i = 0; i < postQueuedFunctionCallCount; ++i)
+		if (const int tempContSize = timerCont[tempInt].unsafe_size()
+			; tempContSize == 0)
 		{
-			int errnum = PostQueuedCompletionStatus(hIOCP, 0, tempInt, reinterpret_cast<LPOVERLAPPED>(&timerMemoryHeadCont[i][tempArrIndex] /*+ sizeof(MEMORY_UNIT_TYPE)*/));
+
+		}
+		else if (tempContSize < 10)
+		{
+			int errnum = PostQueuedCompletionStatus(hIOCP, 0, tempInt, reinterpret_cast<LPOVERLAPPED>(&timerMemoryHeadCont[0][tempInt % 10] /*+ sizeof(MEMORY_UNIT_TYPE)*/));
 			if (errnum == 0)
 			{
 				errnum = WSAGetLastError();
 				std::cout << errnum << std::endl;
 				ERROR_HANDLING::ERROR_QUIT(L"PostQueuedCompletionStatus()");
+			}
+		}
+		else
+		{
+			const int tempArrIndex = tempInt % 10;
+
+			for (int i = 0; i < postQueuedFunctionCallCount; ++i)
+			{
+				int errnum = PostQueuedCompletionStatus(hIOCP, 0, tempInt, reinterpret_cast<LPOVERLAPPED>(&timerMemoryHeadCont[i][tempArrIndex] /*+ sizeof(MEMORY_UNIT_TYPE)*/));
+				if (errnum == 0)
+				{
+					errnum = WSAGetLastError();
+					std::cout << errnum << std::endl;
+					ERROR_HANDLING::ERROR_QUIT(L"PostQueuedCompletionStatus()");
+				}
 			}
 		}
 		//TimerUnit* retTimerUnit = nullptr;

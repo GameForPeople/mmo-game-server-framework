@@ -4,24 +4,7 @@
 
 struct ObjectInfo;
 
-enum class MONSTER_TYPE
-{
-	SLIME,
-	GOLEM,
-	DRAGON
-};
 
-struct MonsterModel {
-	const MONSTER_TYPE monsterType;
-
-	const _HpType hpPerLevel;
-	const _DamageType damagePerLevel;
-	
-	const unsigned char attackRange;
-
-	const _LevelType startLevel;
-	const _LevelType levelMaxDifference;
-};
 
 class BaseMonster {
 public:

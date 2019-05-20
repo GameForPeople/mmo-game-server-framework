@@ -156,6 +156,7 @@
   <ItemGroup>
     <ClInclude Include="..\Define.h" />
     <ClInclude Include="BaseMonster.h" />
+    <ClInclude Include="MonsterModelManager.h" />
     <ClInclude Include="ObjectInfo.h" />
     <ClInclude Include="BaseNPC.h" />
     <ClInclude Include="ChatManager.h" />
@@ -199,6 +200,7 @@
     <ClCompile Include="ServerDefine.cpp" />
     <ClCompile Include="SocketInfo.cpp" />
     <ClCompile Include="UserData.cpp" />
+    <ClCompile Include="MonsterModelManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="InHeaderDefine.hh" />

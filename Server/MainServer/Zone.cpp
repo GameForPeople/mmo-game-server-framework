@@ -20,6 +20,8 @@
 
 #include "ObjectInfo.h"
 
+#include "MonsterLoader.h" 
+
 #include "Zone.h"
 
 Zone::Zone() : 
@@ -71,7 +73,7 @@ void Zone::InitClientCont()
 		const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
 		const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
 
-		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY);
+		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY,);
 		
 		RenewSelfSectorForNpc(monster->objectInfo); // 비용이 너무 큼.
 		//sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);

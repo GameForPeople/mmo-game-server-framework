@@ -156,6 +156,7 @@
   <ItemGroup>
     <ClInclude Include="..\Define.h" />
     <ClInclude Include="BaseMonster.h" />
+    <ClInclude Include="MonsterLoader.h" />
     <ClInclude Include="MonsterModelManager.h" />
     <ClInclude Include="ObjectInfo.h" />
     <ClInclude Include="BaseNPC.h" />
@@ -178,6 +179,7 @@
   <ItemGroup>
     <ClCompile Include="..\Define.cpp" />
     <ClCompile Include="BaseMonster.cpp" />
+    <ClCompile Include="MonsterLoader.cpp" />
     <ClCompile Include="ObjectInfo.cpp" />
     <ClCompile Include="BaseNPC.cpp" />
     <ClCompile Include="ChatManager.cpp" />

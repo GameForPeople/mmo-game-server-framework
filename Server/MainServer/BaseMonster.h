@@ -3,8 +3,7 @@
 #include "InHeaderDefine.hh"
 
 struct ObjectInfo;
-
-
+struct MonsterModel;
 
 class BaseMonster {
 public:

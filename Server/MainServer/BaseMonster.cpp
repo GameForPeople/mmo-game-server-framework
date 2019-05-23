@@ -2,6 +2,7 @@
 
 #include "ObjectInfo.h"
 #include "BaseMonster.h"
+#include "MonsterModelManager.h"
 
 BaseMonster::BaseMonster(_KeyType inKey, _PosType inX, _PosType inY, const MonsterModel* const inMonsterModel)
 	: objectInfo(nullptr)

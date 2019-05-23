@@ -126,6 +126,9 @@
     <ClCompile Include="MonsterModelManager.cpp">
       <Filter>Object\Monster</Filter>
     </ClCompile>
+    <ClCompile Include="MonsterLoader.cpp">
+      <Filter>Object\Monster</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -184,6 +187,9 @@
       <Filter>Define\Global</Filter>
     </ClInclude>
     <ClInclude Include="MonsterModelManager.h">
+      <Filter>Object\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="MonsterLoader.h">
       <Filter>Object\Monster</Filter>
     </ClInclude>
   </ItemGroup>

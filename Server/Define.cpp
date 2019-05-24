@@ -1,5 +1,4 @@
 #include "pch.h"
-
 #include "Define.h"
 
 namespace PACKET_DATA

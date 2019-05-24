@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Server.cpp" />
+    <ClCompile Include="GameQueryServer.cpp">
+      <Filter>QueryServer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Define.cpp">
+      <Filter>Define</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Define\PCH</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="QueryServer">
+      <UniqueIdentifier>{634000a5-33f3-4f76-bd4b-40e080707b3a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Define">
+      <UniqueIdentifier>{6d549edd-95c8-428a-ac42-cae463061d3d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Define\PCH">
+      <UniqueIdentifier>{3095884a-214b-45d2-87a8-18f9c86b29c2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GameQueryServer.h">
+      <Filter>QueryServer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Define.h">
+      <Filter>Define</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Define\PCH</Filter>
+    </ClInclude>
+    <ClInclude Include="InHeaderDefine.hh">
+      <Filter>Define</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

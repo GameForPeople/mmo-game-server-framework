@@ -161,15 +161,12 @@ SocketInfo::~SocketInfo()
 	//delete userData;
 }
 
-//---------------------------------------------------------------------------
-// TimerUnit
-//---------------------------------------------------------------------------
-TimerUnit::TimerUnit()
-	: memoryUnit(MEMORY_UNIT_TYPE::TIMER_FUNCTION),
-	objectKey()
-{
-}
 
-TimerUnit::~TimerUnit()
+//---------------------------------------------------------------------------
+// TimerMemoryHead
+//---------------------------------------------------------------------------
+
+TimerMemoryHead::TimerMemoryHead(/*const unsigned short inTimerContIndex*/) noexcept
+	: memoryUnit(MEMORY_UNIT_TYPE::TIMER_FUNCTION)/*, timerContIndex(inTimerContIndex)*/
 {
 }

@@ -22,22 +22,19 @@ GameServer::GameServer(bool inNotUse)
 	, listenSocket()
 	, serverAddr()
 	, workerThreadCont()
-	, zoneCont()
+	, zone(std::make_unique<Zone>())
 {
 	ServerIntegrityCheck();
 	
-	SendMemoryPool::MakeInstance();
+	ERROR_HANDLING::errorRecvOrSendArr[0] = ERROR_HANDLING::HandleRecvOrSendError;
+	ERROR_HANDLING::errorRecvOrSendArr[1] = ERROR_HANDLING::NotError;
 
+	SendMemoryPool::MakeInstance();
 	InitNetwork();
 
 	TimerManager::MakeInstance(hIOCP);
 
 	PrintServerInfoUI();
-	InitZones();
-	InitFunctions();
-
-	ERROR_HANDLING::errorRecvOrSendArr[0] = ERROR_HANDLING::HandleRecvOrSendError;
-	ERROR_HANDLING::errorRecvOrSendArr[1] = ERROR_HANDLING::NotError;
 };
 
 GameServer::~GameServer()
@@ -46,7 +43,6 @@ GameServer::~GameServer()
 	TimerManager::DeleteInstance();
 
 	workerThreadCont.clear();
-	zoneCont.clear();
 
 	closesocket(listenSocket);
 	CloseHandle(hIOCP);
@@ -62,7 +58,7 @@ void GameServer::ServerIntegrityCheck()
 		!= (int)((GLOBAL_DEFINE::MAX_HEIGHT + 1) / GLOBAL_DEFINE::SECTOR_DISTANCE),
 		"MAX_HEIGHT(그리고 MAX_WIDTH)는 SECTOR_DISTANCE의 배수가 아닐 경우, 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
 	
-	// 이제 채팅서버에서 해당 내용을 검사합니다.
+	// 이제 채팅서버에서 해당 내용을 검사합니다!
 	//static_assert(PACKET_TYPE::CLIENT_TO_SERVER::CHAT == PACKET_TYPE::SERVER_TO_CLIENT::CHAT,
 	//	"CS::CHAT와 SC::CHAT의 값이 다르며, 이는 클라이언트에 치명적인 오류를 발생시킵니다. 서버 실행을 거절하였습니다.");
 }
@@ -82,30 +78,6 @@ void GameServer::PrintServerInfoUI()
 	printf("■ IP : LocalHost(127.0.0.1)\n");
 	printf("■ Listen Port : 9000\n");
 	printf("■■■■■■■■■■■■■■■■■■■■■■■■■\n");
-}
-
-/*
-	GameServer::InitZone()
-		- GamsServer의 생성자에서 호출되며, 씐들의 초기화를 담당합니다.
-*/
-void GameServer::InitZones()
-{
-	zoneCont.reserve(1);
-	zoneCont.emplace_back(std::make_unique<Zone>());
-}
-
-/*
-	GameServer::InitFunctions()
-		- GamsServer의 생성자에서 호출되며, 함수 포인터들의 초기화를 담당합니다.
-*/
-void GameServer::InitFunctions()
-{
-#ifdef DISABLED_FUNCTION_POINTER
-#else
-	recvOrSendArr = new std::function <void(GameServer&, LPVOID)>[NETWORK_TYPE::ENUM_SIZE];
-	recvOrSendArr[NETWORK_TYPE::RECV] = &GameServer::AfterRecv;
-	recvOrSendArr[NETWORK_TYPE::SEND] = &GameServer::AfterSend;
-#endif
 }
 
 /*
@@ -159,7 +131,8 @@ void GameServer::InitNetwork()
 void GameServer::Run()
 {
 	std::thread timerThread{ TimerManager::GetInstance()->StartTimerThread };
-
+	
+	// TimerManaer가 먼저! 여야! 해!
 	std::thread acceptThread{ StartAcceptThread, (LPVOID)this };
 
 	printf("\n\n#. Game Server activated!\n\n");
@@ -173,12 +146,10 @@ void GameServer::Run()
 	GameServer::StartAcceptThread(LPVOID arg)
 		- 쓰레드에서 멤버 변수를 사용하기 위해, 클래스 내부에서 엑셉트 쓰레드에 필요한 함수를 호출.
 */
-DWORD WINAPI GameServer::StartAcceptThread(LPVOID arg)
+void GameServer::StartAcceptThread(LPVOID arg)
 {
 	GameServer* pServer = static_cast<GameServer*>(arg);
 	pServer->AcceptThreadFunction();
-
-	return 0;
 };
 
 /*
@@ -203,7 +174,7 @@ void GameServer::AcceptThreadFunction()
 			break;
 		}
 
-		if (auto [isTrueAdd, pClient] = zoneCont[0]->TryToEnter()
+		if (auto [isTrueAdd, pClient] = zone->TryToEnter()
 			; isTrueAdd)
 		{
 			// 소켓과 입출력 완료 포트 연결
@@ -242,12 +213,10 @@ void GameServer::AcceptThreadFunction()
 	GameServer::StartWorkerThread(LPVOID arg)
 		- 쓰레드에서 멤버 변수를 사용하기 위해, 클래스 내부에서 워커쓰레드에 필요한 함수를 호출.
 */
-DWORD WINAPI GameServer::StartWorkerThread(LPVOID arg)
+void GameServer::StartWorkerThread(LPVOID arg)
 {
 	GameServer* pServer = static_cast<GameServer*>(arg);
 	pServer->WorkerThreadFunction();
-
-	return 0;
 };
 
 /*
@@ -259,9 +228,8 @@ void GameServer::WorkerThreadFunction()
 	// 한 번만 선언해서 여러번 씁시다. 아껴써야지...
 	int retVal{};
 	DWORD cbTransferred;
-	unsigned long long clientKey;
+	unsigned long long Key;
 	
-	BYTE* pReturnPointer{nullptr};
 	LPVOID pMemoryUnit{nullptr};
 
 	while (7)
@@ -271,12 +239,13 @@ void GameServer::WorkerThreadFunction()
 		retVal = GetQueuedCompletionStatus(
 			hIOCP, //입출력 완료 포트 핸들
 			&cbTransferred, //비동기 입출력 작업으로, 전송된 바이트 수가 여기에 저장된다.
-			&clientKey, //함수 호출 시 전달한 세번째 인자(32비트) 가 여기에 저장된다.
-			reinterpret_cast<LPOVERLAPPED *>(&pMemoryUnit /*pReturnPointer*/), //Overlapped 구조체의 주소값
+			&Key, //함수 호출 시 전달한 세번째 인자(32비트) 가 여기에 저장된다.
+			reinterpret_cast<LPOVERLAPPED*>(&pMemoryUnit /*pReturnPointer*/), //Overlapped 구조체의 주소값
 			INFINITE // 대기 시간 -> 깨울 까지 무한대
 		);
 #pragma endregion
 
+#pragma region [ Error Exception ]
 		//pMemoryUnit = pReturnPointer - sizeof(MEMORY_UNIT_TYPE);
 		//std::cout << "출력값 : " << (int&)(*(&pReturnPointer - 4)) << std::endl;
 
@@ -288,63 +257,56 @@ void GameServer::WorkerThreadFunction()
 //			continue;
 //		}
 //#pragma endregion
+#pragma endregion
 
-#ifdef DISABLED_FUNCTION_POINTER
-		switch (reinterpret_cast<MemoryUnit*>(pMemoryUnit)->memoryUnitType)
+#pragma region [ Process ]
+		if (MemoryUnit * pTemp = reinterpret_cast<MemoryUnit*>(pMemoryUnit)
+			; MEMORY_UNIT_TYPE::SEND_TO_CLIENT == pTemp->memoryUnitType)
 		{
-		case MEMORY_UNIT_TYPE::SEND_TO_CLIENT:
-			if (retVal == 0 || cbTransferred == 0)
-			{
-				NETWORK_UTIL::LogOutProcess(pMemoryUnit);
-				continue;
-			}
 			// std::cout << "\n[SEND_TO_CLIENT] \n";
-			AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
-			break;
-		case MEMORY_UNIT_TYPE::RECV_FROM_CLIENT:
+
+			// send에 대한 에러는 처리하지 않음.
+			//if (retVal == 0 || cbTransferred == 0)
+			//{
+			//	NETWORK_UTIL::LogOutProcess(pMemoryUnit);
+			//	continue;
+			//}
+
+			// 보낼 때 사용한 버퍼 후처리하고 끝! ( 오버랩 초기화는 보낼떄 처리)
+			SendMemoryPool::GetInstance()->PushMemory(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
+		}
+		else if (MEMORY_UNIT_TYPE::TIMER_FUNCTION == pTemp->memoryUnitType)
+		{
+			//std::cout << "\n[TIMER_FUNCTION] \n";
+			zone->ProcessTimerUnit(Key);
+		}	
+		else if (MEMORY_UNIT_TYPE::RECV_FROM_CLIENT == pTemp->memoryUnitType)
+		{
+			//std::cout << "\n[RECV_FROM_CLIENT] \n";
 			if (retVal == 0 || cbTransferred == 0)
 			{
 				NETWORK_UTIL::LogOutProcess(pMemoryUnit);
 				continue;
 			}
-			//std::cout << "\n[RECV_FROM_CLIENT] \n";
-			AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
-			break;
-		case MEMORY_UNIT_TYPE::TIMER_FUNCTION:
-			//std::cout << "\n[TIMER_FUNCTION] \n";
-			ProcessTimerUnit(reinterpret_cast<TimerUnit*>(pMemoryUnit));
-			break;
-		default:
+			
+			// 받은 데이터 처리
+			ProcessRecvData(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
+
+			// 바로 다시 Recv!
+			NETWORK_UTIL::RecvPacket(reinterpret_cast<SocketInfo*>(pMemoryUnit));
+		}
+		else
+		{
 			std::cout << "\n[Error Memory Unit Type] \n";
 			std::cout << "마! 니 뭐여? -> " <<
 				static_cast<int>(reinterpret_cast<MemoryUnit*>(pMemoryUnit)->memoryUnitType)
 				<< std::endl;
-			break;
 		}
-		//}
-#else
-		reinterpret_cast<MemoryUnit *>(pMemoryUnit)->memoryUnitType == MEMORY_UNIT_TYPE::RECV
-			? AfterRecv(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred)
-			: AfterSend(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
-
-		recvOrSendArr[GLOBAL_UTIL::BIT_CONVERTER::GetRecvOrSend(pClient->buf[0])](*this, pClient);
-#endif
+#pragma endregion
 	}
 }
 
-/*
-	GameServer::AfterRecv(SocketInfo* pClient)
-		- 리시브 함수 호출 후, 클라이언트의 데이터를 실제로 받았을 때, 호출되는 함수.
-*/
-void GameServer::AfterRecv(SocketInfo* pClient, int cbTransferred)
-{
-	// 받은 데이터 처리
-	ProcessRecvData(pClient, cbTransferred);
-
-	// 바로 다시 Recv!
-	NETWORK_UTIL::RecvPacket(pClient);
-}
-
+ 
 /*
 	GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 		- 받은 데이터들을 패킷화하여 처리하는 함수.
@@ -372,7 +334,7 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 			memcpy(pClient->loadedBuf + pClient->loadedSize, pBuf, required);
 			
 			//-------------------------------------------------------------------------------
-			zoneCont[0]->ProcessPacket(pClient); //== pClient->pZone->ProcessPacket(pClient); // 패킷처리 가가가가아아아아즈즈즈즞즈아아아아앗!!!!!!
+			zone->ProcessPacket(pClient); //== pClient->pZone->ProcessPacket(pClient); // 패킷처리 가가가가아아아아즈즈즈즞즈아아아아앗!!!!!!
 			//-------------------------------------------------------------------------------
 
 			pClient->loadedSize = 0;
@@ -391,23 +353,38 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 	}
 }
 
-/*
-	GameServer::AfterSend(SocketInfo* pClient)
-		- WSASend 함수 호출 후, 데이터 전송이 끝났을 때, 호출되는 함수.
-*/
-void GameServer::AfterSend(SendMemoryUnit* pMemoryUnit)
-{
-	// 보낼 때 사용한 버퍼 후처리하고 끝! ( 오버랩 초기화는 보낼떄 처리)
-	SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
-}
-
-void GameServer::ProcessTimerUnit(TimerUnit* pUnit)
-{
-	zoneCont[0]->ProcessTimerUnit(pUnit);
-
-	// 재활용하고 싶은건 재활용하고, 반납할건 반납하게하기 위해, 내부에서 정하도록 변경함.
-	//TimerManager::GetInstance()->PushTimerUnit(pUnit);
-}
+#pragma region [Legacy Code]
+///*
+//	GameServer::AfterRecv(SocketInfo* pClient)
+//		- 리시브 함수 호출 후, 클라이언트의 데이터를 실제로 받았을 때, 호출되는 함수.
+//*/
+//void GameServer::AfterRecv(SocketInfo* pClient, int cbTransferred)
+//{
+//	// 받은 데이터 처리
+//	ProcessRecvData(pClient, cbTransferred);
+//
+//	// 바로 다시 Recv!
+//	NETWORK_UTIL::RecvPacket(pClient);
+//}
+//
+///*
+//	GameServer::AfterSend(SocketInfo* pClient)
+//		- WSASend 함수 호출 후, 데이터 전송이 끝났을 때, 호출되는 함수.
+//*/
+//void GameServer::AfterSend(SendMemoryUnit* pMemoryUnit)
+//{
+//	// 보낼 때 사용한 버퍼 후처리하고 끝! ( 오버랩 초기화는 보낼떄 처리)
+//	SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
+//}
+//
+//void GameServer::ProcessTimerUnit(const int timerManagerContIndex)
+//{
+//	zone->ProcessTimerUnit(timerManagerContIndex);
+//
+//	// 재활용하고 싶은건 재활용하고, 반납할건 반납하게하기 위해, 내부에서 정하도록 변경함.
+//	//TimerManager::GetInstance()->PushTimerUnit(pUnit);
+//}
+#pragma endregion
 
 #ifndef DISABLED_UNALLOCATED_MEMORY_SEND
 void GameServer::AfterUnallocatedSend(UnallocatedMemoryUnit* pUnit)

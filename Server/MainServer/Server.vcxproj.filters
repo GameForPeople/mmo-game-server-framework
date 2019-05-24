@@ -18,26 +18,8 @@
     <Filter Include="GameServer\Zone">
       <UniqueIdentifier>{561e16c5-d6a2-4aad-ad3f-b7ed162a14b2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Others">
-      <UniqueIdentifier>{58d3a35a-d44d-4f2f-8454-853cd0d6c496}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Others\UserData">
-      <UniqueIdentifier>{233cb163-fdac-4d99-9ace-81319f84441b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Others\Memory">
-      <UniqueIdentifier>{f052244d-703e-432b-855a-280ee59a2e7a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Others\SendMemoryPool">
-      <UniqueIdentifier>{d340e160-0190-45fa-b1d5-354209d1b254}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Others\SocketInfo">
-      <UniqueIdentifier>{61436111-4ecf-411d-9180-0c18c6947a1c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameServer\Zone\ConnectManager">
       <UniqueIdentifier>{35037509-3041-411c-83d5-b76a750aff41}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Others\ClientContUnit">
-      <UniqueIdentifier>{a174d95b-145c-4fd4-8348-8dc3688e4b7d}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameServer\Zone\MoveManager">
       <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
@@ -51,14 +33,38 @@
     <Filter Include="GameServer\Zone\TimerManager">
       <UniqueIdentifier>{df8006a5-cdab-40be-afcd-161c100d62bd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Others\Object">
+    <Filter Include="Define\Server">
+      <UniqueIdentifier>{005dd673-94ad-4a32-b2a5-5ae5cd8051b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Define\Global">
+      <UniqueIdentifier>{78b56df2-e43e-4655-b168-8a6594ff0159}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Object">
       <UniqueIdentifier>{69d06361-c939-46f1-aa85-d52c7f9fd466}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Others\Object\Monster">
+    <Filter Include="Object\Monster">
       <UniqueIdentifier>{4176a17f-be8e-4ebd-98db-b8ab663d650a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Others\Object\NPC">
+    <Filter Include="Object\NPC">
       <UniqueIdentifier>{28ef59f3-1e89-493c-9609-7f45e8e0012f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MemoryType">
+      <UniqueIdentifier>{58d3a35a-d44d-4f2f-8454-853cd0d6c496}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MemoryType\UserData">
+      <UniqueIdentifier>{233cb163-fdac-4d99-9ace-81319f84441b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MemoryType\Memory">
+      <UniqueIdentifier>{f052244d-703e-432b-855a-280ee59a2e7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MemoryType\SendMemoryPool">
+      <UniqueIdentifier>{d340e160-0190-45fa-b1d5-354209d1b254}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MemoryType\SocketInfo">
+      <UniqueIdentifier>{61436111-4ecf-411d-9180-0c18c6947a1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MemoryType\ClientContUnit">
+      <UniqueIdentifier>{a174d95b-145c-4fd4-8348-8dc3688e4b7d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -70,22 +76,19 @@
       <Filter>GameServer</Filter>
     </ClCompile>
     <ClCompile Include="UserData.cpp">
-      <Filter>Others\UserData</Filter>
+      <Filter>MemoryType\UserData</Filter>
     </ClCompile>
     <ClCompile Include="MoveManager.cpp">
       <Filter>GameServer\Zone\MoveManager</Filter>
     </ClCompile>
-    <ClCompile Include="ServerDefine.cpp">
-      <Filter>Define</Filter>
-    </ClCompile>
     <ClCompile Include="SocketInfo.cpp">
-      <Filter>Others\SocketInfo</Filter>
+      <Filter>MemoryType\SocketInfo</Filter>
     </ClCompile>
     <ClCompile Include="MemoryUnit.cpp">
-      <Filter>Others\Memory</Filter>
+      <Filter>MemoryType\Memory</Filter>
     </ClCompile>
     <ClCompile Include="SendMemoryPool.cpp">
-      <Filter>Others\SendMemoryPool</Filter>
+      <Filter>MemoryType\SendMemoryPool</Filter>
     </ClCompile>
     <ClCompile Include="ConnectManager.cpp">
       <Filter>GameServer\Zone\ConnectManager</Filter>
@@ -94,7 +97,7 @@
       <Filter>GameServer\Zone\Sector</Filter>
     </ClCompile>
     <ClCompile Include="ClientContUnit.cpp">
-      <Filter>Others\ClientContUnit</Filter>
+      <Filter>MemoryType\ClientContUnit</Filter>
     </ClCompile>
     <ClCompile Include="Zone.cpp">
       <Filter>GameServer\Zone</Filter>
@@ -102,20 +105,29 @@
     <ClCompile Include="ChatManager.cpp">
       <Filter>GameServer\Zone\ChatManager</Filter>
     </ClCompile>
-    <ClCompile Include="..\Define.cpp">
-      <Filter>Define</Filter>
-    </ClCompile>
     <ClCompile Include="TimerManager.cpp">
       <Filter>GameServer\Zone\TimerManager</Filter>
     </ClCompile>
     <ClCompile Include="BaseNPC.cpp">
-      <Filter>Others\Object\NPC</Filter>
+      <Filter>Object\NPC</Filter>
     </ClCompile>
     <ClCompile Include="BaseMonster.cpp">
-      <Filter>Others\Object\Monster</Filter>
+      <Filter>Object\Monster</Filter>
     </ClCompile>
     <ClCompile Include="ObjectInfo.cpp">
-      <Filter>Others\Object</Filter>
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerDefine.cpp">
+      <Filter>Define\Server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Define.cpp">
+      <Filter>Define\Global</Filter>
+    </ClCompile>
+    <ClCompile Include="MonsterModelManager.cpp">
+      <Filter>Object\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="MonsterLoader.cpp">
+      <Filter>Object\Monster</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -126,22 +138,19 @@
       <Filter>GameServer</Filter>
     </ClInclude>
     <ClInclude Include="SocketInfo.h">
-      <Filter>Others\SocketInfo</Filter>
+      <Filter>MemoryType\SocketInfo</Filter>
     </ClInclude>
     <ClInclude Include="UserData.h">
-      <Filter>Others\UserData</Filter>
+      <Filter>MemoryType\UserData</Filter>
     </ClInclude>
     <ClInclude Include="MoveManager.h">
       <Filter>GameServer\Zone\MoveManager</Filter>
     </ClInclude>
-    <ClInclude Include="ServerDefine.h">
-      <Filter>Define</Filter>
-    </ClInclude>
     <ClInclude Include="MemoryUnit.h">
-      <Filter>Others\Memory</Filter>
+      <Filter>MemoryType\Memory</Filter>
     </ClInclude>
     <ClInclude Include="SendMemoryPool.h">
-      <Filter>Others\SendMemoryPool</Filter>
+      <Filter>MemoryType\SendMemoryPool</Filter>
     </ClInclude>
     <ClInclude Include="ConnectManager.h">
       <Filter>GameServer\Zone\ConnectManager</Filter>
@@ -150,7 +159,7 @@
       <Filter>GameServer\Zone\Sector</Filter>
     </ClInclude>
     <ClInclude Include="ClientContUnit.h">
-      <Filter>Others\ClientContUnit</Filter>
+      <Filter>MemoryType\ClientContUnit</Filter>
     </ClInclude>
     <ClInclude Include="Zone.h">
       <Filter>GameServer\Zone</Filter>
@@ -159,25 +168,34 @@
     <ClInclude Include="ChatManager.h">
       <Filter>GameServer\Zone\ChatManager</Filter>
     </ClInclude>
-    <ClInclude Include="..\Define.h">
-      <Filter>Define</Filter>
-    </ClInclude>
     <ClInclude Include="TimerManager.h">
       <Filter>GameServer\Zone\TimerManager</Filter>
     </ClInclude>
     <ClInclude Include="BaseNPC.h">
-      <Filter>Others\Object\NPC</Filter>
+      <Filter>Object\NPC</Filter>
     </ClInclude>
     <ClInclude Include="BaseMonster.h">
-      <Filter>Others\Object\Monster</Filter>
+      <Filter>Object\Monster</Filter>
     </ClInclude>
     <ClInclude Include="ObjectInfo.h">
-      <Filter>Others\Object</Filter>
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerDefine.h">
+      <Filter>Define\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Define.h">
+      <Filter>Define\Global</Filter>
+    </ClInclude>
+    <ClInclude Include="MonsterModelManager.h">
+      <Filter>Object\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="MonsterLoader.h">
+      <Filter>Object\Monster</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="InHeaderDefine.hh">
-      <Filter>Define</Filter>
+      <Filter>Define\Server</Filter>
     </None>
   </ItemGroup>
 </Project>

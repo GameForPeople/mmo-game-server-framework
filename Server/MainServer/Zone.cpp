@@ -20,6 +20,8 @@
 
 #include "ObjectInfo.h"
 
+#include "MonsterLoader.h" 
+
 #include "Zone.h"
 
 Zone::Zone() : 
@@ -58,7 +60,7 @@ void Zone::InitManagers()
 void Zone::InitClientCont()
 {
 	zoneContUnit = new ZoneContUnit;
-	unsigned int tempIndex = BIT_CONVERTER::NOT_PLAYER_INT;
+	_KeyType tempIndex = BIT_CONVERTER::NOT_PLAYER_INT;
 
 	std::cout << "\n#. 몬스터 할당중입니다." << std::endl;
 
@@ -68,18 +70,19 @@ void Zone::InitClientCont()
 		if((tempIndex - BIT_CONVERTER::NOT_PLAYER_INT) % 1000 == 0)
 			std::cout << tempIndex - BIT_CONVERTER::NOT_PLAYER_INT << " ";
 		
-		USHORT tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
-		USHORT tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
+		const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
+		const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
 
-		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY);
+		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY,);
 		
 		RenewSelfSectorForNpc(monster->objectInfo); // 비용이 너무 큼.
 		//sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);
 
+		// 이동 타이머를 등록해줌.
 		auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-		timerUnit->commandType = 1;
+		timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
 		timerUnit->objectKey = monster->objectInfo->key;
-		TimerManager::GetInstance()->AddTimerEvent(timerUnit, 10);
+		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SECOND);
 	}
 }
 
@@ -129,30 +132,132 @@ void Zone::ProcessPacket(SocketInfo* pClient)
 	recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE)](*this, pClient);
 }
 
-void Zone::ProcessTimerUnit(TimerUnit* pUnit)
+void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 {
-	switch (auto[objectType, index] = BIT_CONVERTER::WhatIsYourTypeAndRealKey(pUnit->objectKey); objectType)
+	concurrency::concurrent_queue<TimerUnit*>* tempCont = TimerManager::GetInstance()->GetTimerContWithIndex(timerManagerContIndex);
+
+	TimerUnit* pUnit = nullptr;
+	while (tempCont->try_pop(pUnit))
 	{
-	case BIT_CONVERTER::OBJECT_TYPE::PLAYER:
-		break;
-	case BIT_CONVERTER::OBJECT_TYPE::MONSTER:
-		if (pUnit->commandType == 1)
+		switch (auto[objectType, index] = BIT_CONVERTER::WhatIsYourTypeAndRealKey(pUnit->objectKey); objectType)
 		{
-			ObjectInfo* tempObjectInfo = zoneContUnit->monsterCont[index]->objectInfo;
+		case BIT_CONVERTER::OBJECT_TYPE::PLAYER:
+			break;
+		case BIT_CONVERTER::OBJECT_TYPE::MONSTER:
+			switch (pUnit->timerType)
+			{
+				case (TIMER_TYPE::NPC_MOVE):
+				{
+					ObjectInfo* tempObjectInfo = zoneContUnit->monsterCont[index]->objectInfo;
 
-			moveManager->MoveRandom(tempObjectInfo);	// 랜덤으로 움직이고
-			RenewSelfSectorForNpc(tempObjectInfo);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
-			RenewPossibleSectors(tempObjectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
+					moveManager->MoveRandom(tempObjectInfo);	// 랜덤으로 움직이고
+					RenewSelfSectorForNpc(tempObjectInfo);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
+					RenewPossibleSectors(tempObjectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
 
-			RenewViewListInSectorsForNpc(tempObjectInfo)
-				? TimerManager::GetInstance()->AddTimerEvent(pUnit, 10)
-				: TimerManager::GetInstance()->AddTimerEvent(pUnit, 10);
-				//최적화 안할겨 뭐 어쩔겨
-				//TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					RenewViewListInSectorsForNpc(tempObjectInfo)
+						? TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND)
+						: TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
+					//최적화 안할겨 뭐 어쩔겨
+					
+					//TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::NPC_ATTACK):
+				{
+					break;
+				}
+				case (TIMER_TYPE::SKILL_1_COOLTIME):
+				{
+					break;
+				}
+				case (TIMER_TYPE::SKILL_2_COOLTIME):
+				{
+					break;
+				}
+				case (TIMER_TYPE::SELF_HEAL):
+				{
+					break;
+				}
+				case (TIMER_TYPE::REVIVAL):
+				{
+					break;
+				}
+				case (TIMER_TYPE::CC_NODAMAGE):
+				{
+					if (zoneContUnit->monsterCont[index]->noDamageTick != 0)
+					{
+						--(zoneContUnit->monsterCont[index]->noDamageTick);
+					}
+					
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_FAINT):
+				{
+					if (zoneContUnit->monsterCont[index]->faintTick != 0)
+					{
+						--(zoneContUnit->monsterCont[index]->faintTick);
+					}
+					
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_FREEZE):
+				{
+					if (zoneContUnit->monsterCont[index]->freezeTick != 0)
+					{
+						--(zoneContUnit->monsterCont[index]->freezeTick);
+					}
+					
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_ELECTRIC):
+				{
+					if (zoneContUnit->monsterCont[index]->electricTick != 0)
+					{
+						--(zoneContUnit->monsterCont[index]->electricTick);
+					}
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_BURN):
+				{
+					if (zoneContUnit->monsterCont[index]->burnTick != 0)
+					{
+						--(zoneContUnit->monsterCont[index]->burnTick);
+						zoneContUnit->monsterCont[index]->hp -= STATE::DAMAGE::BURN_DAMAGE;
+
+						if (zoneContUnit->monsterCont[index]->burnTick != 0)
+						{
+							TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
+						}
+						else
+						{
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						}
+					}
+					else
+					{
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					}
+					break;
+				}
+				case (TIMER_TYPE::ITEM_HP):
+				{
+					break;
+				}
+				case (TIMER_TYPE::ITEM_MP):
+				{
+					break;
+				}
+				default:
+					break;
+			}
+			break;
+		default:
+			break;
 		}
-		break;
-	default:
-		break;
 	}
 }
 
@@ -225,8 +330,8 @@ void Zone::RenewPossibleSectors(ObjectInfo* pClient)
 {
 	// 로컬 변수를 리턴하는 코드에서, 멤버 변수를 활용하여 구현하는 방식으로 변경.
 
-	const USHORT nowSectorCenterX = sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].GetCenterX();
-	const USHORT nowSectorCenterY = sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].GetCenterY();
+	const _PosType nowSectorCenterX = sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].GetCenterX();
+	const _PosType nowSectorCenterY = sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].GetCenterY();
 
 	char xDir = 0;	// x 섹터의 판단 방향
 	char yDir = 0;	// y 섹터의 판단 방향
@@ -487,7 +592,6 @@ void Zone::RenewSelfSectorForNpc(ObjectInfo* pClient)
 		sectorCont[static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE)][static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE)].JoinForNpc(pClient);
 		//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].JoinForNpc(pClient);
 	}
-
 }
 
 /*

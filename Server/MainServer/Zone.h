@@ -4,6 +4,7 @@
 
 struct SocketInfo;
 struct MemoryUnit;
+struct TimerMemoryHead;
 struct TimerUnit;
 
 class ConnectManager;
@@ -27,7 +28,7 @@ class Zone
 {
 public:
 	void ProcessPacket(SocketInfo* pClient);
-	void ProcessTimerUnit(TimerUnit* pUnit);
+	void ProcessTimerUnit(const int timerManagerContIndex);
 
 	Zone();
 	~Zone();

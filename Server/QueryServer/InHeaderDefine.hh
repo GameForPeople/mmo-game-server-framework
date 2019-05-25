@@ -41,15 +41,3 @@ enum class OBJECT_TYPE : unsigned char
 	MONSTER,
 	NPC
 };
-
-namespace GLOBAL_DEFINE
-{
-	//---------
-	constexpr unsigned short MAX_SIZE_OF_RECV{ 100 };			//Recv 한번에 받을 수 있는 최대 사이즈
-	constexpr unsigned short MAX_SIZE_OF_RECV_PACKET{ 80 };		//sizeof(PACKET_DATA::CLIENT_TO_SERVER::Chat);	// (2) Recv 시, 처리해야하는 패킷 중 가장 큰 사이즈
-	constexpr unsigned short MAX_SIZE_OF_SEND{ 5 };				// sizeof(PACKET_DATA::SERVER_TO_CLIENT::Position);	// (5) Send 시, 처리해야하는 패킷 중 가장 큰 사이즈
-	constexpr unsigned short MAX_NUMBER_OF_SEND_POOL{ 1000 };
-	//---
-
-	constexpr unsigned char MAX_CHAT_MASSAGE_SIZE{ 80 };
-}

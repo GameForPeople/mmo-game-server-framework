@@ -42,6 +42,8 @@
 #include <cwchar>
 #include <string>
 
+#include <sqlext.h>  
+
 #define		_NORETURN			[[noreturn]]
 #define		_NODISCARD			[[nodiscard]]
 #define		_DEPRECATED			[[deprecated]]

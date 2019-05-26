@@ -42,7 +42,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -120,6 +120,9 @@
   <ItemGroup>
     <ClCompile Include="..\Define.cpp" />
     <ClCompile Include="GameQueryServer.cpp" />
+    <ClCompile Include="MemoryUnit.cpp" />
+    <ClCompile Include="QueryDefine.cpp" />
+    <ClCompile Include="SendMemoryPool.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -129,7 +132,10 @@
     <ClInclude Include="..\Define.h" />
     <ClInclude Include="GameQueryServer.h" />
     <ClInclude Include="InHeaderDefine.hh" />
+    <ClInclude Include="MemoryUnit.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="QueryDefine.h" />
+    <ClInclude Include="SendMemoryPool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

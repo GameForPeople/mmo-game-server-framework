@@ -11,6 +11,15 @@
     <ClCompile Include="pch.cpp">
       <Filter>Define\PCH</Filter>
     </ClCompile>
+    <ClCompile Include="SendMemoryPool.cpp">
+      <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="MemoryUnit.cpp">
+      <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="QueryDefine.cpp">
+      <Filter>Define</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="QueryServer">
@@ -21,6 +30,9 @@
     </Filter>
     <Filter Include="Define\PCH">
       <UniqueIdentifier>{3095884a-214b-45d2-87a8-18f9c86b29c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Memory">
+      <UniqueIdentifier>{a31d763c-1d99-4daf-a8e6-df9d58cb18de}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -34,6 +46,15 @@
       <Filter>Define\PCH</Filter>
     </ClInclude>
     <ClInclude Include="InHeaderDefine.hh">
+      <Filter>Define</Filter>
+    </ClInclude>
+    <ClInclude Include="SendMemoryPool.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryUnit.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="QueryDefine.h">
       <Filter>Define</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,11 +1,6 @@
 #pragma once
 
 struct MemoryUnit;
-struct SendMemoryUnit;
-struct SocketInfo;
-
-class ZoneContUnit;
-class ChatManager;
 
 /*
 	GameQueryServer
@@ -30,34 +25,42 @@ private:	// for Init
 	void InitNetwork();
 
 private:	// for Worker Thread
-	static DWORD WINAPI StartWorkerThread(LPVOID arg);
+	static void StartWorkerThread(LPVOID arg);
 	void WorkerThreadFunction();
 
-private:	// for Aceept Thread
-	static DWORD WINAPI StartAcceptThread(LPVOID arg);
-	void AcceptThreadFunction();
-
 private:
-	void AfterRecv(SocketInfo* pClient, int cbTransferred);
-	void AfterSend(SendMemoryUnit* pUnit);
+	void AfterRecv(int cbTransferred);
+	void AfterSend(MemoryUnit* pUnit);
 
-	void ProcessRecvData(SocketInfo* pClient, int restSize);
-	void ProcessPacket(SocketInfo* pClient);
+	void ProcessRecvData(int restSize);
+	void ProcessPacket();
 
-	void ProcessChat(SocketInfo* pClient);
-	void ProcessConnect(SocketInfo* pClient);
-	void ProcessChange(SocketInfo* pClient);
+	void SendPacket(char* packetData);
+	void RecvPacket();
 
-private:
+private:	// DB Functions
+	void PrintDBErrorMessage(SQLHANDLE, SQLSMALLINT, RETCODE);
+	bool InitAndConnectToDB();
+	void FreeAndDisconnectDB();
+
+	void ProcessDemandLogin();
+	void ProcessSaveLocation();
+
+private:	// For Server
 	WSADATA								wsa;
 	HANDLE								hIOCP;
-	SOCKET								listenSocket;
+	SOCKET								socket;
 
 	SOCKADDR_IN							serverAddr;
 
 	std::vector<std::thread>			workerThreadCont;
 
-	ZoneContUnit*						zoneCont;	// 나중에는 존 개수에 따라 확장해야혀
+	MemoryUnit*							pRecvMemoryUnit;
+	char								loadedBuf[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
+	int									loadedSize;
 
-	std::unique_ptr<ChatManager>		chatManager;
+private:	// For DB
+	SQLHENV henv;
+	SQLHDBC hdbc;
+	SQLHSTMT hstmt = 0;
 };

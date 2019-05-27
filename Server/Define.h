@@ -12,6 +12,17 @@
 	!1. enum class, enum의 경우 마지막에 ENUM_SIZE를 포함해야합니다.
 */
 
+namespace GLOBAL_DEFINE
+{
+	constexpr USHORT MAIN_SERVER_PORT = 9000;
+	constexpr USHORT CHAT_SERVER_PORT = 9001;
+	constexpr USHORT MANAGER_SERVER_PORT = 9002;
+	constexpr USHORT QUERY_SERVER_PORT = 9003;
+
+	constexpr USHORT MAX_HEIGHT = 800;
+	constexpr USHORT MAX_WIDTH = 800;
+}
+
 namespace NETWORK_TYPE
 {
 	enum /*class NETWORK_TYPE : BYTE */
@@ -65,6 +76,24 @@ namespace PACKET_TYPE
 			PUT_PLAYER,
 			REMOVE_PLAYER,
 			ENUM_SIZE
+		};
+	}
+
+	namespace MAIN_TO_QUERY
+	{
+		enum
+		{
+			DEMAND_LOGIN,
+			SAVE_LOCATION
+		};
+	}
+
+	namespace QUERY_TO_MAIN
+	{
+		enum
+		{
+			LOGIN_TRUE,
+			LOGIN_FALSE
 		};
 	}
 
@@ -172,6 +201,31 @@ namespace PACKET_DATA
 		};
 	}
 
+	namespace MAIN_TO_QUERY
+	{
+		struct DemandLogin
+		{
+			const char size;
+			const char type;
+			int		key;
+			WCHAR	id[10];
+			int		pw;
+
+			DemandLogin(int, WCHAR*, int);
+		};
+
+		struct SavePosition
+		{
+			const char size;
+			const char type;
+			WCHAR	id[10];
+			int xPos;
+			int yPos;
+
+			SavePosition(WCHAR*, int, int);
+		};
+	}
+
 	namespace CHAT_TO_CLIENT
 	{
 		struct Chat
@@ -179,6 +233,30 @@ namespace PACKET_DATA
 			// 부하를 줄이기 위해, 채팅은 릴레이 방식으로 활용
 			char message[80];
 			Chat(char* );
+		};
+	}
+
+	namespace QUERY_TO_MAIN
+	{
+		struct LoginTrue
+		{
+			const char size;
+			const char type;
+			const int key;
+			int xPos;
+			int yPos;
+
+			LoginTrue(int, int, int) noexcept;
+		};
+
+		struct LoginFail
+		{
+			const char size;
+			const char type;
+			const int key;
+			unsigned char failReason;
+
+			LoginFail(int, unsigned char) noexcept;
 		};
 	}
 
@@ -203,16 +281,6 @@ namespace UNICODE_UTIL
 
 	_NODISCARD std::string WStringToString(const std::wstring& InWstring);
 	_NODISCARD std::wstring StringToWString(const std::string& InString);
-}
-
-namespace GLOBAL_DEFINE
-{
-	constexpr USHORT MAIN_SERVER_PORT = 9000;
-	constexpr USHORT CHAT_SERVER_PORT = 9001;
-	constexpr USHORT MANAGER_SERVER_PORT = 9002;
-
-	constexpr USHORT MAX_HEIGHT = 800;
-	constexpr USHORT MAX_WIDTH = 800;
 }
 
 namespace BIT_CONVERTER

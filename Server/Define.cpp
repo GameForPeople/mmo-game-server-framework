@@ -1,5 +1,4 @@
 #include "pch.h"
-
 #include "Define.h"
 
 namespace PACKET_DATA
@@ -72,12 +71,50 @@ namespace PACKET_DATA
 		{}
 	}
 
+	namespace MAIN_TO_QUERY
+	{
+		DemandLogin::DemandLogin(const int inKey, WCHAR* inId, int inPw)
+			: size(sizeof(DemandLogin)), type(PACKET_TYPE::MAIN_TO_QUERY::DEMAND_LOGIN),
+			key(inKey), id(), pw(inPw)
+		{
+			for (int i = 0; i < 10; ++i)
+			{
+				id[i] = inId[i];
+			}
+		}
+
+		SavePosition::SavePosition(WCHAR* inId, const int inXPos, const int inYPos)
+			: size(sizeof(DemandLogin)), type(PACKET_TYPE::MAIN_TO_QUERY::DEMAND_LOGIN),
+			id(), xPos(inXPos), yPos(inYPos)
+		{
+			for (int i = 0; i < 10; ++i)
+			{
+				id[i] = inId[i];
+			}
+		}
+	}
+
 	namespace CHAT_TO_CLIENT
 	{
 		Chat::Chat(char* inPtr)
 		{
 			memcpy(message, inPtr, static_cast<BYTE>(inPtr[0]));
 		}
+	}
+
+	namespace QUERY_TO_MAIN
+	{
+		LoginTrue::LoginTrue(const int inKey, const int inX, const int inY) noexcept : 
+			size(sizeof(LoginTrue)), type(PACKET_TYPE::QUERY_TO_MAIN::LOGIN_TRUE),
+			key(inKey),
+			xPos(inX), yPos(inY)
+		{}
+
+		LoginFail::LoginFail(const int inKey, const unsigned char inFailReason) noexcept :
+			size(sizeof(LoginTrue)), type(PACKET_TYPE::QUERY_TO_MAIN::LOGIN_FALSE),
+			key(inKey),
+			failReason(inFailReason)
+		{}
 	}
 }
 

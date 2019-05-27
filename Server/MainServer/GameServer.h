@@ -51,6 +51,8 @@ private:	// for Aceept Thread
 	static void StartAcceptThread(LPVOID arg);
 	void AcceptThreadFunction();
 
+	void AcceptQueryServer();
+
 private:
 	void ProcessRecvData(SocketInfo* pClient, int restSize);
 
@@ -59,6 +61,8 @@ private:
 	WSADATA								wsa;
 	HANDLE								hIOCP;
 	SOCKET								listenSocket;
+	
+	SOCKET								querySocket;
 
 	SOCKADDR_IN							serverAddr;
 

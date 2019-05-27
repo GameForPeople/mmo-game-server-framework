@@ -33,6 +33,8 @@ TimerManager::TimerManager(HANDLE hIOCP) :
 	for (int i = 0; i < MAX_COOL_TIME; ++i) { timerCont.emplace_back(); }
 
 	for (int i = 0; i < 500000; ++i) { timerMemoryPool.push(new TimerUnit()); }
+
+	SetPostQueuedFunctionCallCountAndTimerMemoryHeadCont(MAX_COOL_TIME);
 }
 
 TimerManager::~TimerManager()

@@ -9,6 +9,7 @@ struct TimerUnit;
 
 class ConnectManager;
 class MoveManager;
+class MonsterModelManager;
 
 class Sector;
 
@@ -59,6 +60,7 @@ private:
 private:
 	std::unique_ptr<ConnectManager> connectManager;
 	std::unique_ptr<MoveManager> moveManager;
+	std::unique_ptr<MonsterModelManager> monsterModelManager;
 
 	std::vector<std::vector<Sector>> sectorCont;
 

@@ -122,6 +122,9 @@ void GameServer::InitNetwork()
 
 	// 7. Listen()!
 	if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR) ERROR_QUIT(TEXT("listen()"));
+
+	// 8.
+	AcceptQueryServer();
 }
 
 /*
@@ -205,6 +208,44 @@ void GameServer::AcceptThreadFunction()
 		else {
 			closesocket(clientSocket);
 			//delete pClient;	// if nullptr;
+		}
+	}
+}
+
+/*
+	GameServer::AcceptQueryServer()
+		- QueryServer 와의 연결을 담당합니다.
+
+		!0. 해당 함수는 Run이 호출되기 전에 반드시 호출되어야 합니다.
+*/
+void GameServer::AcceptQueryServer()
+{
+	std::cout << "QueryServer를 실행시켜주세요!" << std::endl;
+
+	while (7)
+	{
+		SOCKET tempSocket{};
+		SOCKADDR_IN tempAddr{};
+		int addrLength = sizeof(tempAddr);
+
+		if (tempSocket = WSAAccept(listenSocket, (SOCKADDR *)&tempAddr, &addrLength, NULL, NULL)
+			; tempSocket == INVALID_SOCKET)
+		{
+			ERROR_HANDLING::ERROR_QUIT(TEXT("accept()"));
+		}
+
+		getpeername(tempSocket, reinterpret_cast<SOCKADDR *>(&tempAddr), &addrLength);
+
+		if (ntohs(tempAddr.sin_port) == GLOBAL_DEFINE::QUERY_SERVER_PORT)
+		{
+			std::cout << "QueryServer의 연결이 성공했습니다." << std::endl;
+			querySocket = tempSocket;
+			return;
+		}
+		else
+		{
+			std::cout << "QueryServer의 연결에 실패했습니다. 접속한 포트번호 : " << ntohs(tempAddr.sin_port) << std::endl;
+			closesocket(tempSocket);
 		}
 	}
 }

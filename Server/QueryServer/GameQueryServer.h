@@ -52,7 +52,8 @@ private:	// For Server
 	HANDLE								hIOCP;
 	SOCKET								socket;
 
-	SOCKADDR_IN							serverAddr;
+	SOCKADDR_IN							mainServerAddr;
+	SOCKADDR_IN							queryServerAddr;
 
 	std::vector<std::thread>			workerThreadCont;
 

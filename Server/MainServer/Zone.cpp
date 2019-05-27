@@ -21,12 +21,14 @@
 #include "ObjectInfo.h"
 
 #include "MonsterLoader.h" 
+#include "MonsterModelManager.h" 
 
 #include "Zone.h"
 
 Zone::Zone() : 
 	connectManager(nullptr),
 	moveManager(nullptr),
+	monsterModelManager(nullptr),
 	sectorCont(),
 	zoneContUnit(nullptr),
 	recvFunctionArr(nullptr)
@@ -51,6 +53,7 @@ void Zone::InitManagers()
 {
 	moveManager = std::make_unique<MoveManager>();
 	connectManager = std::make_unique<ConnectManager>();
+	monsterModelManager = std::make_unique<MonsterModelManager>();
 }
 
 /*
@@ -67,23 +70,26 @@ void Zone::InitClientCont()
 	//생성
 	for (auto& monster : zoneContUnit->monsterCont)
 	{
+
 		if((tempIndex - BIT_CONVERTER::NOT_PLAYER_INT) % 1000 == 0)
 			std::cout << tempIndex - BIT_CONVERTER::NOT_PLAYER_INT << " ";
 		
 		const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
 		const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
 
-		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY,);
+		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetRenderModel(MONSTER_TYPE::SLIME));
 		
 		RenewSelfSectorForNpc(monster->objectInfo); // 비용이 너무 큼.
 		//sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);
 
 		// 이동 타이머를 등록해줌.
-		auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-		timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
-		timerUnit->objectKey = monster->objectInfo->key;
-		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SECOND);
+		//auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+		//timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
+		//timerUnit->objectKey = monster->objectInfo->key;
+		//TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SECOND);
 	}
+
+	std::cout << "\n#. 몬스터 할당이 종료되었습니다." << std::endl;
 }
 
 /*

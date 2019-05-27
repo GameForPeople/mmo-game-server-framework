@@ -1,4 +1,5 @@
 #pragma once
+#include "InHeaderDefine.hh"
 
 struct MemoryUnit;
 

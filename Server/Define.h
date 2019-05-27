@@ -205,14 +205,24 @@ namespace PACKET_DATA
 	{
 		struct DemandLogin
 		{
+			const char size;
+			const char type;
+			int		key;
 			WCHAR	id[10];
 			int		pw;
+
+			DemandLogin(int, WCHAR*, int);
 		};
 
 		struct SavePosition
 		{
+			const char size;
+			const char type;
+			WCHAR	id[10];
 			int xPos;
 			int yPos;
+
+			SavePosition(WCHAR*, int, int);
 		};
 	}
 
@@ -230,13 +240,23 @@ namespace PACKET_DATA
 	{
 		struct LoginTrue
 		{
+			const char size;
+			const char type;
+			const int key;
 			int xPos;
 			int yPos;
+
+			LoginTrue(int, int, int) noexcept;
 		};
 
 		struct LoginFail
 		{
+			const char size;
+			const char type;
+			const int key;
 			unsigned char failReason;
+
+			LoginFail(int, unsigned char) noexcept;
 		};
 	}
 

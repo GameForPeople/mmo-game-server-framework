@@ -302,7 +302,6 @@ void GameQueryServer::SendPacket(char* packetData)
 */
 void GameQueryServer::RecvPacket()
 {
-	// 받은 데이터에 대한 처리가 끝나면 바로 다시 받을 준비.
 	DWORD flag{};
 
 	ZeroMemory(&(pRecvMemoryUnit->overlapped), sizeof(pRecvMemoryUnit->overlapped));
@@ -323,9 +322,11 @@ void GameQueryServer::ProcessDemandLogin()
 {
 	SQLWCHAR tempIdBuffer[10]{};
 	SQLLEN tempIDType = SQL_NTS;
+	
+	int tempKey = (loadedBuf[2] << 24) & 0xFF000000 | (loadedBuf[3] << 16) & 0xFF0000 | (loadedBuf[4] << 8) & 0xFF00 | (loadedBuf[5]) & 0xFF;
 
-	memcpy(tempIdBuffer, loadedBuf, 20);
-
+	memcpy(tempIdBuffer, loadedBuf + 6, 20);
+	
 	SQLRETURN retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
 	retcode = SQLBindParameter(hstmt,
@@ -341,6 +342,7 @@ void GameQueryServer::ProcessDemandLogin()
 	);
 	
 	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)L"Exec User_DemandLogin", SQL_NTS);
+	PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 
 	SQLINTEGER retPosX{}, retPosY{};
 	SQLLEN intLen = SQL_INTEGER;
@@ -351,11 +353,51 @@ void GameQueryServer::ProcessDemandLogin()
 	std::cout << "받은 위치는  x : " << retPosX << ", y : " << retPosY << std::endl;
 
 	SQLFreeStmt(hstmt, SQL_DROP);
+
+	if (retPosX == -1)
+	{
+		PACKET_DATA::QUERY_TO_MAIN::LoginFail loginFail(tempKey, 1);
+		SendPacket(reinterpret_cast<char*>(&loginFail));
+	}
+	else
+	{
+		PACKET_DATA::QUERY_TO_MAIN::LoginTrue loginTrue(tempKey, retPosX, retPosY);
+		SendPacket(reinterpret_cast<char*>(&loginTrue));
+	}
 }
 
 void GameQueryServer::ProcessSaveLocation()
 {
+	SQLLEN tempIDType = SQL_NTS;
+	SQLLEN tempIntType = SQL_INTEGER;
 
+	SQLWCHAR tempIdBuffer[10]{};
+	SQLINTEGER tempPosX;
+	SQLINTEGER tempPosY;
+
+	memcpy(tempIdBuffer, loadedBuf + 4, 20);
+
+	SQLRETURN retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+	retcode = SQLBindParameter(hstmt,
+		1,	// Parameter Index
+		SQL_PARAM_INPUT, // Parameter Type
+		SQL_C_WCHAR, // c dataType
+		SQL_WCHAR, // db dataType
+		10, // size?
+		0, // ?
+		tempIdBuffer,
+		sizeof(tempIdBuffer),
+		&tempIDType	// SQL_NTS
+	);
+
+	retcode = SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &tempPosX, sizeof(tempPosX), &tempIntType);
+	retcode = SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &tempPosY, sizeof(tempPosY), &tempIntType);
+
+	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)L"Exec User_SaveLocation", SQL_NTS);
+	PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+
+	SQLFreeStmt(hstmt, SQL_DROP);
 }
 
 bool GameQueryServer::InitAndConnectToDB()

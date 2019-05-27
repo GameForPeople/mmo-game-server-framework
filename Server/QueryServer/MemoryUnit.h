@@ -1,15 +1,12 @@
 #pragma once
 
+#include "InHeaderDefine.hh"
+
 enum class MEMORY_UNIT_TYPE : BYTE
 {
 	RECV = 0x00,
 	SEND = 0x01,
 };
-
-namespace GLOBAL_DEFINE
-{
-	constexpr unsigned char MAX_SIZE_OF_RECV_PACKET = 100;
-}
 
 /*
 	MemoryUnit

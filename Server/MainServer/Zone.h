@@ -36,6 +36,7 @@ public:
 
 public: // ConnectManager
 	std::pair<bool, SocketInfo*> /*std::optional<SocketInfo*>*/ TryToEnter();
+	std::pair<bool, SocketInfo*> OnlyGetUniqueKeyAndMallocSocketInfo();
 	void Exit(SocketInfo*);
 	void InitViewAndSector(SocketInfo* );
 
@@ -53,8 +54,8 @@ private:
 	void RenewViewListInSectors(SocketInfo* pClient);
 	bool RenewViewListInSectorsForNpc(ObjectInfo* pClient);
 
-	// MoveManager
 	void RecvCharacterMove(SocketInfo* pClient);
+	void RecvLogin(SocketInfo* pClient);
 	void RecvChat(SocketInfo* pClient);
 
 private:
@@ -66,4 +67,7 @@ private:
 
 	ZoneContUnit* zoneContUnit;
 	std::function<void(Zone&, SocketInfo*)>* recvFunctionArr;
+
+public:
+	ZoneContUnit* GetZoneContUnit() { return zoneContUnit; }
 };

@@ -112,3 +112,19 @@ void ConnectManager::SendRemovePlayerInOuttedClientViewList(SocketInfo* pOutClie
 	//	}
 	//}
 }
+
+std::pair<bool, SocketInfo*> ConnectManager::OnlyGetUniqueKeyAndMallocSocketInfo()
+{
+	if (USHORT retClientKey; uniqueKeyPool.try_pop(retClientKey))
+	{
+		// 소켓 정보 구조체 할당
+		SocketInfo* pInClient = new SocketInfo(retClientKey);
+		if (pInClient == nullptr)
+		{
+			ERROR_HANDLING::ERROR_QUIT(TEXT("Make_SocketInfo()"));
+		}
+		return std::make_pair(true, pInClient);
+	}
+	//-------------------------------------------------------------------0
+	return std::make_pair(false, nullptr);
+}

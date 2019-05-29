@@ -9,6 +9,13 @@ namespace PACKET_DATA
 			size(sizeof(Move)), type(PACKET_TYPE::CLIENT_TO_MAIN::MOVE),
 			direction(inDirection)
 		{}
+
+		Login::Login(WCHAR* pInID) noexcept :
+			size(sizeof(Login)), type(PACKET_TYPE::CLIENT_TO_MAIN::LOGIN),
+			id()
+		{
+			memcpy(id, pInID, 20);
+		}
 	}
 
 	namespace CLIENT_TO_CHAT
@@ -51,6 +58,11 @@ namespace PACKET_DATA
 			id(inNewId)
 		{}
 
+		LoginFail::LoginFail(const char inFailReason) noexcept :
+			size(sizeof(LoginFail)), type(PACKET_TYPE::MAIN_TO_CLIENT::LOGIN_FAIL),
+			failReason(inFailReason)
+		{}
+
 		PutPlayer::PutPlayer(const UINT inPutClientId, const USHORT inX, const USHORT inY) noexcept :
 			size(sizeof(PutPlayer)), type(PACKET_TYPE::MAIN_TO_CLIENT::PUT_PLAYER),
 			id(inPutClientId),
@@ -73,14 +85,11 @@ namespace PACKET_DATA
 
 	namespace MAIN_TO_QUERY
 	{
-		DemandLogin::DemandLogin(const int inKey, WCHAR* inId, int inPw)
+		DemandLogin::DemandLogin(const unsigned int inKey, char* inId, int inPw)
 			: size(sizeof(DemandLogin)), type(PACKET_TYPE::MAIN_TO_QUERY::DEMAND_LOGIN),
 			key(inKey), id(), pw(inPw)
 		{
-			for (int i = 0; i < 10; ++i)
-			{
-				id[i] = inId[i];
-			}
+			memcpy(id, inId, 20);
 		}
 
 		SavePosition::SavePosition(WCHAR* inId, const int inXPos, const int inYPos)

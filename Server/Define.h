@@ -52,6 +52,7 @@ namespace PACKET_TYPE
 		enum
 		{
 			MOVE, 	//LEFT, //UP, //RIGHT, //DOWN,
+			LOGIN,
 			ENUM_SIZE
 		};
 	}
@@ -73,6 +74,7 @@ namespace PACKET_TYPE
 		{
 			POSITION,
 			LOGIN_OK,
+			LOGIN_FAIL,
 			PUT_PLAYER,
 			REMOVE_PLAYER,
 			ENUM_SIZE
@@ -130,6 +132,14 @@ namespace PACKET_DATA
 
 			Move(char inDirection) noexcept;
 		};
+
+		struct Login {
+			const char size;
+			const char type;
+			WCHAR id[10];
+
+			Login(WCHAR* pInID) noexcept;
+		};
 	}
 
 	namespace CLIENT_TO_CHAT
@@ -165,8 +175,19 @@ namespace PACKET_DATA
 			const char size;
 			const char type;
 			UINT id;
+			USHORT x;
+			USHORT y;
 
-			LoginOk(const UINT inNewId) noexcept;
+			LoginOk(const UINT inNewId, const USHORT x, const USHORT y) noexcept;
+		};
+
+		struct LoginFail
+		{
+			const char size;
+			const char type;
+			const char failReason;
+
+			LoginFail(const char inFailReason) noexcept;
 		};
 
 		struct PutPlayer
@@ -207,11 +228,11 @@ namespace PACKET_DATA
 		{
 			const char size;
 			const char type;
-			int		key;
+			unsigned int key;
 			WCHAR	id[10];
 			int		pw;
 
-			DemandLogin(int, WCHAR*, int);
+			DemandLogin(const unsigned int, char*, int);
 		};
 
 		struct SavePosition

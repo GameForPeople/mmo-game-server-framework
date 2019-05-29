@@ -135,7 +135,17 @@ void Zone::InitSector()
 */
 void Zone::ProcessPacket(SocketInfo* pClient)
 {
-	recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE)](*this, pClient);
+	using namespace PACKET_TYPE::CLIENT_TO_MAIN;
+	//recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE)](*this, pClient);
+	switch (pClient->loadedBuf[1])
+	{
+	case MOVE:
+		RecvCharacterMove(pClient);
+		break;
+	case LOGIN:
+		RecvLogin(pClient);
+		break;
+	}
 }
 
 void Zone::ProcessTimerUnit(const int timerManagerContIndex)
@@ -293,6 +303,16 @@ std::pair<bool, SocketInfo*> /* == std::pair<bool, SocketInfo*>*/ Zone::TryToEnt
 			//RenewViewListInSectors(retNode.second);
 		//}
 
+		return retNode;
+	}
+	else return retNode;
+}
+
+std::pair<bool, SocketInfo*> Zone::OnlyGetUniqueKeyAndMallocSocketInfo()
+{
+	if (auto retNode = connectManager->OnlyGetUniqueKeyAndMallocSocketInfo()
+		; retNode.first)
+	{
 		return retNode;
 	}
 	else return retNode;
@@ -625,6 +645,17 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 	RenewSelfSector(pClient->objectInfo);
 	RenewPossibleSectors(pClient->objectInfo);
 	RenewViewListInSectors(pClient);
+}
+
+void Zone::RecvLogin(SocketInfo* pClient)
+{
+	PACKET_DATA::MAIN_TO_QUERY::DemandLogin packet(
+		pClient->objectInfo->key,
+		pClient->loadedBuf + 2,
+		0
+	);
+
+	NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
 }
 
 void Zone::RecvChat(SocketInfo* pClient)

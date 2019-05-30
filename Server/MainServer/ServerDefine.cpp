@@ -18,7 +18,6 @@ namespace NETWORK_UTIL
 
 		?0. wsaBuf의 buf는 보낼때마다 바꿔줘야 할까요?
 	*/
-
 	void SendPacket(SocketInfo* pClient, char* packetData)
 	{
 		SendMemoryUnit* sendMemoryUnit = SendMemoryPool::GetInstance()->PopMemory();
@@ -42,6 +41,23 @@ namespace NETWORK_UTIL
 			ERROR_HANDLING::ERROR_DISPLAY(L"SendPacket()");
 		}
 			//]();
+	}
+
+	void SendQueryPacket(char* packetData)
+	{
+		SendMemoryUnit* sendMemoryUnit = SendMemoryPool::GetInstance()->PopMemory();
+		memcpy(sendMemoryUnit->memoryUnit.dataBuf, packetData, packetData[0]);
+
+		sendMemoryUnit->memoryUnit.wsaBuf.len = static_cast<ULONG>(packetData[0]);
+		
+		ZeroMemory(&(sendMemoryUnit->memoryUnit.overlapped), sizeof(sendMemoryUnit->memoryUnit.overlapped));
+
+		if (SOCKET_ERROR ==
+			WSASend(querySocket, &(sendMemoryUnit->memoryUnit.wsaBuf), 1, NULL, 0, &(sendMemoryUnit->memoryUnit.overlapped), NULL)
+			)
+		{
+			ERROR_HANDLING::ERROR_DISPLAY(L"SendQuery()");
+		}
 	}
 
 #ifndef DISABLED_UNALLOCATED_MEMORY_SEND
@@ -88,6 +104,17 @@ namespace NETWORK_UTIL
 		}
 		//		)
 		//]();
+	}
+
+	void RecvQueryPacket()
+	{
+		DWORD flag{};
+		ZeroMemory(&(queryMemoryUnit->memoryUnit.overlapped), sizeof(queryMemoryUnit->memoryUnit.overlapped));
+		if (SOCKET_ERROR == WSARecv(querySocket, &(queryMemoryUnit->memoryUnit.wsaBuf), 1, NULL, &flag /* NULL*/, &(queryMemoryUnit->memoryUnit.overlapped), NULL))
+		{
+			ERROR_HANDLING::HandleRecvOrSendError();
+			//ERROR_HANDLING::ERROR_DISPLAY("못받았어요....");
+		}
 	}
 
 	/*

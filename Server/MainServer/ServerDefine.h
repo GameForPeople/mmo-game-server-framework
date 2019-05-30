@@ -9,14 +9,23 @@
 struct SendMemoryUnit;
 struct SocketInfo;
 struct MemoryUnit;
+struct QueryMemoryUnit;
+
 
 namespace NETWORK_UTIL
 {
+	SOCKET querySocket;
+	std::unique_ptr<QueryMemoryUnit> queryMemoryUnit;
+
 	void SendPacket(SocketInfo* pClient, char* packetData);
+	void SendQueryPacket(char* packetData);
+
 #ifndef DISABLED_UNALLOCATED_MEMORY_SEND
 	void SendUnallocatedPacket(SocketInfo* pClient, char* pOriginData);
 #endif
 	void RecvPacket(SocketInfo* pClient);
+	void RecvQueryPacket();
+
 	void LogOutProcess(LPVOID pClient);
 	//_NODISCARD const bool GetRecvOrSendPacket(const LPVOID);
 }

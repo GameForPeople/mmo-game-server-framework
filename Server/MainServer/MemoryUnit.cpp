@@ -34,6 +34,11 @@ MemoryUnit::MemoryUnit(const MEMORY_UNIT_TYPE inMemoryUnitType) :
 	{
 		wsaBuf.len = 0;
 	}
+	else if (MEMORY_UNIT_TYPE::RECV_FROM_QUERY == inMemoryUnitType)
+	{
+		dataBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV];
+		wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
+	}
 	else if (MEMORY_UNIT_TYPE::RECV_FROM_COMMAND == inMemoryUnitType)
 	{
 		// 아직 사용되지 않음.
@@ -168,5 +173,16 @@ SocketInfo::~SocketInfo()
 
 TimerMemoryHead::TimerMemoryHead(/*const unsigned short inTimerContIndex*/) noexcept
 	: memoryUnit(MEMORY_UNIT_TYPE::TIMER_FUNCTION)/*, timerContIndex(inTimerContIndex)*/
+{
+}
+
+//---------------------------------------------------------------------------
+// QueryMemoryUnit
+//---------------------------------------------------------------------------
+
+QueryMemoryUnit::QueryMemoryUnit() noexcept :
+	memoryUnit(MEMORY_UNIT_TYPE::RECV_FROM_QUERY),
+	loadedBuf(),
+	loadedSize()
 {
 }

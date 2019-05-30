@@ -7,8 +7,10 @@ enum class MEMORY_UNIT_TYPE : int		/*int*/
 	RECV_FROM_CLIENT = 0x00,
 	SEND_TO_CLIENT = 0x01,
 
+	//Send는 어짜피 다 똑같은거 씀!
 	TIMER_FUNCTION = 0x02,
 	RECV_FROM_COMMAND = 0x03,
+	RECV_FROM_QUERY = 0x04,	
 	//UNALLOCATED_SEND = 0x04
 	ENUM_SIZE
 };
@@ -130,7 +132,6 @@ public:
 
 /*
 	TimerMemoryHead
-
 */
 
 struct TimerMemoryHead
@@ -139,4 +140,17 @@ struct TimerMemoryHead
 public:
 	MemoryUnit memoryUnit;
 	//const unsigned short timerContIndex;
+};
+
+/*
+	QueryMemoryUnit
+*/
+struct QueryMemoryUnit
+{
+	QueryMemoryUnit(/*const unsigned short inTimerContIndex*/) noexcept;
+public:
+	MemoryUnit memoryUnit;
+
+	_BufferType loadedBuf[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
+	int loadedSize;
 };

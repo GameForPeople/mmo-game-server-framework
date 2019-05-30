@@ -45,6 +45,7 @@ GameServer::~GameServer()
 	workerThreadCont.clear();
 
 	closesocket(listenSocket);
+	closesocket(NETWORK_UTIL::querySocket);
 	CloseHandle(hIOCP);
 }
 
@@ -177,38 +178,54 @@ void GameServer::AcceptThreadFunction()
 			break;
 		}
 
-		if (auto [isTrueAdd, pClient] = zone->TryToEnter()
+		if (auto[isTrueAdd, pClient] = zone->OnlyGetUniqueKeyAndMallocSocketInfo()
 			; isTrueAdd)
 		{
 			// 소켓과 입출력 완료 포트 연결
 			CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->objectInfo->key, 0);
-
 			pClient->sock = clientSocket;
-			
-			// MemoryUnit 생성자에서 보장함.
-			//pClient->memoryUnit.wsaBuf.buf = pClient->memoryUnit.dataBuf;
-			//pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
-
-			// 클라이언트에게 서버에 접속(Accept) 함을 알림
-			PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(pClient->objectInfo->key);
-			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&loginPacket));
-
-			// 자신의 캐릭터를 넣어줌.
-			PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket( pClient->objectInfo->key, pClient->objectInfo->posX, pClient->objectInfo->posY);
-			NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
-
-			std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
-			
-			// 최초 위치에서 처음 뷰리스트와 섹터 갱신.
-			pClient->pZone->InitViewAndSector(pClient);
 
 			// 비동기 입출력의 시작.
 			NETWORK_UTIL::RecvPacket(pClient);
 		}
 		else {
 			closesocket(clientSocket);
-			//delete pClient;	// if nullptr;
 		}
+
+#pragma region [ OLD ACCEPT PROCESS ]
+		//if (auto [isTrueAdd, pClient] = zone->TryToEnter()
+		//	; isTrueAdd)
+		//{
+		//	// 소켓과 입출력 완료 포트 연결
+		//	CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->objectInfo->key, 0);
+
+		//	pClient->sock = clientSocket;
+		//	
+		//	// MemoryUnit 생성자에서 보장함.
+		//	//pClient->memoryUnit.wsaBuf.buf = pClient->memoryUnit.dataBuf;
+		//	//pClient->memoryUnit.wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
+
+		//	// 클라이언트에게 서버에 접속(Accept) 함을 알림
+		//	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(pClient->objectInfo->key);
+		//	NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&loginPacket));
+
+		//	// 자신의 캐릭터를 넣어줌.
+		//	PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket( pClient->objectInfo->key, pClient->objectInfo->posX, pClient->objectInfo->posY);
+		//	NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
+
+		//	std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
+		//	
+		//	// 최초 위치에서 처음 뷰리스트와 섹터 갱신.
+		//	pClient->pZone->InitViewAndSector(pClient);
+
+		//	// 비동기 입출력의 시작.
+		//	NETWORK_UTIL::RecvPacket(pClient);
+		//}
+		//else {
+		//	closesocket(clientSocket);
+		//	//delete pClient;	// if nullptr;
+		//}
+#pragma endregion
 	}
 }
 
@@ -239,7 +256,10 @@ void GameServer::AcceptQueryServer()
 		if (ntohs(tempAddr.sin_port) == GLOBAL_DEFINE::QUERY_SERVER_PORT)
 		{
 			std::cout << "QueryServer의 연결이 성공했습니다." << std::endl;
-			querySocket = tempSocket;
+			NETWORK_UTIL::queryMemoryUnit = std::make_unique<QueryMemoryUnit>();
+			NETWORK_UTIL::querySocket = tempSocket;
+			CreateIoCompletionPort(reinterpret_cast<HANDLE>(tempSocket), hIOCP, NETWORK_UTIL::querySocket, 0);
+			NETWORK_UTIL::RecvQueryPacket();
 			return;
 		}
 		else
@@ -336,6 +356,11 @@ void GameServer::WorkerThreadFunction()
 			// 바로 다시 Recv!
 			NETWORK_UTIL::RecvPacket(reinterpret_cast<SocketInfo*>(pMemoryUnit));
 		}
+		else if (MEMORY_UNIT_TYPE::RECV_FROM_QUERY == pTemp->memoryUnitType)
+		{
+			ProcessRecvQueryData(cbTransferred);
+			NETWORK_UTIL::RecvQueryPacket();
+		}
 		else
 		{
 			std::cout << "\n[Error Memory Unit Type] \n";
@@ -347,7 +372,6 @@ void GameServer::WorkerThreadFunction()
 	}
 }
 
- 
 /*
 	GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 		- 받은 데이터들을 패킷화하여 처리하는 함수.
@@ -382,6 +406,7 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 			restSize -= required;
 			pBuf += required;
 			packetSize = 0;
+			packetSize = 0;
 		}
 		// 패킷을 완성할 수 없을 때
 		else
@@ -392,6 +417,91 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 			//restSize = 0; 
 		}
 	}
+}
+
+void GameServer::ProcessRecvQueryData(int restSize)
+{
+	char *pBuf = NETWORK_UTIL::queryMemoryUnit->memoryUnit.dataBuf; // pBuf -> 처리하는 문자열의 시작 위치
+	char packetSize{ 0 }; // 처리해야할 패킷의 크기
+
+	// 이전에 처리를 마치지 못한 버퍼가 있다면, 지금 처리해야할 패킷 사이즈를 알려줘.
+	if (0 < NETWORK_UTIL::queryMemoryUnit->loadedSize) packetSize = NETWORK_UTIL::queryMemoryUnit->loadedBuf[0];
+
+	// 처리하지 않은 버퍼의 크기가 있으면, 계속 루프문을 돕니다.
+	while (restSize > 0)
+	{
+		// 이전에 처리를 마치지 못한 버퍼를 처리해야한다면 패스, 아니라면 지금 처리해야할 패킷의 크기를 받음.
+		if (packetSize == 0) packetSize = static_cast<int>(pBuf[0]);
+
+		// 처리해야하는 패킷 사이즈 중에서, 이전에 이미 처리한 패킷 사이즈를 빼준다.
+		int required = packetSize - NETWORK_UTIL::queryMemoryUnit->loadedSize;
+
+		// 패킷을 완성할 수 있을 때 (요청해야할 사이즈보다, 남은 사이즈가 크거나 같을 때)
+		if (restSize >= required)
+		{
+			memcpy(NETWORK_UTIL::queryMemoryUnit->loadedBuf + NETWORK_UTIL::queryMemoryUnit->loadedSize, pBuf, required);
+
+			//-------------------------------------------------------------------------------
+			ProcessQueryPacket(); //== pClient->pZone->ProcessPacket(pClient); // 패킷처리 가가가가아아아아즈즈즈즞즈아아아아앗!!!!!!
+			//-------------------------------------------------------------------------------
+
+			NETWORK_UTIL::queryMemoryUnit->loadedSize = 0;
+			restSize -= required;
+			pBuf += required;
+			packetSize = 0;
+		}
+		// 패킷을 완성할 수 없을 때
+		else
+		{
+			memcpy(NETWORK_UTIL::queryMemoryUnit->loadedBuf + NETWORK_UTIL::queryMemoryUnit->loadedSize, pBuf, restSize);
+			NETWORK_UTIL::queryMemoryUnit->loadedSize += restSize;
+			break;
+			//restSize = 0; 
+		}
+	}
+}
+
+void GameServer::ProcessQueryPacket()
+{
+	using namespace PACKET_TYPE;
+	switch (NETWORK_UTIL::queryMemoryUnit->loadedBuf[1])
+	{
+	case QUERY_TO_MAIN::LOGIN_TRUE:
+		RecvLoginTrue();
+		break;
+	case QUERY_TO_MAIN::LOGIN_FALSE:
+		RecvLoginFalse();
+		break;
+	default:
+		assert(false, "정의되지 않은 Query Packet을 받았습니다. \n");
+		break;
+	}
+}
+
+void GameServer::RecvLoginTrue()
+{
+	PACKET_DATA::QUERY_TO_MAIN::LoginTrue* packet = reinterpret_cast<PACKET_DATA::QUERY_TO_MAIN::LoginTrue*>(NETWORK_UTIL::queryMemoryUnit->loadedBuf);
+
+	// 클라이언트에게 서버에 접속(Accept) 함을 알림
+	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(packet->key, packet->xPos, packet->yPos);
+	NETWORK_UTIL::SendPacket(zone->GetZoneContUnit()., reinterpret_cast<char*>(&loginPacket));
+
+	// 자신의 캐릭터를 넣어줌.
+	PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket(pClient->objectInfo->key, pClient->objectInfo->posX, pClient->objectInfo->posY);
+	NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
+
+	std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
+
+	// 최초 위치에서 처음 뷰리스트와 섹터 갱신.
+	pClient->pZone->InitViewAndSector(pClient);
+
+	// 비동기 입출력의 시작.
+	NETWORK_UTIL::RecvPacket(pClient);
+}
+
+void GameServer::RecvLoginFalse()
+{
+	//
 }
 
 #pragma region [Legacy Code]

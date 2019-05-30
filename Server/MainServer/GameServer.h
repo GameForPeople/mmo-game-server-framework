@@ -56,14 +56,17 @@ private:	// for Aceept Thread
 private:
 	void ProcessRecvData(SocketInfo* pClient, int restSize);
 
+private: //Query Function
+	void ProcessRecvQueryData(int restSize);
+	void ProcessQueryPacket();
+	void RecvLoginTrue();
+	void RecvLoginFalse();
 
 private:
 	WSADATA								wsa;
 	HANDLE								hIOCP;
 	SOCKET								listenSocket;
 	
-	SOCKET								querySocket;
-
 	SOCKADDR_IN							serverAddr;
 
 	std::vector<std::thread>			workerThreadCont;

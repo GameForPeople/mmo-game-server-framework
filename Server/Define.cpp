@@ -5,16 +5,16 @@ namespace PACKET_DATA
 {
 	namespace CLIENT_TO_MAIN
 	{
-		Move::Move(char inDirection) noexcept :
+		Move::Move(const char inDirection) noexcept :
 			size(sizeof(Move)), type(PACKET_TYPE::CLIENT_TO_MAIN::MOVE),
 			direction(inDirection)
 		{}
 
-		Login::Login(WCHAR* pInID) noexcept :
+		Login::Login(const _IdType* const pInID) noexcept :
 			size(sizeof(Login)), type(PACKET_TYPE::CLIENT_TO_MAIN::LOGIN),
 			id()
 		{
-			memcpy(id, pInID, 20);
+			memcpy(id, pInID, ID_MAX_SIZE);
 		}
 	}
 
@@ -53,9 +53,10 @@ namespace PACKET_DATA
 	
 	namespace MAIN_TO_CLIENT
 	{
-		LoginOk::LoginOk(const UINT inNewId) noexcept :
+		LoginOk::LoginOk(const _KeyType inNewId, const _PosType x, const _PosType y) noexcept :
 			size(sizeof(LoginOk)), type(PACKET_TYPE::MAIN_TO_CLIENT::LOGIN_OK),
-			id(inNewId)
+			id(inNewId),
+			x(x), y(y)
 		{}
 
 		LoginFail::LoginFail(const char inFailReason) noexcept :
@@ -63,19 +64,19 @@ namespace PACKET_DATA
 			failReason(inFailReason)
 		{}
 
-		PutPlayer::PutPlayer(const UINT inPutClientId, const USHORT inX, const USHORT inY) noexcept :
+		PutPlayer::PutPlayer(const _KeyType inPutClientId, const _PosType inX, const _PosType inY) noexcept :
 			size(sizeof(PutPlayer)), type(PACKET_TYPE::MAIN_TO_CLIENT::PUT_PLAYER),
 			id(inPutClientId),
 			x(inX),
 			y(inY)
 		{}
 
-		RemovePlayer::RemovePlayer(const UINT inRemovedClientID) noexcept :
+		RemovePlayer::RemovePlayer(const _KeyType inRemovedClientID) noexcept :
 			size(sizeof(RemovePlayer)), type(PACKET_TYPE::MAIN_TO_CLIENT::REMOVE_PLAYER),
 			id(inRemovedClientID)
 		{}
 
-		Position::Position(const UINT inMovedClientId, const USHORT inX, const USHORT inY) noexcept :
+		Position::Position(const _KeyType inMovedClientId, const _PosType inX, const _PosType inY) noexcept :
 			size(sizeof(Position)), type(PACKET_TYPE::MAIN_TO_CLIENT::POSITION),
 			id(inMovedClientId),
 			x(inX),
@@ -85,21 +86,18 @@ namespace PACKET_DATA
 
 	namespace MAIN_TO_QUERY
 	{
-		DemandLogin::DemandLogin(const unsigned int inKey, char* inId, int inPw)
+		DemandLogin::DemandLogin(const _KeyType inKey, const char* inId, int inPw)
 			: size(sizeof(DemandLogin)), type(PACKET_TYPE::MAIN_TO_QUERY::DEMAND_LOGIN),
 			key(inKey), id(), pw(inPw)
 		{
-			memcpy(id, inId, 20);
+			memcpy(id, inId, ID_MAX_SIZE);
 		}
 
-		SavePosition::SavePosition(WCHAR* inId, const int inXPos, const int inYPos)
+		SavePosition::SavePosition(const _IdType* const inId, const _PosType inXPos, const _PosType inYPos)
 			: size(sizeof(DemandLogin)), type(PACKET_TYPE::MAIN_TO_QUERY::DEMAND_LOGIN),
 			id(), xPos(inXPos), yPos(inYPos)
 		{
-			for (int i = 0; i < 10; ++i)
-			{
-				id[i] = inId[i];
-			}
+			memcpy(id, inId, ID_MAX_SIZE);
 		}
 	}
 
@@ -113,13 +111,13 @@ namespace PACKET_DATA
 
 	namespace QUERY_TO_MAIN
 	{
-		LoginTrue::LoginTrue(const int inKey, const int inX, const int inY) noexcept : 
+		LoginTrue::LoginTrue(const _KeyType inKey, const _PosType inX, const _PosType inY) noexcept :
 			size(sizeof(LoginTrue)), type(PACKET_TYPE::QUERY_TO_MAIN::LOGIN_TRUE),
 			key(inKey),
 			xPos(inX), yPos(inY)
 		{}
 
-		LoginFail::LoginFail(const int inKey, const unsigned char inFailReason) noexcept :
+		LoginFail::LoginFail(const _KeyType inKey, const unsigned char inFailReason) noexcept :
 			size(sizeof(LoginTrue)), type(PACKET_TYPE::QUERY_TO_MAIN::LOGIN_FALSE),
 			key(inKey),
 			failReason(inFailReason)

@@ -632,7 +632,7 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 #ifdef _DEV_MODE_
 	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[2]) << "\n";
 #endif
-	moveManager->MoveCharacter(pClient);
+	const bool tempIsMove = moveManager->MoveCharacter(pClient);
 
 	// 스스로에게 전송.
 	PACKET_DATA::MAIN_TO_CLIENT::Position packet(
@@ -642,9 +642,12 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 	);
 	NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&packet));
 
-	RenewSelfSector(pClient->objectInfo);
-	RenewPossibleSectors(pClient->objectInfo);
-	RenewViewListInSectors(pClient);
+	if (tempIsMove)
+	{
+		RenewSelfSector(pClient->objectInfo);
+		RenewPossibleSectors(pClient->objectInfo);
+		RenewViewListInSectors(pClient);
+	}
 }
 
 void Zone::RecvLogin(SocketInfo* pClient)

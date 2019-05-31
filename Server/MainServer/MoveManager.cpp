@@ -9,8 +9,6 @@
 
 #include "ClientContUnit.h"
 
-#include "ObjectInfo.h"
-
 #include "MoveManager.h"
 
 MoveManager::MoveManager() noexcept
@@ -30,10 +28,10 @@ MoveManager::MoveManager() noexcept
 	MoveManager::moveFunctionArr[DIRECTION::DOWN][0] = &MoveManager::MoveFail;
 	MoveManager::moveFunctionArr[DIRECTION::DOWN][1] = &MoveManager::MoveDown;
 #else
-	MoveManager::moveFunctionArr[DIRECTION::LEFT] = &MoveManager::MoveLeft;
-	MoveManager::moveFunctionArr[DIRECTION::UP] = &MoveManager::MoveUp;
-	MoveManager::moveFunctionArr[DIRECTION::RIGHT] = &MoveManager::MoveRight;
-	MoveManager::moveFunctionArr[DIRECTION::DOWN] = &MoveManager::MoveDown;
+	//MoveManager::moveFunctionArr[DIRECTION::LEFT] = &MoveManager::MoveLeft;
+	//MoveManager::moveFunctionArr[DIRECTION::UP] = &MoveManager::MoveUp;
+	//MoveManager::moveFunctionArr[DIRECTION::RIGHT] = &MoveManager::MoveRight;
+	//MoveManager::moveFunctionArr[DIRECTION::DOWN] = &MoveManager::MoveDown;
 #endif
 }
 
@@ -43,7 +41,7 @@ MoveManager::MoveManager() noexcept
 
 	!0. 해당 버퍼값이 Direction의 사이즈 보다 큰 값일 경우, Overflow가 발생합니다. 
 */
-void MoveManager::MoveCharacter(SocketInfo* pClient)
+bool MoveManager::MoveCharacter(SocketInfo* pClient)
 {
 #ifdef _DEV_MODE_
 	std::cout << "움직이는 방향은 : " << int(static_cast<int>(pClient->loadedBuf[2])) << "\n";
@@ -52,13 +50,61 @@ void MoveManager::MoveCharacter(SocketInfo* pClient)
 #if _USE_STD_FUNCTION_
 	whatIsYourDirection[static_cast<int>(pClient->loadedBuf[2])](*this, pClient->objectInfo);
 #else
-	moveFunctionArr[static_cast<int>(pClient->buf[1])](*this, pClient->userData);
+	bool retBool{};
+
+	switch (pClient->loadedBuf[2])
+	{
+	case DIRECTION::LEFT:
+		retBool = MoveLeft(pClient->objectInfo);
+		break;
+	case DIRECTION::UP:
+		retBool = MoveUp(pClient->objectInfo);
+		break;
+	case DIRECTION::RIGHT:
+		retBool = MoveRight(pClient->objectInfo);
+		break;
+	case DIRECTION::DOWN:
+		retBool = MoveDown(pClient->objectInfo);
+		break;
+	default:
+		assert(false, L"정의되지 않은 방향을 받았습니다.");
+		break;
+	}
+	return retBool;
+
 #endif
 }
 
-void MoveManager::MoveRandom(ObjectInfo* pClient)
+bool MoveManager::MoveRandom(ObjectInfo* pClient)
 {
+#if _USE_STD_FUNCTION_
 	whatIsYourDirection[static_cast<int>(rand() % 4)](*this, pClient);
+#else
+	const int tempRandomDirection{ rand() % 4 };
+	bool retBool{};
+
+	switch (tempRandomDirection)
+	{
+	case DIRECTION::LEFT:
+		retBool = MoveLeft(pClient);
+		break;
+	case DIRECTION::UP:
+		retBool = MoveUp(pClient);
+		break;
+	case DIRECTION::RIGHT:
+		retBool = MoveRight(pClient);
+		break;
+	case DIRECTION::DOWN:
+		retBool = MoveDown(pClient);
+		break;
+	default:
+		assert(false, L"랜덤 무브에서 이럴리가 없는데?");
+		// 릴리즈에서는 고냥 Move Left해!
+		retBool = MoveLeft(pClient);
+		break;
+	}
+	return retBool;
+#endif
 }
 
 /*

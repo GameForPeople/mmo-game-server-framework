@@ -1,12 +1,14 @@
 #pragma once
 
-#define _USE_STD_FUNCTION_	true
+#define _USE_STD_FUNCTION_	false
 //#define _USE_LAMBDA_ true
 
+// 인라인하기 위해, 헤더에 인클루드함. 해당 헤더는 많이 가벼운편임.
+#include "ObjectInfo.h"
+//struct ObjectInfo;
+
 struct SocketInfo;
-class UserData;
 struct ZoneContUnit;
-struct ObjectInfo;
 /*
 	MoveManager
 		- Zone 내부에서, 이동과 관련된 패킷을 처리하는 객체입니다.
@@ -25,12 +27,11 @@ public:
 	std::function<void(MoveManager&, ObjectInfo*)> whatIsYourDirection[static_cast<int>(DIRECTION::ENUM_SIZE)];
 	std::function<void(MoveManager&, ObjectInfo*)> moveFunctionArr[static_cast<int>(DIRECTION::ENUM_SIZE)][2 /* Fail or Success */];
 #else
-	std::function<void(MoveManager&, UserData* )> moveFunctionArr[static_cast<int>(DIRECTION::DIRECTION_END)];
-#endif
-	void MoveCharacter(SocketInfo* pClient);
-	void MoveRandom(ObjectInfo* pClient);
 
-	//void SendMoveCharacter(SocketInfo* pMovedClient, ZoneContUnit* inClientCont);
+#endif
+	bool MoveCharacter(SocketInfo* pClient);
+	bool MoveRandom(ObjectInfo* pClient);
+
 private:
 #if _USE_STD_FUNCTION_
 	/*inline*/ void LeftMoveTest(ObjectInfo* );
@@ -52,47 +53,43 @@ private:
 	/*inline*/ void MoveDown(ObjectInfo* ) noexcept;
 
 #else
-	inline void MoveLeft(UserData* inUserData) noexcept
+	inline bool MoveLeft(ObjectInfo* const inUserData) noexcept
 	{
-		if (Position2D newPosition = inUserData->GetPosition()
-			; newPosition.x == BLOCK_MIN_POSITION) return;
+		if (inUserData->posX == 0) return false;
 		else 
 		{
-			--newPosition.x;
-			inUserData->SetPosition(newPosition);
+			--(inUserData->posX);
+			return true;
 		}
 	};
 
-	inline void MoveUp(UserData* inUserData) noexcept
+	inline bool MoveUp(ObjectInfo* const inUserData) noexcept
 	{
-		if (Position2D newPosition = inUserData->GetPosition()
-			; newPosition.y == BLOCK_MIN_POSITION) return;
+		if (inUserData->posY == 0) return false;
 		else
 		{
-			--newPosition.y;
-			inUserData->SetPosition(newPosition);
+			--(inUserData->posY);
+			return true;
 		}
 	};
 
-	inline void MoveRight(UserData* inUserData) noexcept
+	inline bool MoveRight(ObjectInfo* const inUserData) noexcept
 	{
-		if (Position2D newPosition = inUserData->GetPosition()
-			; newPosition.x == BLOCK_MAX_POSITION) return;
+		if (inUserData->posX == GLOBAL_DEFINE::MAX_WIDTH - 1) return false;
 		else
 		{
-			++newPosition.x;
-			inUserData->SetPosition(newPosition);
+			++(inUserData->posX);
+			return true;
 		}
 	};
 
-	inline void MoveDown(UserData* inUserData) noexcept
+	inline bool MoveDown(ObjectInfo* const inUserData) noexcept
 	{
-		if (Position2D newPosition = inUserData->GetPosition()
-			; newPosition.y == BLOCK_MAX_POSITION) return;
+		if (inUserData->posY == GLOBAL_DEFINE::MAX_HEIGHT - 1) return false;
 		else
 		{
-			++newPosition.y;
-			inUserData->SetPosition(newPosition);
+			++(inUserData->posY);
+			return true;
 		}
 	};
 #endif

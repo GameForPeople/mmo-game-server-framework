@@ -26,14 +26,10 @@ GameServer::GameServer(bool inNotUse)
 {
 	ServerIntegrityCheck();
 	
-	ERROR_HANDLING::errorRecvOrSendArr[0] = ERROR_HANDLING::HandleRecvOrSendError;
-	ERROR_HANDLING::errorRecvOrSendArr[1] = ERROR_HANDLING::NotError;
-
 	SendMemoryPool::MakeInstance();
 	InitNetwork();
 
 	TimerManager::MakeInstance(hIOCP);
-
 	PrintServerInfoUI();
 };
 
@@ -484,7 +480,7 @@ void GameServer::RecvLoginTrue()
 
 	// 클라이언트에게 서버에 접속(Accept) 함을 알림
 	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(packet->key, packet->xPos, packet->yPos);
-	NETWORK_UTIL::SendPacket(zone->GetZoneContUnit()., reinterpret_cast<char*>(&loginPacket));
+	NETWORK_UTIL::SendPacket(zone->GetZoneContUnit(), reinterpret_cast<char*>(&loginPacket));
 
 	// 자신의 캐릭터를 넣어줌.
 	PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket(pClient->objectInfo->key, pClient->objectInfo->posX, pClient->objectInfo->posY);

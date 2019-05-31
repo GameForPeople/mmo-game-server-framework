@@ -31,13 +31,9 @@ namespace NETWORK_UTIL
 }
 
 namespace ERROR_HANDLING {
-	// 해당 static Function Array의 초기화는 GameServer의 생성자에서 이루어짐.
-	static std::function<void(void)> errorRecvOrSendArr[2];
-	inline void NotError(void) {};
-	void HandleRecvOrSendError(void);
-
 	_NORETURN void ERROR_QUIT(const WCHAR *msg);
 	/*_DEPRECATED*/ void ERROR_DISPLAY(const WCHAR *msg);
+	void HandleRecvOrSendError();
 }
 
  namespace GLOBAL_DEFINE

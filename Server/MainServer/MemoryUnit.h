@@ -119,15 +119,17 @@ public:
 	int loadedSize;
 
 	SOCKET sock;
-	_NicknameType nickname;
-	BYTE contIndex;
 
-	Zone* pZone;		// 현재 입장한 존.
-
-	Concurrency::concurrent_unordered_set<_ClientKeyType> viewList;
-	Concurrency::concurrent_unordered_set<_MonsterKeyType> monsterViewList;
+	/*Concurrency::concurrent_*/std::unordered_set<_ClientKeyType> viewList;
+	/*Concurrency::concurrent_*/std::unordered_set<_MonsterKeyType> monsterViewList;
 
 	ObjectInfo* objectInfo;
+
+public:
+	void RegisterNewClient(SOCKET);
+	void SetNewObjectInfo(ObjectInfo*);
+	
+	void TerminateClient();
 };
 
 /*

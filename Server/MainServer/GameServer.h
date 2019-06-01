@@ -7,6 +7,7 @@ struct SendMemoryUnit;
 struct SocketInfo;
 struct TimerMemoryHead;
 
+class ConnectMaanger;
 class Zone;
 
 /*
@@ -75,6 +76,7 @@ private:
 
 	std::vector<std::thread>			workerThreadCont;
 	std::unique_ptr<Zone>				zone;
+	std::unique_ptr<ConnectManager>		connectManager;
 };
 
 #pragma region [Legacy Code]

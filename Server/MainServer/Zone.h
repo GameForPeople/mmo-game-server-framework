@@ -55,11 +55,11 @@ private:
 
 public:
 	void RecvCharacterMove(SocketInfo* pClient);
-	void RecvLogin(SocketInfo* pClient);
+	//void RecvLogin(SocketInfo* pClient);
 	void RecvChat(SocketInfo* pClient);
 
 private:
-	std::unique_ptr<ConnectManager> connectManager;
+	//std::unique_ptr<ConnectManager> connectManager;
 	std::unique_ptr<MoveManager> moveManager;
 	std::unique_ptr<MonsterModelManager> monsterModelManager;
 
@@ -67,7 +67,4 @@ private:
 
 	ZoneContUnit* zoneContUnit;
 	std::function<void(Zone&, SocketInfo*)>* recvFunctionArr;
-
-public:
-	SocketInfo* GetSocektInfoInZoneContUnitWithKey(_KeyType);
 };

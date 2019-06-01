@@ -10,34 +10,33 @@
 
 ZoneContUnit::ZoneContUnit() :
 	clientContArr(),
-	lockArr(),
-	indexArr(),
+	//lockArr(),
+	//indexArr(),
 	monsterCont(),
 	npcCont()
 {
-	for (auto& iter : clientContArr)
+	for (int i = 0 ; i < GLOBAL_DEFINE::MAX_CLIENT; ++i)
 	{
-		iter.reserve(CONT_INIT_SIZE);
-		
-		for (int i = 0; i < CONT_INIT_SIZE; ++i)
-		{
-			iter.emplace_back(nullptr);
-		}
+		clientContArr[i] = new SocketInfo(i /* == Key */);
 	}
 
-	for (auto& iter : lockArr)
-	{
-		iter.clear(std::memory_order_release);
-	}
-
+	// Init Spin Lock 
+	//for (auto& iter : lockArr)
+	//{
+	//	iter.clear(std::memory_order_release);
+	//}
 }
 
 ZoneContUnit::~ZoneContUnit()
 {
-	for (auto& iter : lockArr)
-	{
-		iter.clear(std::memory_order_release);
-	}
+	// GoodBye Spin Lock 
+	//for (auto& iter : lockArr)
+	//{
+	//	iter.clear(std::memory_order_release);
+	//}
+
+	for (auto& iter : clientContArr)
+		delete iter;
 
 	for (auto& iter : monsterCont)
 		delete iter;
@@ -48,17 +47,13 @@ ZoneContUnit::~ZoneContUnit()
 
 void ZoneContUnit::Enter(SocketInfo* pClient)
 {
-	const BYTE contHashIndex = GetContHashKey(pClient->objectInfo->key);
+	//const BYTE contHashIndex = GetContHashKey(pClient->objectInfo->key);
+	//while (lockArr[contHashIndex].test_and_set(std::memory_order_acquire))  // acquire lock //++++++++++++++++++++++++++++++++ 1
+	//	; // spin
 
-	while (lockArr[contHashIndex].test_and_set(std::memory_order_acquire))  // acquire lock //++++++++++++++++++++++++++++++++ 1
-		; // spin
 
-	clientContArr[contHashIndex][indexArr[contHashIndex]/*.load()*/] = pClient;	// 클라이언트 컨테이너에 접속한 클라이언트 구조체를 넣어줌.
-	pClient->contIndex = indexArr[contHashIndex];
 
-	indexArr[contHashIndex].fetch_add(1);	//인덱스 값을 하나 증가시킴.
-
-	lockArr[contHashIndex].clear(std::memory_order_release);               // release lock //+-------------------------------- 0
+	// lockArr[contHashIndex].clear(std::memory_order_release);               // release lock //+-------------------------------- 0
 }
 
 void ZoneContUnit::Exit(SocketInfo* pClient)

@@ -638,8 +638,3 @@ void Zone::RecvChat(SocketInfo* pClient)
 #endif
 	//chatManager->ChatProcess(pClient, zoneContUnit);
 }
-
-SocketInfo* Zone::GetSocektInfoInZoneContUnitWithKey(const _KeyType inClientKey)
-{
-	return zoneContUnit->clientContArr[inClientKey];
-}

@@ -38,7 +38,7 @@ namespace ERROR_HANDLING {
 
  namespace GLOBAL_DEFINE
 {
-	constexpr USHORT MAX_CLIENT = 10;
+	constexpr USHORT MAX_CLIENT = 10000;
 	constexpr UINT MAX_MONSTER = 200000;
 
 	constexpr USHORT START_POSITION_X = 400;

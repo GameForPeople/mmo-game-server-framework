@@ -129,25 +129,6 @@ void Zone::InitSector()
 	}
 }
 
-/*
-	Zone::ProcessRecvData()
-		- 받은 데이터들을 함수와 연결해줍니다.
-*/
-void Zone::ProcessPacket(SocketInfo* pClient)
-{
-	using namespace PACKET_TYPE::CLIENT_TO_MAIN;
-	//recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE)](*this, pClient);
-	switch (pClient->loadedBuf[1])
-	{
-	case MOVE:
-		RecvCharacterMove(pClient);
-		break;
-	case LOGIN:
-		RecvLogin(pClient);
-		break;
-	}
-}
-
 void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 {
 	concurrency::concurrent_queue<TimerUnit*>* tempCont = TimerManager::GetInstance()->GetTimerContWithIndex(timerManagerContIndex);
@@ -650,21 +631,15 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 	}
 }
 
-void Zone::RecvLogin(SocketInfo* pClient)
-{
-	PACKET_DATA::MAIN_TO_QUERY::DemandLogin packet(
-		pClient->objectInfo->key,
-		pClient->loadedBuf + 2,
-		0
-	);
-
-	NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
-}
-
 void Zone::RecvChat(SocketInfo* pClient)
 {
 #ifdef _DEV_MODE_
 	std::cout << "[AfterRecv] 채팅 버퍼를 받았습니다. \n";
 #endif
 	//chatManager->ChatProcess(pClient, zoneContUnit);
+}
+
+SocketInfo* Zone::GetSocektInfoInZoneContUnitWithKey(const _KeyType inClientKey)
+{
+	return zoneContUnit->clientContArr[inClientKey];
 }

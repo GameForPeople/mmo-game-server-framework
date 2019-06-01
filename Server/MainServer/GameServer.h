@@ -53,12 +53,16 @@ private:	// for Aceept Thread
 
 	void AcceptQueryServer();
 
-private:
-	void ProcessRecvData(SocketInfo* pClient, int restSize);
+private: //Client to Main Function
+	void MakePacketFromRecvData(SocketInfo* pClient, int restSize);
+	void ProcessPacket(SocketInfo* pClient);
+
+	void RecvLogin(SocketInfo*);
 
 private: //Query Function
-	void ProcessRecvQueryData(int restSize);
+	void MakeQueryPacketFromRecvData(int restSize);
 	void ProcessQueryPacket();
+
 	void RecvLoginTrue();
 	void RecvLoginFalse();
 

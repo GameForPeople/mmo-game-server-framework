@@ -28,7 +28,6 @@ struct ObjectInfo;
 class Zone
 {
 public:
-	void ProcessPacket(SocketInfo* pClient);
 	void ProcessTimerUnit(const int timerManagerContIndex);
 
 	Zone();
@@ -54,6 +53,7 @@ private:
 	void RenewViewListInSectors(SocketInfo* pClient);
 	bool RenewViewListInSectorsForNpc(ObjectInfo* pClient);
 
+public:
 	void RecvCharacterMove(SocketInfo* pClient);
 	void RecvLogin(SocketInfo* pClient);
 	void RecvChat(SocketInfo* pClient);
@@ -69,5 +69,5 @@ private:
 	std::function<void(Zone&, SocketInfo*)>* recvFunctionArr;
 
 public:
-	ZoneContUnit* GetZoneContUnit() { return zoneContUnit; }
+	SocketInfo* GetSocektInfoInZoneContUnitWithKey(_KeyType);
 };

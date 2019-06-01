@@ -45,6 +45,7 @@ GameServer::~GameServer()
 	CloseHandle(hIOCP);
 }
 
+#pragma region [Framework]
 void GameServer::ServerIntegrityCheck()
 {
 	//무결성 검사
@@ -347,14 +348,14 @@ void GameServer::WorkerThreadFunction()
 			}
 			
 			// 받은 데이터 처리
-			ProcessRecvData(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
+			MakePacketFromRecvData(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
 
 			// 바로 다시 Recv!
 			NETWORK_UTIL::RecvPacket(reinterpret_cast<SocketInfo*>(pMemoryUnit));
 		}
 		else if (MEMORY_UNIT_TYPE::RECV_FROM_QUERY == pTemp->memoryUnitType)
 		{
-			ProcessRecvQueryData(cbTransferred);
+			MakeQueryPacketFromRecvData(cbTransferred);
 			NETWORK_UTIL::RecvQueryPacket();
 		}
 		else
@@ -367,12 +368,14 @@ void GameServer::WorkerThreadFunction()
 #pragma endregion
 	}
 }
+#pragma endregion
 
+#pragma region [Client to Main]
 /*
 	GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 		- 받은 데이터들을 패킷화하여 처리하는 함수.
 */
-void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
+void GameServer::MakePacketFromRecvData(SocketInfo* pClient, int restSize)
 {
 	char *pBuf = pClient->memoryUnit.dataBuf; // pBuf -> 처리하는 문자열의 시작 위치
 	char packetSize{ 0 }; // 처리해야할 패킷의 크기
@@ -395,7 +398,7 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 			memcpy(pClient->loadedBuf + pClient->loadedSize, pBuf, required);
 			
 			//-------------------------------------------------------------------------------
-			zone->ProcessPacket(pClient); //== pClient->pZone->ProcessPacket(pClient); // 패킷처리 가가가가아아아아즈즈즈즞즈아아아아앗!!!!!!
+			ProcessPacket(pClient); //== pClient->pZone->ProcessPacket(pClient); // 패킷처리 가가가가아아아아즈즈즈즞즈아아아아앗!!!!!!
 			//-------------------------------------------------------------------------------
 
 			pClient->loadedSize = 0;
@@ -415,7 +418,39 @@ void GameServer::ProcessRecvData(SocketInfo* pClient, int restSize)
 	}
 }
 
-void GameServer::ProcessRecvQueryData(int restSize)
+/*
+	Zone::ProcessRecvData()
+		- 받은 데이터들을 함수와 연결해줍니다.
+*/
+void GameServer::ProcessPacket(SocketInfo* pClient)
+{
+	using namespace PACKET_TYPE::CLIENT_TO_MAIN;
+	//recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE)](*this, pClient);
+	switch (pClient->loadedBuf[1])
+	{
+	case MOVE:
+		zone->RecvCharacterMove(pClient);
+		break;
+	case LOGIN:
+		RecvLogin(pClient);
+		break;
+	}
+}
+
+void GameServer::RecvLogin(SocketInfo* pClient)
+{
+	PACKET_DATA::MAIN_TO_QUERY::DemandLogin packet(
+		pClient->objectInfo->key,
+		pClient->loadedBuf + 2,
+		0
+	);
+
+	NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
+}
+#pragma endregion
+
+#pragma region [QUERY]
+void GameServer::MakeQueryPacketFromRecvData(int restSize)
 {
 	char *pBuf = NETWORK_UTIL::queryMemoryUnit->memoryUnit.dataBuf; // pBuf -> 처리하는 문자열의 시작 위치
 	char packetSize{ 0 }; // 처리해야할 패킷의 크기
@@ -480,7 +515,7 @@ void GameServer::RecvLoginTrue()
 
 	// 클라이언트에게 서버에 접속(Accept) 함을 알림
 	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(packet->key, packet->xPos, packet->yPos);
-	NETWORK_UTIL::SendPacket(zone->GetZoneContUnit(), reinterpret_cast<char*>(&loginPacket));
+	NETWORK_UTIL::SendPacket(zone->GetZoneContUnit(packet->key), reinterpret_cast<char*>(&loginPacket));
 
 	// 자신의 캐릭터를 넣어줌.
 	PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket(pClient->objectInfo->key, pClient->objectInfo->posX, pClient->objectInfo->posY);
@@ -499,6 +534,7 @@ void GameServer::RecvLoginFalse()
 {
 	//
 }
+#pragma endregion
 
 #pragma region [Legacy Code]
 ///*

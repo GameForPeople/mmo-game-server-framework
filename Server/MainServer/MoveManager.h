@@ -3,7 +3,7 @@
 #define _USE_STD_FUNCTION_	false
 //#define _USE_LAMBDA_ true
 
-// 인라인하기 위해, 헤더에 인클루드함. 해당 헤더는 많이 가벼운편임.
+// 함수 인라인하기 위해, 헤더에 헤더를 인클루드함. 해당 헤더는 많이 가벼움.
 #include "ObjectInfo.h"
 //struct ObjectInfo;
 
@@ -23,14 +23,15 @@ public:
 	MoveManager& operator=(const MoveManager&) = delete;
 
 public:
+	bool MoveCharacter(SocketInfo* pClient);
+	bool MoveRandom(ObjectInfo* pClient);
+
 #if _USE_STD_FUNCTION_
 	std::function<void(MoveManager&, ObjectInfo*)> whatIsYourDirection[static_cast<int>(DIRECTION::ENUM_SIZE)];
 	std::function<void(MoveManager&, ObjectInfo*)> moveFunctionArr[static_cast<int>(DIRECTION::ENUM_SIZE)][2 /* Fail or Success */];
 #else
 
 #endif
-	bool MoveCharacter(SocketInfo* pClient);
-	bool MoveRandom(ObjectInfo* pClient);
 
 private:
 #if _USE_STD_FUNCTION_

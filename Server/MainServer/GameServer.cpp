@@ -3,16 +3,17 @@
 #include "ServerDefine.h"
 
 #include "Zone.h"
-
 #include "MemoryUnit.h"
 
 #include "TimerManager.h"
+#include "ConnectManager.h"
 
 #include "SendMemoryPool.h"
 
 #include "UserData.h"
 
 #include "ObjectInfo.h"
+#include "ClientContUnit.h"
 
 #include "GameServer.h"
 
@@ -23,6 +24,7 @@ GameServer::GameServer(bool inNotUse)
 	, serverAddr()
 	, workerThreadCont()
 	, zone(std::make_unique<Zone>())
+	, connectManager(std::make_unique<ConnectManager>())
 {
 	ServerIntegrityCheck();
 	
@@ -175,20 +177,20 @@ void GameServer::AcceptThreadFunction()
 			break;
 		}
 
-		if (auto[isTrueAdd, pClient] = zone->OnlyGetUniqueKeyAndMallocSocketInfo()
+		if (auto[isTrueAdd, uniqueKey] = connectManager->GetUniqueKey()
 			; isTrueAdd)
 		{
+			zone->zoneContUnit->clientContArr[uniqueKey]->sock = clientSocket;
+
 			// 소켓과 입출력 완료 포트 연결
-			CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, pClient->objectInfo->key, 0);
-			pClient->sock = clientSocket;
+			CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), hIOCP, uniqueKey, 0);
 
 			// 비동기 입출력의 시작.
-			NETWORK_UTIL::RecvPacket(pClient);
+			NETWORK_UTIL::RecvPacket(zone->zoneContUnit->clientContArr[uniqueKey]);
 		}
 		else {
 			closesocket(clientSocket);
 		}
-
 #pragma region [ OLD ACCEPT PROCESS ]
 		//if (auto [isTrueAdd, pClient] = zone->TryToEnter()
 		//	; isTrueAdd)
@@ -318,52 +320,40 @@ void GameServer::WorkerThreadFunction()
 #pragma endregion
 
 #pragma region [ Process ]
-		if (MemoryUnit * pTemp = reinterpret_cast<MemoryUnit*>(pMemoryUnit)
-			; MEMORY_UNIT_TYPE::SEND_TO_CLIENT == pTemp->memoryUnitType)
+		switch (reinterpret_cast<MemoryUnit*>(pMemoryUnit)->memoryUnitType)
 		{
-			// std::cout << "\n[SEND_TO_CLIENT] \n";
-
-			// send에 대한 에러는 처리하지 않음.
-			//if (retVal == 0 || cbTransferred == 0)
-			//{
-			//	NETWORK_UTIL::LogOutProcess(pMemoryUnit);
-			//	continue;
-			//}
-
-			// 보낼 때 사용한 버퍼 후처리하고 끝! ( 오버랩 초기화는 보낼떄 처리)
+		case MEMORY_UNIT_TYPE::SEND_TO_CLIENT:
+			//  send에 대한 에러는 처리하지 않고, 보낼 때 사용한 버퍼 후처리하고 끝! ( 오버랩 초기화는 보낼떄 처리)
 			SendMemoryPool::GetInstance()->PushMemory(reinterpret_cast<SendMemoryUnit*>(pMemoryUnit));
-		}
-		else if (MEMORY_UNIT_TYPE::TIMER_FUNCTION == pTemp->memoryUnitType)
-		{
-			//std::cout << "\n[TIMER_FUNCTION] \n";
+			
+			break;
+		case MEMORY_UNIT_TYPE::TIMER_FUNCTION:
 			zone->ProcessTimerUnit(Key);
-		}	
-		else if (MEMORY_UNIT_TYPE::RECV_FROM_CLIENT == pTemp->memoryUnitType)
-		{
-			//std::cout << "\n[RECV_FROM_CLIENT] \n";
+		
+			break;
+		case MEMORY_UNIT_TYPE::RECV_FROM_CLIENT:
 			if (retVal == 0 || cbTransferred == 0)
 			{
 				NETWORK_UTIL::LogOutProcess(pMemoryUnit);
 				continue;
 			}
-			
 			// 받은 데이터 처리
 			MakePacketFromRecvData(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
-
 			// 바로 다시 Recv!
 			NETWORK_UTIL::RecvPacket(reinterpret_cast<SocketInfo*>(pMemoryUnit));
-		}
-		else if (MEMORY_UNIT_TYPE::RECV_FROM_QUERY == pTemp->memoryUnitType)
-		{
+			
+			break;
+		case MEMORY_UNIT_TYPE::RECV_FROM_QUERY:
 			MakeQueryPacketFromRecvData(cbTransferred);
 			NETWORK_UTIL::RecvQueryPacket();
-		}
-		else
-		{
+			
+			break;
+		default:
 			std::cout << "\n[Error Memory Unit Type] \n";
 			std::cout << "마! 니 뭐여? -> " <<
 				static_cast<int>(reinterpret_cast<MemoryUnit*>(pMemoryUnit)->memoryUnitType)
 				<< std::endl;
+			break;
 		}
 #pragma endregion
 	}
@@ -440,7 +430,7 @@ void GameServer::ProcessPacket(SocketInfo* pClient)
 void GameServer::RecvLogin(SocketInfo* pClient)
 {
 	PACKET_DATA::MAIN_TO_QUERY::DemandLogin packet(
-		pClient->objectInfo->key,
+		pClient->key,
 		pClient->loadedBuf + 2,
 		0
 	);
@@ -515,11 +505,11 @@ void GameServer::RecvLoginTrue()
 
 	// 클라이언트에게 서버에 접속(Accept) 함을 알림
 	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(packet->key, packet->xPos, packet->yPos);
-	NETWORK_UTIL::SendPacket(zone->GetZoneContUnit(packet->key), reinterpret_cast<char*>(&loginPacket));
+	NETWORK_UTIL::SendPacket(zone->zoneContUnit->clientContArr[packet->key], reinterpret_cast<char*>(&loginPacket));
 
-	// 자신의 캐릭터를 넣어줌.
-	PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket(pClient->objectInfo->key, pClient->objectInfo->posX, pClient->objectInfo->posY);
-	NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
+	// 자신의 캐릭터를 넣어줌. -> LoginOK에 통합.
+	//PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket(pClient->objectInfo->key, pClient->objectInfo->posX, pClient->objectInfo->posY);
+	//NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
 
 	std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
 

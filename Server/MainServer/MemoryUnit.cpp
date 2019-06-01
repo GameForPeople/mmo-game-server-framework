@@ -141,12 +141,14 @@ SocketInfo::SocketInfo(_KeyType inKey) /*noexcept*/ :
 	sock(),
 	loadedSize(),
 	loadedBuf(),
+	key(inKey),
 	//posX(),
 	//posY(),
 	//userData(new UserData(GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y)/*std::make_unique<UserData>(0, 0)*/),
 	//clientKey(-1),
 	//pZone(nullptr),
-	viewList()
+	viewList(),
+	monsterViewList()
 	//contIndex()
 	//sectorArr(),
 	//sectorIndexX(),
@@ -156,7 +158,7 @@ SocketInfo::SocketInfo(_KeyType inKey) /*noexcept*/ :
 	viewList.clear();
 	monsterViewList.clear();
 
-	objectInfo = new ObjectInfo(inKey, GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y);
+	//objectInfo = new ObjectInfo(inKey, GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y);
 }
 
 SocketInfo::~SocketInfo()

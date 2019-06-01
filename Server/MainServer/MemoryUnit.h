@@ -113,6 +113,7 @@ public:
 	~SocketInfo();
 
 public:
+	const _KeyType key;
 	MemoryUnit memoryUnit;
 
 	_BufferType loadedBuf[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];

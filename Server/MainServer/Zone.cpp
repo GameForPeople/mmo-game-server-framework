@@ -26,7 +26,7 @@
 #include "Zone.h"
 
 Zone::Zone() : 
-	connectManager(nullptr),
+	//connectManager(nullptr),
 	moveManager(nullptr),
 	monsterModelManager(nullptr),
 	sectorCont(),
@@ -52,7 +52,7 @@ Zone::~Zone()
 void Zone::InitManagers()
 {
 	moveManager = std::make_unique<MoveManager>();
-	connectManager = std::make_unique<ConnectManager>();
+	//connectManager = std::make_unique<ConnectManager>();
 	monsterModelManager = std::make_unique<MonsterModelManager>();
 }
 

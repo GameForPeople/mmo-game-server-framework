@@ -5,8 +5,9 @@
 
 #include "ObjectInfo.h"
 
-ObjectInfo::ObjectInfo(_KeyType inKey, _PosType inX, _PosType inY)
-	: key(inKey),
+ObjectInfo::ObjectInfo(_NicknameType inNickname, _PosType inX, _PosType inY)
+	: 
+	nickname(inNickname),
 	posX(inX),
 	posY(inY),
 	sectorIndexX(GLOBAL_DEFINE::START_SECTOR_X),

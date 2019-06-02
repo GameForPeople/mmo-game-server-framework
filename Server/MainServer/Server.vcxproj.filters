@@ -164,7 +164,6 @@
     <ClInclude Include="Zone.h">
       <Filter>GameServer\Zone</Filter>
     </ClInclude>
-    <ClInclude Include="ToDo.hpp" />
     <ClInclude Include="ChatManager.h">
       <Filter>GameServer\ChatManager</Filter>
     </ClInclude>
@@ -192,6 +191,7 @@
     <ClInclude Include="MonsterLoader.h">
       <Filter>Object\Monster</Filter>
     </ClInclude>
+    <ClInclude Include="ToDo.Hello" />
   </ItemGroup>
   <ItemGroup>
     <None Include="InHeaderDefine.hh">

@@ -502,27 +502,38 @@ void GameServer::ProcessQueryPacket()
 void GameServer::RecvLoginTrue()
 {
 	PACKET_DATA::QUERY_TO_MAIN::LoginTrue* packet = reinterpret_cast<PACKET_DATA::QUERY_TO_MAIN::LoginTrue*>(NETWORK_UTIL::queryMemoryUnit->loadedBuf);
+	SocketInfo* tempSocketInfo = zone->zoneContUnit->clientContArr[packet->key];
+	
+	// DB에서 받은 데이터로 ObjectInfo 생성.
+	tempSocketInfo->objectInfo = new ObjectInfo(L"", packet->xPos, packet->yPos);
 
 	// 클라이언트에게 서버에 접속(Accept) 함을 알림
 	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(packet->key, packet->xPos, packet->yPos);
-	NETWORK_UTIL::SendPacket(zone->zoneContUnit->clientContArr[packet->key], reinterpret_cast<char*>(&loginPacket));
+	NETWORK_UTIL::SendPacket(tempSocketInfo, reinterpret_cast<char*>(&loginPacket));
 
 	// 자신의 캐릭터를 넣어줌. -> LoginOK에 통합.
 	//PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket(pClient->objectInfo->key, pClient->objectInfo->posX, pClient->objectInfo->posY);
 	//NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
 
-	std::cout << " [HELLO] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 접속했습니다. \n";
+	std::cout << " [HELLO] 클라이언트 (" << packet->key /*inet_ntoa(clientAddr.sin_addr)*/ << ") 가 접속했습니다. \n";
 
 	// 최초 위치에서 처음 뷰리스트와 섹터 갱신.
-	pClient->pZone->InitViewAndSector(pClient);
+	zone->InitViewAndSector(tempSocketInfo);
 
 	// 비동기 입출력의 시작.
-	NETWORK_UTIL::RecvPacket(pClient);
+	NETWORK_UTIL::RecvPacket(tempSocketInfo);
 }
 
 void GameServer::RecvLoginFalse()
 {
-	//
+	PACKET_DATA::QUERY_TO_MAIN::LoginFail* packet = reinterpret_cast<PACKET_DATA::QUERY_TO_MAIN::LoginFail*>(NETWORK_UTIL::queryMemoryUnit->loadedBuf);
+	SocketInfo* tempSocketInfo = zone->zoneContUnit->clientContArr[packet->key];
+
+	// 클라이언트에게 서버에 접속(Accept) 함을 알림
+	PACKET_DATA::MAIN_TO_CLIENT::LoginFail loginPacket(packet->failReason);
+	NETWORK_UTIL::SendPacket(tempSocketInfo, reinterpret_cast<char*>(&loginPacket));
+
+	NETWORK_UTIL::RecvPacket(tempSocketInfo);
 }
 #pragma endregion
 

@@ -6,6 +6,7 @@
 
 BaseMonster::BaseMonster(_KeyType inKey, _PosType inX, _PosType inY, const MonsterModel* const inMonsterModel)
 	: objectInfo(nullptr)
+	, key(inKey)
 	, monsterModel(inMonsterModel)
 	, level()
 	, spawnPosX(inX)
@@ -17,7 +18,7 @@ BaseMonster::BaseMonster(_KeyType inKey, _PosType inX, _PosType inY, const Monst
 	, electricTick(0)
 	, burnTick(0)
 {
-	objectInfo = new ObjectInfo(inKey, inX, inY);
+	objectInfo = new ObjectInfo(inX, inY);
 	level = ( rand() % monsterModel->levelMaxDifference ) + monsterModel->startLevel;
 
 	hp = monsterModel->hpPerLevel * level;

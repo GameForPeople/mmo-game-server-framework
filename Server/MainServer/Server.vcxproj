@@ -174,7 +174,7 @@
     <ClInclude Include="ServerDefine.h" />
     <ClInclude Include="SocketInfo.h" />
     <ClInclude Include="UserData.h" />
-    <ClInclude Include="ToDo.hpp" />
+    <ClInclude Include="ToDo.Hello" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Define.cpp" />

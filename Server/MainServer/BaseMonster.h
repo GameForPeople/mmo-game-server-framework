@@ -14,6 +14,8 @@ public:
 	ObjectInfo* objectInfo;
 	const MonsterModel* monsterModel;
 
+	_KeyType key;
+
 	_LevelType level;
 	_PosType spawnPosX;
 	_PosType spawnPosY;

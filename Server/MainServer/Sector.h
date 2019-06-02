@@ -20,24 +20,25 @@ struct ObjectInfo;
 class Sector
 {
 public:
-	void Join(ObjectInfo*);
-	void Exit(ObjectInfo*);
+	void Join(SocketInfo*);
+	void Exit(SocketInfo*);
 
-	void JoinForNpc(ObjectInfo*);
-	void ExitForNpc(ObjectInfo*);
+	void JoinForNpc(BaseMonster*);
+	void ExitForNpc(BaseMonster*);
 
 	void JudgeClientWithViewList(SocketInfo*, ZoneContUnit*);
-	bool JudgeClientWithViewListForNpc(ObjectInfo*, ZoneContUnit*);
+	bool JudgeClientWithViewListForNpc(BaseMonster*, ZoneContUnit*);
 
-	void SendPutPlayer(ObjectInfo* pPutClient, SocketInfo* pRecvClient);
+	template <class OBJECT> void SendPutPlayer(OBJECT* pPutObject, SocketInfo* pRecvClient);
+
 	void SendRemovePlayer(const _ClientKeyType pRemoveClient, SocketInfo* pRecvClient);
 
-	void SendMovePlayer(ObjectInfo* pPutClient, SocketInfo* pRecvClient);
+	template <class OBJECT> void SendMovePlayer(OBJECT* pPutClient, SocketInfo* pRecvClient);
 
 private:
-	bool IsSeeEachOther(const _PosType, const _PosType, const _PosType, const _PosType) const noexcept;
-	bool IsSeeEachOther(const std::pair<_PosType, _PosType>&, const std::pair<_PosType, _PosType>&) const noexcept;
-	bool IsSeeEachOther(const ObjectInfo* , const ObjectInfo*) const noexcept;
+	//bool IsSeeEachOther(const _PosType, const _PosType, const _PosType, const _PosType) const noexcept;
+	//bool IsSeeEachOther(const std::pair<_PosType, _PosType>&, const std::pair<_PosType, _PosType>&) const noexcept;
+	bool IsSeeEachOther(const ObjectInfo* const, const ObjectInfo* const) const noexcept;
 
 public:
 	Sector(const BYTE sectorIndeX, const BYTE sectorIndeY);

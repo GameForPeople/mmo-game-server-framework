@@ -151,7 +151,7 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 					RenewSelfSectorForNpc(tempObjectInfo);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
 					RenewPossibleSectors(tempObjectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
 
-					RenewViewListInSectorsForNpc(tempObjectInfo)
+					RenewViewListInSectorsForNpc(zoneContUnit->monsterCont[index])
 						? TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND)
 						: TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
 					//최적화 안할겨 뭐 어쩔겨
@@ -267,49 +267,41 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 	#2.	입장 실패 시, 아무런 짓도 하지 않음
 */
 /*std::optional<SocketInfo*>*/ 
-std::pair<bool, SocketInfo*> /* == std::pair<bool, SocketInfo*>*/ Zone::TryToEnter()
-{
-	if (auto retNode = connectManager->LogInToZone(zoneContUnit, this)
-		; retNode.first)
-	{
-		//최초 Sector에 클라이언트 삽입.
-		sectorCont[GLOBAL_DEFINE::START_SECTOR_Y][GLOBAL_DEFINE::START_SECTOR_X].Join(retNode.second->objectInfo);
-
-		// InitViewAndSector에서 래핑되며, Accept Process에서 해당 클라이언트 소켓을 IOCP 등록 후, 호출함
-		//{
-			// 둘러볼 지역 결정하고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
-			//RenewPossibleSectors(retNode.second);
-
-		// 친구들 새로 사귀고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
-			//RenewViewListInSectors(retNode.second);
-		//}
-
-		return retNode;
-	}
-	else return retNode;
-}
-
-std::pair<bool, SocketInfo*> Zone::OnlyGetUniqueKeyAndMallocSocketInfo()
-{
-	if (auto retNode = connectManager->OnlyGetUniqueKeyAndMallocSocketInfo()
-		; retNode.first)
-	{
-		return retNode;
-	}
-	else return retNode;
-}
+//std::pair<bool, SocketInfo*> /* == std::pair<bool, SocketInfo*>*/ Zone::TryToEnter()
+//{
+//	if (auto retNode = connectManager->LogInToZone(zoneContUnit, this)
+//		; retNode.first)
+//	{
+//		//최초 Sector에 클라이언트 삽입.
+//		sectorCont[GLOBAL_DEFINE::START_SECTOR_Y][GLOBAL_DEFINE::START_SECTOR_X].Join(retNode.second->objectInfo);
+//
+//		// InitViewAndSector에서 래핑되며, Accept Process에서 해당 클라이언트 소켓을 IOCP 등록 후, 호출함
+//		//{
+//			// 둘러볼 지역 결정하고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
+//			//RenewPossibleSectors(retNode.second);
+//
+//		// 친구들 새로 사귀고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
+//			//RenewViewListInSectors(retNode.second);
+//		//}
+//
+//		return retNode;
+//	}
+//	else return retNode;
+//}
 
 /*
-	Zone::InitViewAndSector()
-		- Zone의 Enter 후, 최초로 Sector와 ViewList를 갱신합니다.
+	Zone::Enter()
+		- 해당 존 및 섹터에 들어가고, 보이는 애들애게 알립니다.
 
-	!0. 해당 두 함수들은 네트워크 함수를 포함하고 있습니다.
-		- IOCP에 소켓을 등록한 후에, 호출되어야 합니다.
+	#0.connectManager에서 해당 함수 처리하도록 변경.은 절로가 없어짐~
 */
-void Zone::InitViewAndSector(SocketInfo* pClient)
+void Zone::Enter(SocketInfo* pEnteredClient)
 {
-	RenewPossibleSectors(pClient->objectInfo);
-	RenewViewListInSectors(pClient);
+	// 섹터 컨테이너에서 내 정보를 먼저 넣어주고.
+	sectorCont[pEnteredClient->objectInfo->posY / GLOBAL_DEFINE::MAX_HEIGHT ][pEnteredClient->objectInfo->posX / GLOBAL_DEFINE::MAX_WIDTH].Join(pEnteredClient);
+
+	// PossibleSector을 검사하고!
+	InitViewAndSector(pEnteredClient);
 }
 
 /*
@@ -328,10 +320,24 @@ void Zone::Exit(SocketInfo* pOutClient)
 }
 
 /*
+	Zone::InitViewAndSector()
+		- Zone의 Enter 후, 최초로 Sector와 ViewList를 갱신합니다.
+
+	!0. 해당 두 함수들은 네트워크 함수를 포함하고 있습니다.
+		- IOCP에 소켓을 등록한 후에, 호출되어야 합니다.
+*/
+void Zone::InitViewAndSector(SocketInfo* pClient)
+{
+	RenewPossibleSectors(pClient->objectInfo);
+	RenewViewListInSectors(pClient);
+}
+
+
+/*
 	FindPossibleSectors? CheckPossibleSectors?
 		- 현재 캐릭터의 섹터와 위치를 검사하여, 시야 체크를 해야하는 섹터를 검사합니다.
 
-	?0. 기존의 지역변수를 생성하여, 리턴하는 방식에서, SocketInfo의 멤버변수를 두는 방식으로 변경하는게 날꺼 같은디?
+	?0. 기존의 지역변수를 생성하여, 리턴하는 방식에서, SocketInfo의 멤버변수를 두는 방식으로 변경하는게 날꺼 같은디? -> 그렇게 했다가 이게 뭐야 ㅡ
 */
 void Zone::RenewPossibleSectors(ObjectInfo* pClient)
 {
@@ -344,7 +350,7 @@ void Zone::RenewPossibleSectors(ObjectInfo* pClient)
 	char yDir = 0;	// y 섹터의 판단 방향
 
 	/*
-		Sector's Size = 10
+		Sector's Size = 10 example
 		View Length = 3
 
 		possible Other Sector Count
@@ -546,19 +552,19 @@ void Zone::RenewViewListInSectors(SocketInfo* pClient)
 
 	!0. 반드시 이 함수가 호출되기 전에, RenewPossibleSectors가 선행되어야 옳은 ViewList를 획득할 수 있습니다.
 */
-bool Zone::RenewViewListInSectorsForNpc(ObjectInfo* pClient)
+bool Zone::RenewViewListInSectorsForNpc(BaseMonster* pMonster)
 {
 	bool retValue = false;
+	auto pObjectInfo = pMonster->objectInfo;
 
-	if (sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].JudgeClientWithViewListForNpc(pClient, zoneContUnit))
+	if (sectorCont[pObjectInfo->sectorIndexY][pObjectInfo->sectorIndexX].JudgeClientWithViewListForNpc(pMonster, zoneContUnit))
 		retValue = true;
 
-	for (int i = 0; i < pClient->possibleSectorCount; ++i)
+	for (int i = 0; i < pObjectInfo->possibleSectorCount; ++i)
 	{
-		if (sectorCont[pClient->sectorArr[i].second][pClient->sectorArr[i].first].JudgeClientWithViewListForNpc(pClient, zoneContUnit))
+		if (sectorCont[pObjectInfo->sectorArr[i].second][pObjectInfo->sectorArr[i].first].JudgeClientWithViewListForNpc(pMonster, zoneContUnit))
 			retValue = true;
 	}
-
 	return retValue;
 }
 

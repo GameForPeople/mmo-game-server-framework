@@ -11,7 +11,6 @@ struct SocketInfo;
 struct MemoryUnit;
 struct QueryMemoryUnit;
 
-
 namespace NETWORK_UTIL
 {
 	SOCKET querySocket;
@@ -28,6 +27,13 @@ namespace NETWORK_UTIL
 
 	void LogOutProcess(LPVOID pClient);
 	//_NODISCARD const bool GetRecvOrSendPacket(const LPVOID);
+
+	namespace SEND
+	{
+		template <class OBJECT> void SendPutPlayer(OBJECT* pPutObject, SocketInfo* pRecvClient);
+		template <class OBJECT> void SendMovePlayer(OBJECT* pPutClient, SocketInfo* pRecvClient);
+		void SendRemovePlayer(const _KeyType pRemoveClient, SocketInfo* pRecvClient);
+	}
 }
 
 namespace ERROR_HANDLING {

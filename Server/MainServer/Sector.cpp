@@ -47,7 +47,7 @@ void Sector::Exit(SocketInfo* pInClient)
 {
 	// 지역 정보에서 나를 지워주고.
 	sectorContUnit->wrlock.lock(); //+++++++++++++++++++++++++++++++++++++1
-
+	
 	// 이게 무슨 미친놈의 코드야;
 	//for (auto iter = sectorContUnit->clientCont.begin()
 	//	; iter != sectorContUnit->clientCont.end()
@@ -59,6 +59,7 @@ void Sector::Exit(SocketInfo* pInClient)
 	//		break;
 	//	}
 	//
+
 	sectorContUnit->clientCont.erase(pInClient->key);
 
 	sectorContUnit->wrlock.unlock(); //-----------------------------------0
@@ -176,17 +177,17 @@ void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneCon
 
 				// 추가 처리가 요청됩니다. 동기화가 안될 가능성이 큽니다.
 				pClient->viewList.insert(otherClientKey);
-				SendPutPlayer(pOtherClient->objectInfo, pClient);
+				NETWORK_UTIL::SEND::SendPutPlayer(pOtherClient->objectInfo, pClient);
 				//
 
 				if (pOtherClient->viewList.count(pClient->key) != 0)
 				{
-					SendMovePlayer(pClient, pOtherClient);
+					NETWORK_UTIL::SEND::SendMovePlayer(pClient, pOtherClient);
 				}
 				else
 				{
 					pOtherClient->viewList.insert(pClient->key);
-					SendPutPlayer(pClient, pOtherClient);
+					NETWORK_UTIL::SEND::SendPutPlayer(pClient, pOtherClient);
 				}
 			}
 		}
@@ -255,10 +256,9 @@ void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneCon
 				auto pMonster = pZoneContUnit->monsterCont[otherMonsterKey - BIT_CONVERTER::NOT_PLAYER_INT];
 
 				pClient->monsterViewList.insert(otherMonsterKey);
-				SendPutPlayer(pMonster, pClient);
+				NETWORK_UTIL::SEND::SendPutPlayer(pMonster, pClient);
 				
 				// WAKE UP 처리가 필요합니다.
-
 			}
 		}
 	}
@@ -328,12 +328,12 @@ bool Sector::JudgeClientWithViewListForNpc(BaseMonster* pMonster, ZoneContUnit* 
 	{
 		if (pZoneContUnit->clientContArr[clientKey]->monsterViewList.count(pMonster->key))
 		{
-			SendMovePlayer( pMonster->objectInfo, pZoneContUnit->clientContArr[clientKey]);
+			NETWORK_UTIL::SEND::SendMovePlayer( pMonster->objectInfo, pZoneContUnit->clientContArr[clientKey]);
 		}
 		else
 		{
 			pZoneContUnit->clientContArr[clientKey]->monsterViewList.insert(pMonster->key);
-			SendPutPlayer(pMonster, pZoneContUnit->clientContArr[clientKey]);
+			NETWORK_UTIL::SEND::SendPutPlayer(pMonster, pZoneContUnit->clientContArr[clientKey]);
 		}
 	}
 
@@ -365,37 +365,3 @@ bool Sector::IsSeeEachOther(const ObjectInfo* const objectA, const ObjectInfo* c
 	return true;
 }
 
-template <class OBJECT>
-void Sector::SendPutPlayer(OBJECT* pPutObject, SocketInfo* pRecvClient)
-{
-	PACKET_DATA::MAIN_TO_CLIENT::PutPlayer packet(
-		pPutObject->key,
-		//pPutClient->userData->GetPosition().x,
-		//pPutClient->userData->GetPosition().y
-		pPutObject->objectInfo->posX,
-		pPutObject->objectInfo->posY
-	);
-
-	NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
-}
-
-void Sector::SendRemovePlayer(const _ClientKeyType pRemoveClientID, SocketInfo* pRecvClient)
-{
-	PACKET_DATA::MAIN_TO_CLIENT::RemovePlayer packet(pRemoveClientID);
-
-	NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
-}
-
-template <class OBJECT>
-void Sector::SendMovePlayer(OBJECT* pMovedObject, SocketInfo* pRecvClient)
-{
-	PACKET_DATA::MAIN_TO_CLIENT::Position packet(
-		pMovedClient->key,
-		//pMovedClientKey->userData->GetPosition().x,
-		//pMovedClientKey->userData->GetPosition().y
-		pMovedClient->objectInfo->posX,
-		pMovedClient->objectInfo->posY
-	);
-
-	NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
-}

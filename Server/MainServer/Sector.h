@@ -29,12 +29,6 @@ public:
 	void JudgeClientWithViewList(SocketInfo*, ZoneContUnit*);
 	bool JudgeClientWithViewListForNpc(BaseMonster*, ZoneContUnit*);
 
-	template <class OBJECT> void SendPutPlayer(OBJECT* pPutObject, SocketInfo* pRecvClient);
-
-	void SendRemovePlayer(const _ClientKeyType pRemoveClient, SocketInfo* pRecvClient);
-
-	template <class OBJECT> void SendMovePlayer(OBJECT* pPutClient, SocketInfo* pRecvClient);
-
 private:
 	//bool IsSeeEachOther(const _PosType, const _PosType, const _PosType, const _PosType) const noexcept;
 	//bool IsSeeEachOther(const std::pair<_PosType, _PosType>&, const std::pair<_PosType, _PosType>&) const noexcept;

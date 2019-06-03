@@ -162,6 +162,44 @@ namespace NETWORK_UTIL
 		}
 #endif
 	}
+
+	namespace SEND
+	{
+		template <class OBJECT>
+		void SendPutPlayer(OBJECT* pPutObject, SocketInfo* pRecvClient)
+		{
+			PACKET_DATA::MAIN_TO_CLIENT::PutPlayer packet(
+				pPutObject->key,
+				//pPutClient->userData->GetPosition().x,
+				//pPutClient->userData->GetPosition().y
+				pPutObject->objectInfo->posX,
+				pPutObject->objectInfo->posY
+			);
+
+			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
+		}
+
+		template <class OBJECT>
+		void SendMovePlayer(OBJECT* pMovedObject, SocketInfo* pRecvClient)
+		{
+			PACKET_DATA::MAIN_TO_CLIENT::Position packet(
+				pMovedClient->key,
+				//pMovedClientKey->userData->GetPosition().x,
+				//pMovedClientKey->userData->GetPosition().y
+				pMovedClient->objectInfo->posX,
+				pMovedClient->objectInfo->posY
+			);
+
+			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
+		}
+
+		void SendRemovePlayer(const _KeyType pRemoveClientID, SocketInfo* pRecvClient)
+		{
+			PACKET_DATA::MAIN_TO_CLIENT::RemovePlayer packet(pRemoveClientID);
+
+			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
+		}
+	}
 }
 
 namespace ERROR_HANDLING

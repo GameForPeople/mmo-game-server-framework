@@ -52,6 +52,7 @@ private:
 
 	void RenewPossibleSectors(ObjectInfo* pObjectInfo);
 	void RenewViewListInSectors(SocketInfo* pClient);
+
 	bool RenewViewListInSectorsForNpc(BaseMonster* pClient);
 
 public:

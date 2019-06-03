@@ -300,7 +300,7 @@ void Zone::Enter(SocketInfo* pEnteredClient)
 	// 섹터 컨테이너에서 내 정보를 먼저 넣어주고.
 	sectorCont[pEnteredClient->objectInfo->posY / GLOBAL_DEFINE::MAX_HEIGHT ][pEnteredClient->objectInfo->posX / GLOBAL_DEFINE::MAX_WIDTH].Join(pEnteredClient);
 
-	// PossibleSector을 검사하고!
+	// PossibleSector와 View 처리
 	InitViewAndSector(pEnteredClient);
 }
 
@@ -312,11 +312,18 @@ void Zone::Enter(SocketInfo* pEnteredClient)
 */
 void Zone::Exit(SocketInfo* pOutClient)
 {
-	// 섹터 컨테이너에서 내 정보를 지워주고
-	sectorCont[pOutClient->objectInfo->sectorIndexY][pOutClient->objectInfo->sectorIndexX].Exit(pOutClient->objectInfo);
+	// 현재 포함되어 있는, 섹터 컨테이너에서 내 정보를 지워주고
+	sectorCont[pOutClient->objectInfo->sectorIndexY][pOutClient->objectInfo->sectorIndexX].Exit(pOutClient);
 	
 	// 내 ViewList의 Client에게 나 나간다고 알려주고.
-	connectManager->LogOutToZone(pOutClient, zoneContUnit);
+	
+	//connectManager->LogOutToZone(pOutClient, zoneContUnit);
+
+	for (auto iter : pOutClient->viewList)
+	{
+		zoneContUnit->clientContArr[iter]->viewList.erase(pOutClient->key);
+		NETWORK_UTIL::SEND::SendRemovePlayer(pOutClient->key, zoneContUnit->clientContArr[iter]);
+	}
 }
 
 /*
@@ -621,16 +628,17 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 #endif
 	const bool tempIsMove = moveManager->MoveCharacter(pClient);
 
-	// 스스로에게 전송.
-	PACKET_DATA::MAIN_TO_CLIENT::Position packet(
-		pClient->objectInfo->key,
-		pClient->objectInfo->posX,
-		pClient->objectInfo->posY
-	);
-	NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&packet));
-
 	if (tempIsMove)
 	{
+		// 스스로에게 전송.
+		NETWORK_UTIL::SEND::SendMovePlayer(pClient, pClient);
+		//PACKET_DATA::MAIN_TO_CLIENT::Position packet(
+		//	pClient->key,
+		//	pClient->objectInfo->posX,
+		//	pClient->objectInfo->posY
+		//);
+		//NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&packet));
+
 		RenewSelfSector(pClient->objectInfo);
 		RenewPossibleSectors(pClient->objectInfo);
 		RenewViewListInSectors(pClient);

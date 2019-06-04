@@ -7,7 +7,7 @@ struct SendMemoryUnit;
 struct SocketInfo;
 struct TimerMemoryHead;
 
-class ConnectMaanger;
+class ConnectManager;
 class Zone;
 
 /*

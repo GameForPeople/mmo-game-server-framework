@@ -20,6 +20,7 @@
 
 #include "ObjectInfo.h"
 
+#include "BaseMonster.h"
 #include "MonsterLoader.h" 
 #include "MonsterModelManager.h" 
 
@@ -79,7 +80,7 @@ void Zone::InitClientCont()
 
 		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetRenderModel(MONSTER_TYPE::SLIME));
 		
-		RenewSelfSectorForNpc(monster->objectInfo); // 비용이 너무 큼.
+		RenewSelfSectorForNpc(monster); // 비용이 너무 큼.
 		//sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);
 
 		// 이동 타이머를 등록해줌.
@@ -148,7 +149,7 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 					ObjectInfo* tempObjectInfo = zoneContUnit->monsterCont[index]->objectInfo;
 
 					moveManager->MoveRandom(tempObjectInfo);	// 랜덤으로 움직이고
-					RenewSelfSectorForNpc(tempObjectInfo);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
+					RenewSelfSectorForNpc(zoneContUnit->monsterCont[index]);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
 					RenewPossibleSectors(tempObjectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
 
 					RenewViewListInSectorsForNpc(zoneContUnit->monsterCont[index])
@@ -582,36 +583,36 @@ bool Zone::RenewViewListInSectorsForNpc(BaseMonster* pMonster)
 
 	!0. 반드시 이 함수가 호출되기 전에, RenewPossibleSectors가 선행되어야 옳은 ViewList를 획득할 수 있습니다.
 */
-void Zone::RenewSelfSector(ObjectInfo* pClient)
+void Zone::RenewSelfSector(SocketInfo* pClient)
 {
-	bool isNeedToChangeSector{ false };
+	ObjectInfo* tempObjectInfo = pClient->objectInfo;
 
-	if (static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexX) isNeedToChangeSector = true;
-	if (static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexY) isNeedToChangeSector = true;
+	_SectorIndexType tempX = static_cast<_SectorIndexType>(tempObjectInfo->posX / GLOBAL_DEFINE::SECTOR_DISTANCE);
+	_SectorIndexType tempY = static_cast<_SectorIndexType>(tempObjectInfo->posY / GLOBAL_DEFINE::SECTOR_DISTANCE);
 
-	if (isNeedToChangeSector == false) 	return;
-	else
+	if (tempX != tempObjectInfo->sectorIndexX || tempObjectInfo->sectorIndexY)
 	{
-		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].Exit(pClient);
+		sectorCont[tempObjectInfo->sectorIndexY][tempObjectInfo->sectorIndexX].Exit(pClient);
 		//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].Join(pClient);
-		sectorCont[static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE)][static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE)].Join(pClient);
+		sectorCont[tempY][tempX].Join(pClient);
 	}
+	else return;
 }
 
-void Zone::RenewSelfSectorForNpc(ObjectInfo* pClient)
+void Zone::RenewSelfSectorForNpc(BaseMonster* pMonster)
 {
-	bool isNeedToChangeSector{ false };
+	ObjectInfo* tempObjectInfo = pMonster->objectInfo;
 
-	if (static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexX) isNeedToChangeSector = true;
-	else if (static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexY) isNeedToChangeSector = true;
+	_SectorIndexType tempX = static_cast<_SectorIndexType>(tempObjectInfo->posX / GLOBAL_DEFINE::SECTOR_DISTANCE);
+	_SectorIndexType tempY = static_cast<_SectorIndexType>(tempObjectInfo->posY / GLOBAL_DEFINE::SECTOR_DISTANCE);
 
-	if (isNeedToChangeSector == false) 	return;
-	else
+	if (tempX != tempObjectInfo->sectorIndexX || tempY != tempObjectInfo->sectorIndexY)
 	{
-		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].ExitForNpc(pClient);
-		sectorCont[static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE)][static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE)].JoinForNpc(pClient);
+		sectorCont[tempObjectInfo->sectorIndexY][tempObjectInfo->sectorIndexX].ExitForNpc(pMonster);
+		sectorCont[tempY][tempX].JoinForNpc(pMonster);
 		//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].JoinForNpc(pClient);
 	}
+	else return;
 }
 
 /*
@@ -626,9 +627,8 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 #ifdef _DEV_MODE_
 	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[2]) << "\n";
 #endif
-	const bool tempIsMove = moveManager->MoveCharacter(pClient);
 
-	if (tempIsMove)
+	if (moveManager->MoveCharacter(pClient))
 	{
 		// 스스로에게 전송.
 		NETWORK_UTIL::SEND::SendMovePlayer(pClient, pClient);
@@ -639,7 +639,7 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 		//);
 		//NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&packet));
 
-		RenewSelfSector(pClient->objectInfo);
+		RenewSelfSector(pClient);
 		RenewPossibleSectors(pClient->objectInfo);
 		RenewViewListInSectors(pClient);
 	}

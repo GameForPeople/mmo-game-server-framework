@@ -129,39 +129,40 @@ namespace NETWORK_UTIL
 
 			#0. 성능상의 이슈로, !0, !1, !2의 nullptr여부를 보장하지 않습니다. ( 적합한 구조일 경우, nullptr참조가 발생하기 어려움 )
 	*/
-	void LogOutProcess(LPVOID pClient)
-	{
-		if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::RECV_FROM_CLIENT)
-		{
-			SocketInfo* pOutClient = reinterpret_cast<SocketInfo*>(pClient);
-
-			SOCKADDR_IN clientAddr;
-
-			int addrLength = sizeof(clientAddr);
-
-			getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
-			std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
-			
-			// 애초에 존에 접속도 못했는데, 로그아웃 할 경우를 방지.
-			if (pOutClient->objectInfo->key != -1) pOutClient->pZone->Exit(pOutClient);
-
-			closesocket(pOutClient->sock);
-			delete pOutClient;
-		}
-		else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND_TO_CLIENT)
-		{
-			SendMemoryUnit* pMemoryUnit = (reinterpret_cast<SendMemoryUnit*>(pClient));
-			SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
-		}
-#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
-		else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND)
-		{
-			UnallocatedMemoryUnit* pMemoryUnit = (reinterpret_cast<UnallocatedMemoryUnit*>(pClient));
-
-			SendMemoryPool::GetInstance()->PushUnallocatedMemory(pMemoryUnit);
-		}
-#endif
-	}
+//	void LogOutProcess(LPVOID pClient)
+//	{
+//
+//		//if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::RECV_FROM_CLIENT)
+//		//{
+//		SocketInfo* pOutClient = reinterpret_cast<SocketInfo*>(pClient);
+//
+//		SOCKADDR_IN clientAddr;
+//
+//		int addrLength = sizeof(clientAddr);
+//
+//		getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
+//		std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
+//
+//		// 애초에 존에 접속도 못했는데, 로그아웃 할 경우를 방지.
+//		if (pOutClient->key != -1) pOutClient->Exit(pOutClient);
+//
+//		closesocket(pOutClient->sock);
+//		delete pOutClient;
+//		//}
+//		//else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND_TO_CLIENT)
+//		//{
+//		//	SendMemoryUnit* pMemoryUnit = (reinterpret_cast<SendMemoryUnit*>(pClient));
+//		//	SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
+//		//}
+//#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
+//		else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND)
+//		{
+//			UnallocatedMemoryUnit* pMemoryUnit = (reinterpret_cast<UnallocatedMemoryUnit*>(pClient));
+//
+//			SendMemoryPool::GetInstance()->PushUnallocatedMemory(pMemoryUnit);
+//		}
+//#endif
+//	}
 
 	namespace SEND
 	{
@@ -183,11 +184,11 @@ namespace NETWORK_UTIL
 		void SendMovePlayer(OBJECT* pMovedObject, SocketInfo* pRecvClient)
 		{
 			PACKET_DATA::MAIN_TO_CLIENT::Position packet(
-				pMovedClient->key,
+				pMovedObject->key,
 				//pMovedClientKey->userData->GetPosition().x,
 				//pMovedClientKey->userData->GetPosition().y
-				pMovedClient->objectInfo->posX,
-				pMovedClient->objectInfo->posY
+				pMovedObject->objectInfo->posX,
+				pMovedObject->objectInfo->posY
 			);
 
 			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));

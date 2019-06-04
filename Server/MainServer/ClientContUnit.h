@@ -26,8 +26,8 @@ public:
 	ZoneContUnit();
 	~ZoneContUnit();
 
-	void Enter(SocketInfo*);
-	void Exit(SocketInfo*);
+	//void Enter(SocketInfo*);
+	//void Exit(SocketInfo*);
 	
 	//std::pair<bool, SocketInfo*> FindClient(_ClientKeyType);
 	//inline BYTE GetContHashKey(_ClientKeyType inClientKey) noexcept { return inClientKey % HASH_SIZE; }

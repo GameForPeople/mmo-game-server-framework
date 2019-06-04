@@ -42,7 +42,9 @@ GameServer::~GameServer()
 
 	workerThreadCont.clear();
 
+
 	closesocket(listenSocket);
+	delete NETWORK_UTIL::queryMemoryUnit;
 	closesocket(NETWORK_UTIL::querySocket);
 	CloseHandle(hIOCP);
 }
@@ -255,7 +257,7 @@ void GameServer::AcceptQueryServer()
 		if (ntohs(tempAddr.sin_port) == GLOBAL_DEFINE::QUERY_SERVER_PORT)
 		{
 			std::cout << "QueryServer의 연결이 성공했습니다." << std::endl;
-			NETWORK_UTIL::queryMemoryUnit = std::make_unique<QueryMemoryUnit>();
+			NETWORK_UTIL::queryMemoryUnit = new QueryMemoryUnit;// std::make_unique<QueryMemoryUnit>();
 			NETWORK_UTIL::querySocket = tempSocket;
 			CreateIoCompletionPort(reinterpret_cast<HANDLE>(tempSocket), hIOCP, NETWORK_UTIL::querySocket, 0);
 			NETWORK_UTIL::RecvQueryPacket();
@@ -334,7 +336,8 @@ void GameServer::WorkerThreadFunction()
 		case MEMORY_UNIT_TYPE::RECV_FROM_CLIENT:
 			if (retVal == 0 || cbTransferred == 0)
 			{
-				NETWORK_UTIL::LogOutProcess(pMemoryUnit);
+				//NETWORK_UTIL::LogOutProcess(pMemoryUnit);
+
 				continue;
 			}
 			// 받은 데이터 처리
@@ -505,7 +508,7 @@ void GameServer::RecvLoginTrue()
 	SocketInfo* tempSocketInfo = zone->zoneContUnit->clientContArr[packet->key];
 	
 	// DB에서 받은 데이터로 ObjectInfo 생성.
-	tempSocketInfo->objectInfo = new ObjectInfo(L"", packet->xPos, packet->yPos);
+	tempSocketInfo->objectInfo = new ObjectInfo(packet->xPos, packet->yPos);
 
 	// 클라이언트에게 서버에 접속(Accept) 함을 알림
 	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(packet->key, packet->xPos, packet->yPos);

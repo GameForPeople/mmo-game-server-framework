@@ -4,6 +4,9 @@
 	ServerDefine.h
 		- 해당 헤더 파일은, 서버에서만 사용합니다.
 */
+
+#include "InHeaderDefine.hh"
+
 #define DISABLED_UNALLOCATED_MEMORY_SEND
 
 struct SendMemoryUnit;
@@ -14,7 +17,8 @@ struct QueryMemoryUnit;
 namespace NETWORK_UTIL
 {
 	SOCKET querySocket;
-	std::unique_ptr<QueryMemoryUnit> queryMemoryUnit;
+	//std::unique_ptr<QueryMemoryUnit> queryMemoryUnit;
+	QueryMemoryUnit* queryMemoryUnit;
 
 	void SendPacket(SocketInfo* pClient, char* packetData);
 	void SendQueryPacket(char* packetData);
@@ -25,7 +29,7 @@ namespace NETWORK_UTIL
 	void RecvPacket(SocketInfo* pClient);
 	void RecvQueryPacket();
 
-	void LogOutProcess(LPVOID pClient);
+	//void LogOutProcess(LPVOID pClient);
 	//_NODISCARD const bool GetRecvOrSendPacket(const LPVOID);
 
 	namespace SEND

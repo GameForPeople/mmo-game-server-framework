@@ -16,6 +16,8 @@ class Sector;
 struct ZoneContUnit;
 struct ObjectInfo;
 
+class BaseMonster;
+
 /*
 	Zone
 		- GameServer(GameWorld)를 구성하는 단위 객체입니다.
@@ -47,8 +49,8 @@ private:
 	void InitSector();
 
 private:
-	void RenewSelfSector(ObjectInfo* pClient);
-	void RenewSelfSectorForNpc(ObjectInfo* pClient);
+	void RenewSelfSector(SocketInfo* pClient);
+	void RenewSelfSectorForNpc(BaseMonster* pClient);
 
 	void RenewPossibleSectors(ObjectInfo* pObjectInfo);
 	void RenewViewListInSectors(SocketInfo* pClient);

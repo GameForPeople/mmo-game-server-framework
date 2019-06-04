@@ -45,50 +45,47 @@ ZoneContUnit::~ZoneContUnit()
 		delete iter;
 }
 
-void ZoneContUnit::Enter(SocketInfo* pClient)
-{
+//void ZoneContUnit::Enter(SocketInfo* pClient)
+//{
 	//const BYTE contHashIndex = GetContHashKey(pClient->objectInfo->key);
 	//while (lockArr[contHashIndex].test_and_set(std::memory_order_acquire))  // acquire lock //++++++++++++++++++++++++++++++++ 1
 	//	; // spin
-
-
-
 	// lockArr[contHashIndex].clear(std::memory_order_release);               // release lock //+-------------------------------- 0
-}
+//}
 
-void ZoneContUnit::Exit(SocketInfo* pClient)
-{
-	const BYTE contHashIndex = GetContHashKey(pClient->objectInfo->key);
+//void ZoneContUnit::Exit(SocketInfo* pClient)
+//{
+	//const BYTE contHashIndex = GetContHashKey(pClient->key);
+	//
+	//while (lockArr[contHashIndex].test_and_set(std::memory_order_acquire))  // acquire lock //++++++++++++++++++++++++++++++++ 1
+	//	; // spin
+	//
+	//const USHORT contEndIndex = indexArr[contHashIndex].load() - 1;
+	//
+	//// 컨테이너 맨 뒤의 멤버를, 지워지는 멤버의 인덱스로 변경
+	//clientContArr[contHashIndex][pClient->contIndex] = clientContArr[contHashIndex][contEndIndex];
+	//
+	//// 맨뒤의 인덱스였던 애에게, 새로운 인덱스를 알려줌.
+	//clientContArr[contHashIndex][pClient->contIndex]->contIndex = pClient->contIndex;
+	//
+	//// 맨뒤의 컨테이너 제거 -> 해당 컨테이너의 허용 인덱스 변경.
+	////clientContArr[contIndex].pop_back();
+	//indexArr[contHashIndex].fetch_sub(1);
+	//
+	//lockArr[contHashIndex].clear(std::memory_order_release);               // release lock //+-------------------------------- 0
+//}
 
-	while (lockArr[contHashIndex].test_and_set(std::memory_order_acquire))  // acquire lock //++++++++++++++++++++++++++++++++ 1
-		; // spin
-
-	const USHORT contEndIndex = indexArr[contHashIndex].load() - 1;
-
-	// 컨테이너 맨 뒤의 멤버를, 지워지는 멤버의 인덱스로 변경
-	clientContArr[contHashIndex][pClient->contIndex] = clientContArr[contHashIndex][contEndIndex];
-
-	// 맨뒤의 인덱스였던 애에게, 새로운 인덱스를 알려줌.
-	clientContArr[contHashIndex][pClient->contIndex]->contIndex = pClient->contIndex;
-
-	// 맨뒤의 컨테이너 제거 -> 해당 컨테이너의 허용 인덱스 변경.
-	//clientContArr[contIndex].pop_back();
-	indexArr[contHashIndex].fetch_sub(1);
-
-	lockArr[contHashIndex].clear(std::memory_order_release);               // release lock //+-------------------------------- 0
-}
-
-std::pair<bool, SocketInfo*> ZoneContUnit::FindClient(_ClientKeyType inClientKey)
-{
-	const BYTE contHashIndex = GetContHashKey(inClientKey);
-	
-	for (auto iter : clientContArr[contHashIndex])
-	{
-		if (iter->objectInfo->key == inClientKey)
-		{
-			return std::make_pair(true, iter);
-		}
-	}
-
-	return std::make_pair(false, nullptr);
-}
+//std::pair<bool, SocketInfo*> ZoneContUnit::FindClient(_ClientKeyType inClientKey)
+//{
+//	const BYTE contHashIndex = GetContHashKey(inClientKey);
+//	
+//	for (auto iter : clientContArr[contHashIndex])
+//	{
+//		if (iter->objectInfo->key == inClientKey)
+//		{
+//			return std::make_pair(true, iter);
+//		}
+//	}
+//
+//	return std::make_pair(false, nullptr);
+//}

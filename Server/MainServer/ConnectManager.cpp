@@ -109,21 +109,21 @@ inline void ConnectManager::PushOldKey(USHORT oldKey)
 //
 void ConnectManager::SendRemovePlayerInOuttedClientViewList(SocketInfo* pOutClient, ZoneContUnit* inClientCont)
 {
-	PACKET_DATA::MAIN_TO_CLIENT::RemovePlayer packet(
-		pOutClient->objectInfo->key
-	);
-
-	//inClientCont->wrlock.lock_shared(); // +++++++++++++++++++++++++++++++++++++++++++++++++++1 read
-	for (auto otherKey : pOutClient->viewList)
-	{
-		if (auto [isConnect, pOtherClient] = inClientCont->FindClient(otherKey); isConnect)
-		{
-			NETWORK_UTIL::SendPacket(pOtherClient, reinterpret_cast<char*>(&packet));
-
-			// 상대방 viewList 수정.
-			pOtherClient->viewList.unsafe_erase(pOutClient->objectInfo->key);
-		}
-	}
+	//PACKET_DATA::MAIN_TO_CLIENT::RemovePlayer packet(
+	//	pOutClient->objectInfo->key
+	//);
+	//
+	////inClientCont->wrlock.lock_shared(); // +++++++++++++++++++++++++++++++++++++++++++++++++++1 read
+	//for (auto otherKey : pOutClient->viewList)
+	//{
+	//	if (auto [isConnect, pOtherClient] = inClientCont->FindClient(otherKey); isConnect)
+	//	{
+	//		NETWORK_UTIL::SendPacket(pOtherClient, reinterpret_cast<char*>(&packet));
+	//
+	//		// 상대방 viewList 수정.
+	//		pOtherClient->viewList.unsafe_erase(pOutClient->objectInfo->key);
+	//	}
+	//}
 	//inClientCont->wrlock.unlock_shared(); //--------------------------------------------------0 read
 
 	//for (std::pair<bool, SocketInfo*>& pRecvedClient : inClientCont)

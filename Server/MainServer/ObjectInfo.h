@@ -28,9 +28,9 @@ public:	// 이럴꺼면 님 왜 이거 class했어요? -> 조용히해 -> 결국 Struct...ㅎ
 */
 struct PlayerObjectInfo : public ObjectInfo
 {
-	_NicknameType nickname;
+	_NicknameType nickname[10];
 
 public:
-	PlayerObjectInfo(_NicknameType&, _PosType, _PosType);
+	PlayerObjectInfo(_NicknameType*, _PosType, _PosType);
 	~PlayerObjectInfo() final = default;
 };

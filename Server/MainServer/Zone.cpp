@@ -66,31 +66,21 @@ void Zone::InitClientCont()
 	zoneContUnit = new ZoneContUnit;
 	_KeyType tempIndex = BIT_CONVERTER::NOT_PLAYER_INT;
 
-	std::cout << "\n#. 몬스터 할당중입니다." << std::endl;
+	std::cout << "#. 몬스터 "<< zoneContUnit->monsterCont.size() << "ea를 할당중입니다...";
 
-	//생성
-	for (auto& monster : zoneContUnit->monsterCont)
-	{
+	// 추후 쓰레드 분할
+		for (auto& monster : zoneContUnit->monsterCont)
+		{
+			const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
+			const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
 
-		if((tempIndex - BIT_CONVERTER::NOT_PLAYER_INT) % 1000 == 0)
-			std::cout << tempIndex - BIT_CONVERTER::NOT_PLAYER_INT << " ";
-		
-		const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
-		const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
+			monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetRenderModel(MONSTER_TYPE::SLIME));
 
-		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetRenderModel(MONSTER_TYPE::SLIME));
-		
-		RenewSelfSectorForNpc(monster); // 비용이 너무 큼.
-		//sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);
+			RenewSelfSectorForNpc(monster); // 비용이 너무 큼.
+			//sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);
+		}
 
-		// 이동 타이머를 등록해줌.
-		//auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-		//timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
-		//timerUnit->objectKey = monster->objectInfo->key;
-		//TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SECOND);
-	}
-
-	std::cout << "\n#. 몬스터 할당이 종료되었습니다." << std::endl;
+	std::cout << "    할당이 종료되었습니다." << std::endl;
 }
 
 /*

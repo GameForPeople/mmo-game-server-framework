@@ -76,7 +76,7 @@ void GameServer::ServerIntegrityCheck()
 	assert(typeid(_PosType).name() == typeid(PACKET_DATA::_PosType).name(),
 		L"_KeyType이 Define과 InHeaderDefine에서 서로 다르게 정의되어있습니다. 확인해주세요.");
 
-	std::wcout << L"!. Server의 무결성 테스트를 통과하였습니다. \n";
+	std::wcout << L"#. Server의 무결성 테스트를 통과하였습니다. \n";
 }
 
 /*
@@ -252,7 +252,7 @@ void GameServer::AcceptThreadFunction()
 */
 void GameServer::AcceptQueryServer()
 {
-	std::cout << "QueryServer를 실행시켜주세요!" << std::endl;
+	std::cout << "!. QueryServer를 실행시켜주세요!" << std::endl;
 
 	while (7)
 	{
@@ -522,10 +522,10 @@ void GameServer::RecvLoginTrue()
 	SocketInfo* tempSocketInfo = zone->zoneContUnit->clientContArr[packet->key];
 	
 	// DB에서 받은 데이터로 ObjectInfo 생성.
-	tempSocketInfo->objectInfo = new ObjectInfo(packet->xPos, packet->yPos);
+	tempSocketInfo->objectInfo = new PlayerObjectInfo(packet->nickname, packet->xPos, packet->yPos);
 
 	// 클라이언트에게 서버에 접속(Accept) 함을 알림
-	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(packet->key, packet->xPos, packet->yPos);
+	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(packet->key, packet->nickname ,packet->xPos, packet->yPos);
 	NETWORK_UTIL::SendPacket(tempSocketInfo, reinterpret_cast<char*>(&loginPacket));
 
 	// 자신의 캐릭터를 넣어줌. -> LoginOK에 통합.
@@ -566,7 +566,7 @@ void GameServer::LogOut(SocketInfo* pOutClient)
 	if (pOutClient->objectInfo != nullptr) 
 	{
 		zone->Exit(pOutClient);
-		delete pOutClient->objectInfo;
+		pOutClient->TerminateClient();
 	}
 
 	closesocket(pOutClient->sock);
@@ -575,6 +575,14 @@ void GameServer::LogOut(SocketInfo* pOutClient)
 	timerUnit->timerType = TIMER_TYPE::PUSH_OLD_KEY;
 	timerUnit->objectKey = pOutClient->key;
 	TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::MAX_TIME);
+
+	PACKET_DATA::MAIN_TO_QUERY::SavePosition packet(
+		static_cast<PlayerObjectInfo*>(pOutClient->objectInfo)->nickname,
+		pOutClient->objectInfo->posX,
+		pOutClient->objectInfo->posY
+	);
+
+	NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
 }
 
 #pragma region [Legacy Code]

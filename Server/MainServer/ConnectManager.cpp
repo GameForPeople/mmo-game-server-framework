@@ -12,6 +12,8 @@
 
 #include "ConnectManager.h"
 
+ConnectManager* ConnectManager::instance = nullptr;
+
 ConnectManager::ConnectManager()
 {
 	USHORT tempPushKey{ 0 };
@@ -35,7 +37,7 @@ std::pair<bool, _ClientKeyType> ConnectManager::GetUniqueKey()
 	}
 }
 
-inline void ConnectManager::PushOldKey(USHORT oldKey)
+void ConnectManager::PushOldKey(USHORT oldKey)
 {
 	uniqueKeyPool.push(oldKey);
 }

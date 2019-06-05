@@ -102,6 +102,7 @@ struct SendMemoryUnit
 */
 class Zone;
 struct ObjectInfo;
+struct PlayerObjectInfo;
 /*
 	4바이트 정렬 짓 해야합니다 여기.
 */
@@ -124,11 +125,11 @@ public:
 	/*Concurrency::concurrent_*/std::unordered_set<_ClientKeyType> viewList;
 	/*Concurrency::concurrent_*/std::unordered_set<_MonsterKeyType> monsterViewList;
 
-	ObjectInfo* objectInfo;
+	PlayerObjectInfo * objectInfo;
 
 public:
 	void RegisterNewClient(SOCKET);
-	void SetNewObjectInfo(ObjectInfo*);
+	void SetNewObjectInfo(PlayerObjectInfo*);
 	
 	void TerminateClient();
 };

@@ -29,7 +29,7 @@ namespace NETWORK_UTIL
 	void RecvPacket(SocketInfo* pOutClient);
 	void RecvQueryPacket();
 
-	void LogOutProcess(SocketInfo* pClient);
+	//void LogOutProcess(SocketInfo* pClient);
 	//_NODISCARD const bool GetRecvOrSendPacket(const LPVOID);
 
 	namespace SEND
@@ -50,6 +50,11 @@ namespace ERROR_HANDLING {
 	_NORETURN void ERROR_QUIT(const WCHAR *msg);
 	/*_DEPRECATED*/ void ERROR_DISPLAY(const WCHAR *msg);
 	void HandleRecvOrSendError();
+}
+
+namespace TIME_UTIL
+{
+	const std::string GetCurrentDateTime();
 }
 
  namespace GLOBAL_DEFINE

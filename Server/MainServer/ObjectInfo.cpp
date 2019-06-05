@@ -18,8 +18,9 @@ ObjectInfo::ObjectInfo(_PosType inX, _PosType inY)
 //-----------
 //-----------
 
-PlayerObjectInfo::PlayerObjectInfo(_NicknameType& inNickname, _PosType inX, _PosType inY)
-	: ObjectInfo(inX, inY),
-	nickname(inNickname)
+PlayerObjectInfo::PlayerObjectInfo(_NicknameType* inNickname, _PosType inX, _PosType inY)
+	: ObjectInfo(inX, inY)
+	, nickname()
 {
+	memcpy(nickname, inNickname, 20);
 }

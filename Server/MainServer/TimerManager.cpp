@@ -35,6 +35,10 @@ TimerManager::TimerManager(HANDLE hIOCP) :
 	for (int i = 0; i < 500000; ++i) { timerMemoryPool.push(new TimerUnit()); }
 
 	SetPostQueuedFunctionCallCountAndTimerMemoryHeadCont(MAX_COOL_TIME);
+
+#ifdef _DEV_MODE_
+	std::wcout << L"!. TimerManager의 초기 할당 사이즈는 " << timerMemoryPool.unsafe_size() << " 입니다." << std::endl;
+#endif
 }
 
 TimerManager::~TimerManager()

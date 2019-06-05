@@ -21,6 +21,9 @@ namespace GLOBAL_DEFINE
 
 	constexpr USHORT MAX_HEIGHT = 800;
 	constexpr USHORT MAX_WIDTH = 800;
+
+	constexpr BYTE ID_MAX_LEN = 10;
+	constexpr BYTE ID_MAX_SIZE = ID_MAX_LEN * 2;
 }
 
 namespace NETWORK_TYPE
@@ -125,10 +128,7 @@ namespace PACKET_DATA
 	using _PacketTypeType = const char;	//? 이름이 뭐 이따구가
 	using _KeyType = unsigned int;	//? 이름이 뭐 이따구가
 	using _PosType = unsigned short;
-	using _IdType = WCHAR;
-
-	constexpr BYTE ID_MAX_LEN = 10;
-	constexpr BYTE ID_MAX_SIZE = ID_MAX_LEN * 2;
+	using _CharType = WCHAR;
 
 #pragma pack(push, 1)
 
@@ -145,9 +145,9 @@ namespace PACKET_DATA
 		struct Login {
 			_PacketSizeType size;
 			_PacketTypeType type;
-			_IdType id[ID_MAX_LEN];
+			_CharType id[GLOBAL_DEFINE::ID_MAX_LEN];
 
-			Login(const _IdType* const pInID) noexcept;
+			Login(const _CharType* const pInNickname) noexcept;
 		};
 	}
 
@@ -183,11 +183,12 @@ namespace PACKET_DATA
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			_KeyType id;
+			_KeyType key;
+			_CharType nickname[GLOBAL_DEFINE::ID_MAX_LEN];
 			_PosType x;
 			_PosType y;
 
-			LoginOk(const _KeyType inNewId, const _PosType x, const _PosType y) noexcept;
+			LoginOk(const _KeyType, const _CharType* inNewNickname, const _PosType x, const _PosType y) noexcept;
 		};
 
 		struct LoginFail
@@ -203,31 +204,31 @@ namespace PACKET_DATA
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			_KeyType id;
+			_KeyType key;
 			_PosType x;
 			_PosType y;
 
-			PutPlayer(const _KeyType inMovedClientId, const _PosType inX, const _PosType inY) noexcept;
+			PutPlayer(const _KeyType inMovedClientKey, const _PosType inX, const _PosType inY) noexcept;
 		};
 
 		struct RemovePlayer
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			_KeyType id;
+			_KeyType key;
 
-			RemovePlayer(const _KeyType inRemovedClientID) noexcept;
+			RemovePlayer(const _KeyType inRemovedClientKey) noexcept;
 		};
 
 		struct Position
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			_KeyType id;
+			_KeyType key;
 			_PosType x;
 			_PosType y;
 
-			Position(const _KeyType inMovedClientId, const _PosType inX, const _PosType inY) noexcept;
+			Position(const _KeyType inMovedClientKey, const _PosType inX, const _PosType inY) noexcept;
 		};
 	}
 
@@ -237,22 +238,22 @@ namespace PACKET_DATA
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			_KeyType key;
-			_IdType	id[10];
+			_KeyType key;	// 나중에 반납할 때, 이 키를 알려줘야함.
+			_CharType id[10];
 			int		pw;
 
-			DemandLogin(const _KeyType, const char* const, const int);
+			DemandLogin(const _KeyType, const char* inId, const int);
 		};
 
 		struct SavePosition
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			_IdType	id[10];
+			// 여기는 단방향성이라 Key가 필요없음
+			_CharType id[10];
 			_PosType xPos;
 			_PosType yPos;
-
-			SavePosition(const _IdType * const, const _PosType, const _PosType);
+			SavePosition(const _CharType * const, const _PosType, const _PosType);
 		};
 	}
 
@@ -273,10 +274,11 @@ namespace PACKET_DATA
 			_PacketSizeType size;
 			_PacketTypeType type;
 			_KeyType key;
+			_CharType nickname[10];
 			_PosType xPos;
 			_PosType yPos;
 
-			LoginTrue(const _KeyType, const _PosType, const _PosType) noexcept;
+			LoginTrue(const _KeyType, const _CharType *, const _PosType, const _PosType) noexcept;
 		};
 
 		struct LoginFail

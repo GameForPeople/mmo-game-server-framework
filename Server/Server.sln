@@ -8,6 +8,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MainServer", "MainServer\Server.vcxproj", "{D60AA702-D49D-4CA4-94A4-7F66517E8645}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "QueryServer", "QueryServer\QueryServer.vcxproj", "{03762BF4-E19B-4F07-8BB7-CD03994ECCE0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D60AA702-D49D-4CA4-94A4-7F66517E8645} = {D60AA702-D49D-4CA4-94A4-7F66517E8645}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

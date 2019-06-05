@@ -139,20 +139,6 @@ namespace NETWORK_UTIL
 			#0. 성능상의 이슈로, !0, !1, !2의 nullptr여부를 보장하지 않습니다. ( 적합한 구조일 경우, nullptr참조가 발생하기 어려움 )
 	*/
 
-	void LogOutProcess(SocketInfo* pOutClient)
-	{
-		SOCKADDR_IN clientAddr;
-		int addrLength = sizeof(clientAddr);
-
-		getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
-		std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
-
-		// 애초에 존에 접속도 못했는데, 로그아웃 할 경우를 방지.
-		if (pOutClient->key != -1) pOutClient->Exit(pOutClient);
-
-		closesocket(pOutClient->sock);
-	}
-
 //	void LogOutProcess(LPVOID pClient)
 //	{
 //
@@ -247,6 +233,18 @@ namespace ERROR_HANDLING
 		{
 			ERROR_DISPLAY((L"RecvOrSend()"));
 		}
+	}
+}
+
+namespace TIME_UTIL {
+	const std::string GetCurrentDateTime() {
+		time_t     now = time(0); //현재 시간을 time_t 타입으로 저장
+		struct tm  tstruct;
+		char       buf[80];
+		localtime_s(&tstruct, &now);
+		strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss 형태의 스트링
+
+		return buf;
 	}
 }
 

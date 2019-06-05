@@ -191,7 +191,7 @@ void SocketInfo::RegisterNewClient(SOCKET inSocket)
 	sock = inSocket;
 }
 
-void SocketInfo::SetNewObjectInfo(ObjectInfo* inNewClientObjectInfo)
+void SocketInfo::SetNewObjectInfo(PlayerObjectInfo* inNewClientObjectInfo)
 {
 	objectInfo = inNewClientObjectInfo;
 }

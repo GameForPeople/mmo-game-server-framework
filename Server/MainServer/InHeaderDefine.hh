@@ -23,7 +23,7 @@ using _ClientKeyType = _KeyType;
 using _MonsterKeyType = _KeyType;
 using _NpcKeyType = _KeyType;
 
-using _NicknameType = std::wstring;
+using _NicknameType = WCHAR;
 
 using _PosType = unsigned short;
 using _HpType = unsigned short;

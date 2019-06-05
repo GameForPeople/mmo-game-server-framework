@@ -44,28 +44,30 @@ private:	// for Init
 	void PrintServerInfoUI();
 	void InitNetwork();
 
-private:	// for Worker Thread
+private:	// for Aceept
+	static void StartAcceptThread(LPVOID arg);
+	void AcceptThreadFunction();
+	void AcceptQueryServer();
+
+private:	// for Worker
 	static void StartWorkerThread(LPVOID arg);
 	void WorkerThreadFunction();
 
-private:	// for Aceept Thread
-	static void StartAcceptThread(LPVOID arg);
-	void AcceptThreadFunction();
-
-	void AcceptQueryServer();
-
-private: //Client to Main Function
+private: // "Client to Main" Function
 	void MakePacketFromRecvData(SocketInfo* pClient, int restSize);
 	void ProcessPacket(SocketInfo* pClient);
 
 	void RecvLogin(SocketInfo*);
 
-private: //Query Function
+private: // "Query" Function
 	void MakeQueryPacketFromRecvData(int restSize);
 	void ProcessQueryPacket();
 
 	void RecvLoginTrue();
 	void RecvLoginFalse();
+
+private:
+	void LogOut(SocketInfo*);
 
 private:
 	WSADATA								wsa;
@@ -76,7 +78,6 @@ private:
 
 	std::vector<std::thread>			workerThreadCont;
 	std::unique_ptr<Zone>				zone;
-	std::unique_ptr<ConnectManager>		connectManager;
 };
 
 #pragma region [Legacy Code]

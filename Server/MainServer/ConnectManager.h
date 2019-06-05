@@ -7,9 +7,20 @@ struct ZoneContUnit;
 
 class Zone;
 
-class ConnectManager
+class ConnectManager /**/
 {
 public:
+	_NODISCARD static inline ConnectManager* GetInstance() noexcept { return ConnectManager::instance; };
+
+	// 해당 함수는 GameServer.cpp의 생성자에서 한번 호출되어야합니다.
+	/*_NODISCARD*/ static void MakeInstance() { ConnectManager::instance = new ConnectManager(); /*return SendMemoryPool::instance;*/ };
+
+	// 해당 함수는 GameServer.cpp의 소멸자에서 한번 호출되어야합니다.
+	static void DeleteInstance() { delete instance; }
+
+private:
+	static ConnectManager* instance;
+
 	ConnectManager();
 	~ConnectManager() = default;
 

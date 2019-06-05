@@ -17,21 +17,23 @@
 
 #include "GameServer.h"
 
-GameServer::GameServer(bool inNotUse)
+GameServer::GameServer(bool)
 	: wsa()
 	, hIOCP()
 	, listenSocket()
 	, serverAddr()
 	, workerThreadCont()
 	, zone(std::make_unique<Zone>())
-	, connectManager(std::make_unique<ConnectManager>())
 {
 	ServerIntegrityCheck();
 	
+	ConnectManager::MakeInstance();
 	SendMemoryPool::MakeInstance();
+
 	InitNetwork();
 
 	TimerManager::MakeInstance(hIOCP);
+
 	PrintServerInfoUI();
 };
 
@@ -39,9 +41,9 @@ GameServer::~GameServer()
 {
 	SendMemoryPool::DeleteInstance();
 	TimerManager::DeleteInstance();
+	ConnectManager::DeleteInstance();
 
 	workerThreadCont.clear();
-
 
 	closesocket(listenSocket);
 	delete NETWORK_UTIL::queryMemoryUnit;
@@ -52,17 +54,29 @@ GameServer::~GameServer()
 #pragma region [Framework]
 void GameServer::ServerIntegrityCheck()
 {
-	//무결성 검사
+	// 프로그래밍 구조상 오류 유발 제한
 	static_assert(GLOBAL_DEFINE::MAX_HEIGHT == GLOBAL_DEFINE::MAX_WIDTH,
-		"MAX_HEIGHT와 MAX_WIDTH가 다르며, 이는 현재로직에서 Sector 계산에서 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
+		L"MAX_HEIGHT와 MAX_WIDTH가 다르며, 이는 현재로직에서 Sector 계산에서 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
 
 	static_assert((int)((GLOBAL_DEFINE::MAX_HEIGHT - 1) / GLOBAL_DEFINE::SECTOR_DISTANCE)
 		!= (int)((GLOBAL_DEFINE::MAX_HEIGHT + 1) / GLOBAL_DEFINE::SECTOR_DISTANCE),
-		"MAX_HEIGHT(그리고 MAX_WIDTH)는 SECTOR_DISTANCE의 배수가 아닐 경우, 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
+		L"MAX_HEIGHT(그리고 MAX_WIDTH)는 SECTOR_DISTANCE의 배수가 아닐 경우, 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
 	
+	static_assert(GLOBAL_DEFINE::MAX_HEIGHT / GLOBAL_DEFINE::SECTOR_DISTANCE < 128,
+		L"현재 구조상 Sector Index의 최대 갯수는 BYTE(4바이트)를 초과할 수 없습니다.");
+
 	// 이제 채팅서버에서 해당 내용을 검사합니다!
 	//static_assert(PACKET_TYPE::CLIENT_TO_SERVER::CHAT == PACKET_TYPE::SERVER_TO_CLIENT::CHAT,
 	//	"CS::CHAT와 SC::CHAT의 값이 다르며, 이는 클라이언트에 치명적인 오류를 발생시킵니다. 서버 실행을 거절하였습니다.");
+
+	// 자료형 통일 검사
+	assert(typeid(_KeyType).name() == typeid(PACKET_DATA::_KeyType).name(),
+		L"_KeyType이 Define과 InHeaderDefine에서 서로 다르게 정의되어있습니다. 확인해주세요.");
+
+	assert(typeid(_PosType).name() == typeid(PACKET_DATA::_PosType).name(),
+		L"_KeyType이 Define과 InHeaderDefine에서 서로 다르게 정의되어있습니다. 확인해주세요.");
+
+	std::wcout << L"!. Server의 무결성 테스트를 통과하였습니다. \n";
 }
 
 /*
@@ -125,7 +139,7 @@ void GameServer::InitNetwork()
 	// 7. Listen()!
 	if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR) ERROR_QUIT(TEXT("listen()"));
 
-	// 8.
+	// 8. !
 	AcceptQueryServer();
 }
 
@@ -179,7 +193,7 @@ void GameServer::AcceptThreadFunction()
 			break;
 		}
 
-		if (auto[isTrueAdd, uniqueKey] = connectManager->GetUniqueKey()
+		if (auto[isTrueAdd, uniqueKey] = ConnectManager::GetInstance()->GetUniqueKey()
 			; isTrueAdd)
 		{
 			zone->zoneContUnit->clientContArr[uniqueKey]->sock = clientSocket;
@@ -256,18 +270,18 @@ void GameServer::AcceptQueryServer()
 
 		if (ntohs(tempAddr.sin_port) == GLOBAL_DEFINE::QUERY_SERVER_PORT)
 		{
-			std::cout << "QueryServer의 연결이 성공했습니다." << std::endl;
+			std::cout << "!. QueryServer의 연결이 성공했습니다." << std::endl;
 			NETWORK_UTIL::queryMemoryUnit = new QueryMemoryUnit;// std::make_unique<QueryMemoryUnit>();
 			NETWORK_UTIL::querySocket = tempSocket;
 			CreateIoCompletionPort(reinterpret_cast<HANDLE>(tempSocket), hIOCP, NETWORK_UTIL::querySocket, 0);
 			NETWORK_UTIL::RecvQueryPacket();
 			return;
 		}
-		else
-		{
-			std::cout << "QueryServer의 연결에 실패했습니다. 접속한 포트번호 : " << ntohs(tempAddr.sin_port) << std::endl;
-			closesocket(tempSocket);
-		}
+		
+		std::cout << "!. QueryServer의 연결에 실패했습니다. 접속한 포트번호 : " << ntohs(tempAddr.sin_port) << std::endl;
+		closesocket(tempSocket);
+
+		Sleep(1000);
 	}
 }
 
@@ -337,7 +351,7 @@ void GameServer::WorkerThreadFunction()
 			if (retVal == 0 || cbTransferred == 0)
 			{
 				//NETWORK_UTIL::LogOutProcess(pMemoryUnit);
-
+				LogOut(reinterpret_cast<SocketInfo*>(pMemoryUnit));
 				continue;
 			}
 			// 받은 데이터 처리
@@ -539,6 +553,29 @@ void GameServer::RecvLoginFalse()
 	NETWORK_UTIL::RecvPacket(tempSocketInfo);
 }
 #pragma endregion
+
+void GameServer::LogOut(SocketInfo* pOutClient)
+{
+	SOCKADDR_IN clientAddr;
+	int addrLength = sizeof(clientAddr);
+
+	getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
+	std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
+
+	// 애초에 존에 접속도 못했는데, 로그아웃 할 경우를 방지.
+	if (pOutClient->objectInfo != nullptr) 
+	{
+		zone->Exit(pOutClient);
+		delete pOutClient->objectInfo;
+	}
+
+	closesocket(pOutClient->sock);
+	
+	auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+	timerUnit->timerType = TIMER_TYPE::PUSH_OLD_KEY;
+	timerUnit->objectKey = pOutClient->key;
+	TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::MAX_TIME);
+}
 
 #pragma region [Legacy Code]
 ///*

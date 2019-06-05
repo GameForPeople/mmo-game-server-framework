@@ -7,8 +7,10 @@ enum class MEMORY_UNIT_TYPE : int		/*int*/
 	RECV_FROM_CLIENT = 0x00,
 	SEND_TO_CLIENT = 0x01,
 
+	//Send는 어짜피 다 똑같은거 씀!
 	TIMER_FUNCTION = 0x02,
 	RECV_FROM_COMMAND = 0x03,
+	RECV_FROM_QUERY = 0x04,	
 	//UNALLOCATED_SEND = 0x04
 	ENUM_SIZE
 };
@@ -100,6 +102,7 @@ struct SendMemoryUnit
 */
 class Zone;
 struct ObjectInfo;
+struct PlayerObjectInfo;
 /*
 	4바이트 정렬 짓 해야합니다 여기.
 */
@@ -111,26 +114,28 @@ public:
 	~SocketInfo();
 
 public:
+	const _KeyType key;
 	MemoryUnit memoryUnit;
 
 	_BufferType loadedBuf[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
 	int loadedSize;
 
 	SOCKET sock;
-	_NicknameType nickname;
-	BYTE contIndex;
 
-	Zone* pZone;		// 현재 입장한 존.
+	/*Concurrency::concurrent_*/std::unordered_set<_ClientKeyType> viewList;
+	/*Concurrency::concurrent_*/std::unordered_set<_MonsterKeyType> monsterViewList;
 
-	Concurrency::concurrent_unordered_set<_ClientKeyType> viewList;
-	Concurrency::concurrent_unordered_set<_MonsterKeyType> monsterViewList;
+	PlayerObjectInfo * objectInfo;
 
-	ObjectInfo* objectInfo;
+public:
+	void RegisterNewClient(SOCKET);
+	void SetNewObjectInfo(PlayerObjectInfo*);
+	
+	void TerminateClient();
 };
 
 /*
 	TimerMemoryHead
-
 */
 
 struct TimerMemoryHead
@@ -139,4 +144,17 @@ struct TimerMemoryHead
 public:
 	MemoryUnit memoryUnit;
 	//const unsigned short timerContIndex;
+};
+
+/*
+	QueryMemoryUnit
+*/
+struct QueryMemoryUnit
+{
+	QueryMemoryUnit(/*const unsigned short inTimerContIndex*/) noexcept;
+public:
+	MemoryUnit memoryUnit;
+
+	_BufferType loadedBuf[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
+	int loadedSize;
 };

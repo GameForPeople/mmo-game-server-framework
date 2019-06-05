@@ -17,7 +17,7 @@ SendMemoryPool::SendMemoryPool()
 		sendMemoryPool.push(new SendMemoryUnit() /* == std::move(SendMemoryUnit())*/);
 
 #ifdef _DEV_MODE_
-	std::cout << "!. sendMemoryPool의 테스트 사이즈는 " << sendMemoryPool.unsafe_size() << " 입니다." << std::endl;
+	std::cout << "!. sendMemoryPool의 초기 할당 사이즈는 " << sendMemoryPool.unsafe_size() << " 입니다." << std::endl;
 #endif
 }
 

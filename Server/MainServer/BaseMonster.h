@@ -14,6 +14,8 @@ public:
 	ObjectInfo* objectInfo;
 	const MonsterModel* monsterModel;
 
+	_KeyType key;
+
 	_LevelType level;
 	_PosType spawnPosX;
 	_PosType spawnPosY;
@@ -22,7 +24,8 @@ public:
 	_DamageType damage;
 
 	//_StateType state;
-	bool isDead;
+	/*std::atomic<bool>*/ bool isDead;
+	std::atomic<bool> /*bool*/ isSleep;
 	_TickCountType noDamageTick;
 	_TickCountType faintTick;
 	_TickCountType freezeTick;

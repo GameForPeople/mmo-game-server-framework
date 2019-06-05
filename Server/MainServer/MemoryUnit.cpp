@@ -34,6 +34,11 @@ MemoryUnit::MemoryUnit(const MEMORY_UNIT_TYPE inMemoryUnitType) :
 	{
 		wsaBuf.len = 0;
 	}
+	else if (MEMORY_UNIT_TYPE::RECV_FROM_QUERY == inMemoryUnitType)
+	{
+		dataBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV];
+		wsaBuf.len = GLOBAL_DEFINE::MAX_SIZE_OF_RECV;
+	}
 	else if (MEMORY_UNIT_TYPE::RECV_FROM_COMMAND == inMemoryUnitType)
 	{
 		// 아직 사용되지 않음.
@@ -136,21 +141,24 @@ SocketInfo::SocketInfo(_KeyType inKey) /*noexcept*/ :
 	sock(),
 	loadedSize(),
 	loadedBuf(),
+	key(inKey),
 	//posX(),
 	//posY(),
 	//userData(new UserData(GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y)/*std::make_unique<UserData>(0, 0)*/),
 	//clientKey(-1),
-	pZone(nullptr),
+	//pZone(nullptr),
 	viewList(),
-	contIndex()
+	monsterViewList()
+	//contIndex()
 	//sectorArr(),
 	//sectorIndexX(),
 	//sectorIndexY(),
 	//possibleSectorCount()
 {
-	objectInfo = new ObjectInfo(inKey, GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y);
-	//loadedBuf = new char[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
 	viewList.clear();
+	monsterViewList.clear();
+
+	//objectInfo = new ObjectInfo(inKey, GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y);
 }
 
 SocketInfo::~SocketInfo()
@@ -161,6 +169,32 @@ SocketInfo::~SocketInfo()
 	//delete userData;
 }
 
+void SocketInfo::TerminateClient()
+{
+	loadedSize = 0;
+	/*
+		버퍼들은 초기화하지 않음.
+	*/
+
+	/*
+		여기서 원래.. 뭔말인지 알지? 몬스터는 상관없는데, 클라 뷰리스트에는 상대방에게 알려줘야해!
+	*/
+	viewList.clear();
+	monsterViewList.clear();
+
+	delete objectInfo;
+	objectInfo = nullptr;
+}
+
+void SocketInfo::RegisterNewClient(SOCKET inSocket)
+{
+	sock = inSocket;
+}
+
+void SocketInfo::SetNewObjectInfo(PlayerObjectInfo* inNewClientObjectInfo)
+{
+	objectInfo = inNewClientObjectInfo;
+}
 
 //---------------------------------------------------------------------------
 // TimerMemoryHead
@@ -168,5 +202,16 @@ SocketInfo::~SocketInfo()
 
 TimerMemoryHead::TimerMemoryHead(/*const unsigned short inTimerContIndex*/) noexcept
 	: memoryUnit(MEMORY_UNIT_TYPE::TIMER_FUNCTION)/*, timerContIndex(inTimerContIndex)*/
+{
+}
+
+//---------------------------------------------------------------------------
+// QueryMemoryUnit
+//---------------------------------------------------------------------------
+
+QueryMemoryUnit::QueryMemoryUnit() noexcept :
+	memoryUnit(MEMORY_UNIT_TYPE::RECV_FROM_QUERY),
+	loadedBuf(),
+	loadedSize()
 {
 }

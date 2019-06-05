@@ -12,6 +12,8 @@ struct TimerMemoryHead;
 
 enum class TIME : /*unsigned short*/ int
 {
+	MAX_TIME = 600,
+
 	SECOND = 10,
 	MINUTE = 600,
 
@@ -69,6 +71,8 @@ enum class TIMER_TYPE
 
 	ITEM_HP,
 	ITEM_MP,
+
+	PUSH_OLD_KEY
 };
 
 struct TimerUnit

@@ -20,16 +20,19 @@
 
 #include "ObjectInfo.h"
 
+#include "BaseMonster.h"
 #include "MonsterLoader.h" 
+#include "MonsterModelManager.h" 
 
 #include "Zone.h"
 
 Zone::Zone() : 
-	connectManager(nullptr),
+	//connectManager(nullptr),
 	moveManager(nullptr),
+	monsterModelManager(nullptr),
 	sectorCont(),
-	zoneContUnit(nullptr),
-	recvFunctionArr(nullptr)
+	recvFunctionArr(nullptr),
+	zoneContUnit(nullptr)
 {
 	InitManagers();
 	InitSector();
@@ -50,7 +53,8 @@ Zone::~Zone()
 void Zone::InitManagers()
 {
 	moveManager = std::make_unique<MoveManager>();
-	connectManager = std::make_unique<ConnectManager>();
+	//connectManager = std::make_unique<ConnectManager>();
+	monsterModelManager = std::make_unique<MonsterModelManager>();
 }
 
 /*
@@ -62,28 +66,21 @@ void Zone::InitClientCont()
 	zoneContUnit = new ZoneContUnit;
 	_KeyType tempIndex = BIT_CONVERTER::NOT_PLAYER_INT;
 
-	std::cout << "\n#. 몬스터 할당중입니다." << std::endl;
+	std::cout << "#. 몬스터 "<< zoneContUnit->monsterCont.size() << "ea를 할당중입니다...";
 
-	//생성
-	for (auto& monster : zoneContUnit->monsterCont)
-	{
-		if((tempIndex - BIT_CONVERTER::NOT_PLAYER_INT) % 1000 == 0)
-			std::cout << tempIndex - BIT_CONVERTER::NOT_PLAYER_INT << " ";
-		
-		const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
-		const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
+	// 추후 쓰레드 분할
+		for (auto& monster : zoneContUnit->monsterCont)
+		{
+			const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
+			const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
 
-		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY,);
-		
-		RenewSelfSectorForNpc(monster->objectInfo); // 비용이 너무 큼.
-		//sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);
+			monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetRenderModel(MONSTER_TYPE::SLIME));
 
-		// 이동 타이머를 등록해줌.
-		auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-		timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
-		timerUnit->objectKey = monster->objectInfo->key;
-		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SECOND);
-	}
+			RenewSelfSectorForNpc(monster); // 비용이 너무 큼.
+			//sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);
+		}
+
+	std::cout << "    할당이 종료되었습니다." << std::endl;
 }
 
 /*
@@ -123,15 +120,6 @@ void Zone::InitSector()
 	}
 }
 
-/*
-	Zone::ProcessRecvData()
-		- 받은 데이터들을 함수와 연결해줍니다.
-*/
-void Zone::ProcessPacket(SocketInfo* pClient)
-{
-	recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE)](*this, pClient);
-}
-
 void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 {
 	concurrency::concurrent_queue<TimerUnit*>* tempCont = TimerManager::GetInstance()->GetTimerContWithIndex(timerManagerContIndex);
@@ -142,24 +130,36 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 		switch (auto[objectType, index] = BIT_CONVERTER::WhatIsYourTypeAndRealKey(pUnit->objectKey); objectType)
 		{
 		case BIT_CONVERTER::OBJECT_TYPE::PLAYER:
+			switch (pUnit->timerType)
+			{
+				case (TIMER_TYPE::PUSH_OLD_KEY):
+				{
+					ConnectManager::GetInstance()->PushOldKey(pUnit->objectKey);
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+				}
+			}
 			break;
 		case BIT_CONVERTER::OBJECT_TYPE::MONSTER:
 			switch (pUnit->timerType)
 			{
 				case (TIMER_TYPE::NPC_MOVE):
 				{
-					ObjectInfo* tempObjectInfo = zoneContUnit->monsterCont[index]->objectInfo;
+					BaseMonster* tempBaseMonster = zoneContUnit->monsterCont[index];
 
-					moveManager->MoveRandom(tempObjectInfo);	// 랜덤으로 움직이고
-					RenewSelfSectorForNpc(tempObjectInfo);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
-					RenewPossibleSectors(tempObjectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
+					moveManager->MoveRandom(tempBaseMonster->objectInfo);	// 랜덤으로 움직이고
+					RenewSelfSectorForNpc(tempBaseMonster);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
+					RenewPossibleSectors(tempBaseMonster->objectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
 
-					RenewViewListInSectorsForNpc(tempObjectInfo)
-						? TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND)
-						: TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
-					//최적화 안할겨 뭐 어쩔겨
-					
-					//TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					// 주변에 클라이언트가 없습니다. 이동을 종료합니다.
+					if (RenewViewListInSectorsForNpc(zoneContUnit->monsterCont[index]))
+					{
+						TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SLIME_MOVE);
+					}
+					else
+					{
+						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					}
 					break;
 				}
 				case (TIMER_TYPE::NPC_ATTACK):
@@ -252,6 +252,11 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 					break;
 				}
 				default:
+					assert(false, L"[ERROR] 정의되지 않은 Tmier Unit이 실행되었습니다. 서버를 종료합니다.");
+
+					// 디버그가 아닐 경우! 실제는 그냥 반납.
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+
 					break;
 			}
 			break;
@@ -270,26 +275,62 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 	#2.	입장 실패 시, 아무런 짓도 하지 않음
 */
 /*std::optional<SocketInfo*>*/ 
-std::pair<bool, SocketInfo*> /* == std::pair<bool, SocketInfo*>*/ Zone::TryToEnter()
+//std::pair<bool, SocketInfo*> /* == std::pair<bool, SocketInfo*>*/ Zone::TryToEnter()
+//{
+//	if (auto retNode = connectManager->LogInToZone(zoneContUnit, this)
+//		; retNode.first)
+//	{
+//		//최초 Sector에 클라이언트 삽입.
+//		sectorCont[GLOBAL_DEFINE::START_SECTOR_Y][GLOBAL_DEFINE::START_SECTOR_X].Join(retNode.second->objectInfo);
+//
+//		// InitViewAndSector에서 래핑되며, Accept Process에서 해당 클라이언트 소켓을 IOCP 등록 후, 호출함
+//		//{
+//			// 둘러볼 지역 결정하고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
+//			//RenewPossibleSectors(retNode.second);
+//
+//		// 친구들 새로 사귀고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
+//			//RenewViewListInSectors(retNode.second);
+//		//}
+//
+//		return retNode;
+//	}
+//	else return retNode;
+//}
+
+/*
+	Zone::Enter()
+		- 해당 존 및 섹터에 들어가고, 보이는 애들애게 알립니다.
+
+	#0.connectManager에서 해당 함수 처리하도록 변경.은 절로가 없어짐~
+*/
+void Zone::Enter(SocketInfo* pEnteredClient)
 {
-	if (auto retNode = connectManager->LogInToZone(zoneContUnit, this)
-		; retNode.first)
+	// 섹터 컨테이너에서 내 정보를 먼저 넣어주고.
+	sectorCont[pEnteredClient->objectInfo->posY / GLOBAL_DEFINE::MAX_HEIGHT ][pEnteredClient->objectInfo->posX / GLOBAL_DEFINE::MAX_WIDTH].Join(pEnteredClient);
+
+	// PossibleSector와 View 처리
+	InitViewAndSector(pEnteredClient);
+}
+
+/*
+	Zone::Exit()
+		- 해당 존에서 나갑니다.
+
+	#0.connectManager에서 해당 함수 처리하도록 변경.
+*/
+void Zone::Exit(SocketInfo* pOutClient)
+{
+	// 현재 포함되어 있는, 섹터 컨테이너에서 내 정보를 지워주고
+	sectorCont[pOutClient->objectInfo->sectorIndexY][pOutClient->objectInfo->sectorIndexX].Exit(pOutClient);
+	
+	// 내 ViewList의 Client에게 나 나간다고 알려주고.
+	//connectManager->LogOutToZone(pOutClient, zoneContUnit);
+
+	for (auto iter : pOutClient->viewList)
 	{
-		//최초 Sector에 클라이언트 삽입.
-		sectorCont[GLOBAL_DEFINE::START_SECTOR_Y][GLOBAL_DEFINE::START_SECTOR_X].Join(retNode.second->objectInfo);
-
-		// InitViewAndSector에서 래핑되며, Accept Process에서 해당 클라이언트 소켓을 IOCP 등록 후, 호출함
-		//{
-			// 둘러볼 지역 결정하고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
-			//RenewPossibleSectors(retNode.second);
-
-		// 친구들 새로 사귀고 -> 소켓을 포트에 등록 후, 나중에 사귈껍니다.
-			//RenewViewListInSectors(retNode.second);
-		//}
-
-		return retNode;
+		zoneContUnit->clientContArr[iter]->viewList.erase(pOutClient->key);
+		NETWORK_UTIL::SEND::SendRemovePlayer(pOutClient->key, zoneContUnit->clientContArr[iter]);
 	}
-	else return retNode;
 }
 
 /*
@@ -305,26 +346,12 @@ void Zone::InitViewAndSector(SocketInfo* pClient)
 	RenewViewListInSectors(pClient);
 }
 
-/*
-	Zone::Exit()
-		- 해당 존에서 나갑니다.
-
-	#0.connectManager에서 해당 함수 처리하도록 변경.
-*/
-void Zone::Exit(SocketInfo* pOutClient)
-{
-	// 섹터 컨테이너에서 내 정보를 지워주고
-	sectorCont[pOutClient->objectInfo->sectorIndexY][pOutClient->objectInfo->sectorIndexX].Exit(pOutClient->objectInfo);
-	
-	// 내 ViewList의 Client에게 나 나간다고 알려주고.
-	connectManager->LogOutToZone(pOutClient, zoneContUnit);
-}
 
 /*
 	FindPossibleSectors? CheckPossibleSectors?
 		- 현재 캐릭터의 섹터와 위치를 검사하여, 시야 체크를 해야하는 섹터를 검사합니다.
 
-	?0. 기존의 지역변수를 생성하여, 리턴하는 방식에서, SocketInfo의 멤버변수를 두는 방식으로 변경하는게 날꺼 같은디?
+	?0. 기존의 지역변수를 생성하여, 리턴하는 방식에서, SocketInfo의 멤버변수를 두는 방식으로 변경하는게 날꺼 같은디? -> 그렇게 했다가 이게 뭐야 ㅡ
 */
 void Zone::RenewPossibleSectors(ObjectInfo* pClient)
 {
@@ -337,7 +364,7 @@ void Zone::RenewPossibleSectors(ObjectInfo* pClient)
 	char yDir = 0;	// y 섹터의 판단 방향
 
 	/*
-		Sector's Size = 10
+		Sector's Size = 10 example
 		View Length = 3
 
 		possible Other Sector Count
@@ -539,19 +566,19 @@ void Zone::RenewViewListInSectors(SocketInfo* pClient)
 
 	!0. 반드시 이 함수가 호출되기 전에, RenewPossibleSectors가 선행되어야 옳은 ViewList를 획득할 수 있습니다.
 */
-bool Zone::RenewViewListInSectorsForNpc(ObjectInfo* pClient)
+bool Zone::RenewViewListInSectorsForNpc(BaseMonster* pMonster)
 {
 	bool retValue = false;
+	auto pObjectInfo = pMonster->objectInfo;
 
-	if (sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].JudgeClientWithViewListForNpc(pClient, zoneContUnit))
+	if (sectorCont[pObjectInfo->sectorIndexY][pObjectInfo->sectorIndexX].JudgeClientWithViewListForNpc(pMonster, zoneContUnit))
 		retValue = true;
 
-	for (int i = 0; i < pClient->possibleSectorCount; ++i)
+	for (int i = 0; i < pObjectInfo->possibleSectorCount; ++i)
 	{
-		if (sectorCont[pClient->sectorArr[i].second][pClient->sectorArr[i].first].JudgeClientWithViewListForNpc(pClient, zoneContUnit))
+		if (sectorCont[pObjectInfo->sectorArr[i].second][pObjectInfo->sectorArr[i].first].JudgeClientWithViewListForNpc(pMonster, zoneContUnit))
 			retValue = true;
 	}
-
 	return retValue;
 }
 
@@ -562,36 +589,36 @@ bool Zone::RenewViewListInSectorsForNpc(ObjectInfo* pClient)
 
 	!0. 반드시 이 함수가 호출되기 전에, RenewPossibleSectors가 선행되어야 옳은 ViewList를 획득할 수 있습니다.
 */
-void Zone::RenewSelfSector(ObjectInfo* pClient)
+void Zone::RenewSelfSector(SocketInfo* pClient)
 {
-	bool isNeedToChangeSector{ false };
+	ObjectInfo* tempObjectInfo = pClient->objectInfo;
 
-	if (static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexX) isNeedToChangeSector = true;
-	if (static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexY) isNeedToChangeSector = true;
+	_SectorIndexType tempX = static_cast<_SectorIndexType>(tempObjectInfo->posX / GLOBAL_DEFINE::SECTOR_DISTANCE);
+	_SectorIndexType tempY = static_cast<_SectorIndexType>(tempObjectInfo->posY / GLOBAL_DEFINE::SECTOR_DISTANCE);
 
-	if (isNeedToChangeSector == false) 	return;
-	else
+	if (tempX != tempObjectInfo->sectorIndexX || tempObjectInfo->sectorIndexY)
 	{
-		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].Exit(pClient);
+		sectorCont[tempObjectInfo->sectorIndexY][tempObjectInfo->sectorIndexX].Exit(pClient);
 		//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].Join(pClient);
-		sectorCont[static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE)][static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE)].Join(pClient);
+		sectorCont[tempY][tempX].Join(pClient);
 	}
+	else return;
 }
 
-void Zone::RenewSelfSectorForNpc(ObjectInfo* pClient)
+void Zone::RenewSelfSectorForNpc(BaseMonster* pMonster)
 {
-	bool isNeedToChangeSector{ false };
+	ObjectInfo* tempObjectInfo = pMonster->objectInfo;
 
-	if (static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexX) isNeedToChangeSector = true;
-	else if (static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE) != pClient->sectorIndexY) isNeedToChangeSector = true;
+	_SectorIndexType tempX = static_cast<_SectorIndexType>(tempObjectInfo->posX / GLOBAL_DEFINE::SECTOR_DISTANCE);
+	_SectorIndexType tempY = static_cast<_SectorIndexType>(tempObjectInfo->posY / GLOBAL_DEFINE::SECTOR_DISTANCE);
 
-	if (isNeedToChangeSector == false) 	return;
-	else
+	if (tempX != tempObjectInfo->sectorIndexX || tempY != tempObjectInfo->sectorIndexY)
 	{
-		sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].ExitForNpc(pClient);
-		sectorCont[static_cast<BYTE>(pClient->posY / GLOBAL_DEFINE::SECTOR_DISTANCE)][static_cast<BYTE>(pClient->posX / GLOBAL_DEFINE::SECTOR_DISTANCE)].JoinForNpc(pClient);
+		sectorCont[tempObjectInfo->sectorIndexY][tempObjectInfo->sectorIndexX].ExitForNpc(pMonster);
+		sectorCont[tempY][tempX].JoinForNpc(pMonster);
 		//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].JoinForNpc(pClient);
 	}
+	else return;
 }
 
 /*
@@ -606,19 +633,22 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 #ifdef _DEV_MODE_
 	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[2]) << "\n";
 #endif
-	moveManager->MoveCharacter(pClient);
 
-	// 스스로에게 전송.
-	PACKET_DATA::MAIN_TO_CLIENT::Position packet(
-		pClient->objectInfo->key,
-		pClient->objectInfo->posX,
-		pClient->objectInfo->posY
-	);
-	NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&packet));
+	if (moveManager->MoveCharacter(pClient))
+	{
+		// 스스로에게 전송.
+		NETWORK_UTIL::SEND::SendMovePlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::Position>(pClient, pClient);
+		//PACKET_DATA::MAIN_TO_CLIENT::Position packet(
+		//	pClient->key,
+		//	pClient->objectInfo->posX,
+		//	pClient->objectInfo->posY
+		//);
+		//NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&packet));
 
-	RenewSelfSector(pClient->objectInfo);
-	RenewPossibleSectors(pClient->objectInfo);
-	RenewViewListInSectors(pClient);
+		RenewSelfSector(pClient);
+		RenewPossibleSectors(pClient->objectInfo);
+		RenewViewListInSectors(pClient);
+	}
 }
 
 void Zone::RecvChat(SocketInfo* pClient)

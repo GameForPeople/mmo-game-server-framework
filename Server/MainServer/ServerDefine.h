@@ -4,36 +4,62 @@
 	ServerDefine.h
 		- 해당 헤더 파일은, 서버에서만 사용합니다.
 */
+
+#include "InHeaderDefine.hh"
+
 #define DISABLED_UNALLOCATED_MEMORY_SEND
 
 struct SendMemoryUnit;
 struct SocketInfo;
 struct MemoryUnit;
+struct QueryMemoryUnit;
 
 namespace NETWORK_UTIL
 {
+	static SOCKET querySocket;
+	//std::unique_ptr<QueryMemoryUnit> queryMemoryUnit;
+	static QueryMemoryUnit* queryMemoryUnit;
+
 	void SendPacket(SocketInfo* pClient, char* packetData);
+	void SendQueryPacket(char* packetData);
+
 #ifndef DISABLED_UNALLOCATED_MEMORY_SEND
 	void SendUnallocatedPacket(SocketInfo* pClient, char* pOriginData);
 #endif
-	void RecvPacket(SocketInfo* pClient);
-	void LogOutProcess(LPVOID pClient);
+	void RecvPacket(SocketInfo* pOutClient);
+	void RecvQueryPacket();
+
+	//void LogOutProcess(SocketInfo* pClient);
 	//_NODISCARD const bool GetRecvOrSendPacket(const LPVOID);
+
+	namespace SEND
+	{
+		template <class OBJECT, class PACKET_PUT> void SendPutPlayer(OBJECT* pPutObject, SocketInfo* pRecvClient);
+		template <class OBJECT, class PACKET_POSITION> void SendMovePlayer(OBJECT* pPutClient, SocketInfo* pRecvClient);
+		void SendRemovePlayer(const _KeyType pRemoveClient, SocketInfo* pRecvClient);
+	}
+}
+
+#include "ServerDefine.hpp"
+
+namespace ATOMIC_UTIL {
+	template <class TYPE> bool T_CAS(std::atomic<TYPE> *addr, TYPE expected, TYPE new_val);
 }
 
 namespace ERROR_HANDLING {
-	// 해당 static Function Array의 초기화는 GameServer의 생성자에서 이루어짐.
-	static std::function<void(void)> errorRecvOrSendArr[2];
-	inline void NotError(void) {};
-	void HandleRecvOrSendError(void);
-
 	_NORETURN void ERROR_QUIT(const WCHAR *msg);
 	/*_DEPRECATED*/ void ERROR_DISPLAY(const WCHAR *msg);
+	void HandleRecvOrSendError();
+}
+
+namespace TIME_UTIL
+{
+	const std::string GetCurrentDateTime();
 }
 
  namespace GLOBAL_DEFINE
 {
-	constexpr USHORT MAX_CLIENT = 10;
+	constexpr USHORT MAX_CLIENT = 10000;
 	constexpr UINT MAX_MONSTER = 200000;
 
 	constexpr USHORT START_POSITION_X = 400;

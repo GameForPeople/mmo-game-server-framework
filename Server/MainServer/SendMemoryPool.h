@@ -25,7 +25,7 @@ public:
 	// 해당 함수는 GameServer.cpp의 소멸자에서 한번 호출되어야합니다.
 	static void DeleteInstance() { delete instance; }
 
-	SendMemoryUnit* PopMemory();	// 메모리 제공
+	_NODISCARD SendMemoryUnit* PopMemory();	// 메모리 제공
 	void PushMemory(SendMemoryUnit*);	// 메모리 반납
 
 #ifndef DISABLED_UNALLOCATED_MEMORY_SEND

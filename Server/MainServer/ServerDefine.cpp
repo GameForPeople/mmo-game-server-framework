@@ -18,7 +18,6 @@ namespace NETWORK_UTIL
 
 		?0. wsaBuf의 buf는 보낼때마다 바꿔줘야 할까요?
 	*/
-
 	void SendPacket(SocketInfo* pClient, char* packetData)
 	{
 		SendMemoryUnit* sendMemoryUnit = SendMemoryPool::GetInstance()->PopMemory();
@@ -42,6 +41,23 @@ namespace NETWORK_UTIL
 			ERROR_HANDLING::ERROR_DISPLAY(L"SendPacket()");
 		}
 			//]();
+	}
+
+	void SendQueryPacket(char* packetData)
+	{
+		SendMemoryUnit* sendMemoryUnit = SendMemoryPool::GetInstance()->PopMemory();
+		memcpy(sendMemoryUnit->memoryUnit.dataBuf, packetData, packetData[0]);
+
+		sendMemoryUnit->memoryUnit.wsaBuf.len = static_cast<ULONG>(packetData[0]);
+		
+		ZeroMemory(&(sendMemoryUnit->memoryUnit.overlapped), sizeof(sendMemoryUnit->memoryUnit.overlapped));
+
+		if (SOCKET_ERROR ==
+			WSASend(querySocket, &(sendMemoryUnit->memoryUnit.wsaBuf), 1, NULL, 0, &(sendMemoryUnit->memoryUnit.overlapped), NULL)
+			)
+		{
+			ERROR_HANDLING::ERROR_DISPLAY(L"SendQuery()");
+		}
 	}
 
 #ifndef DISABLED_UNALLOCATED_MEMORY_SEND
@@ -90,6 +106,26 @@ namespace NETWORK_UTIL
 		//]();
 	}
 
+	void RecvQueryPacket()
+	{
+		DWORD flag{};
+		ZeroMemory(&(queryMemoryUnit->memoryUnit.overlapped), sizeof(queryMemoryUnit->memoryUnit.overlapped));
+		if (SOCKET_ERROR == WSARecv(querySocket, &(queryMemoryUnit->memoryUnit.wsaBuf), 1, NULL, &flag /* NULL*/, &(queryMemoryUnit->memoryUnit.overlapped), NULL))
+		{
+			ERROR_HANDLING::HandleRecvOrSendError();
+			//ERROR_HANDLING::ERROR_DISPLAY("못받았어요....");
+		}
+	}
+
+	namespace SEND
+	{
+		void SendRemovePlayer(const _KeyType pRemoveClientID, SocketInfo* pRecvClient)
+		{
+			PACKET_DATA::MAIN_TO_CLIENT::RemovePlayer packet(pRemoveClientID);
+
+			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
+		}
+	}
 	/*
 		LogOutProcess()
 			- 클라이언트의 로그아웃 처리를 합니다.
@@ -102,39 +138,42 @@ namespace NETWORK_UTIL
 
 			#0. 성능상의 이슈로, !0, !1, !2의 nullptr여부를 보장하지 않습니다. ( 적합한 구조일 경우, nullptr참조가 발생하기 어려움 )
 	*/
-	void LogOutProcess(LPVOID pClient)
-	{
-		if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::RECV_FROM_CLIENT)
-		{
-			SocketInfo* pOutClient = reinterpret_cast<SocketInfo*>(pClient);
 
-			SOCKADDR_IN clientAddr;
+//	void LogOutProcess(LPVOID pClient)
+//	{
+//
+//		//if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::RECV_FROM_CLIENT)
+//		//{
+//		SocketInfo* pOutClient = reinterpret_cast<SocketInfo*>(pClient);
+//
+//		SOCKADDR_IN clientAddr;
+//
+//		int addrLength = sizeof(clientAddr);
+//
+//		getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
+//		std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
+//
+//		// 애초에 존에 접속도 못했는데, 로그아웃 할 경우를 방지.
+//		if (pOutClient->key != -1) pOutClient->Exit(pOutClient);
+//
+//		closesocket(pOutClient->sock);
+//		delete pOutClient;
+//		//}
+//		//else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND_TO_CLIENT)
+//		//{
+//		//	SendMemoryUnit* pMemoryUnit = (reinterpret_cast<SendMemoryUnit*>(pClient));
+//		//	SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
+//		//}
+//#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
+//		else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND)
+//		{
+//			UnallocatedMemoryUnit* pMemoryUnit = (reinterpret_cast<UnallocatedMemoryUnit*>(pClient));
+//
+//			SendMemoryPool::GetInstance()->PushUnallocatedMemory(pMemoryUnit);
+//		}
+//#endif
+//	}
 
-			int addrLength = sizeof(clientAddr);
-
-			getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
-			std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
-			
-			// 애초에 존에 접속도 못했는데, 로그아웃 할 경우를 방지.
-			if (pOutClient->objectInfo->key != -1) pOutClient->pZone->Exit(pOutClient);
-
-			closesocket(pOutClient->sock);
-			delete pOutClient;
-		}
-		else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND_TO_CLIENT)
-		{
-			SendMemoryUnit* pMemoryUnit = (reinterpret_cast<SendMemoryUnit*>(pClient));
-			SendMemoryPool::GetInstance()->PushMemory(pMemoryUnit);
-		}
-#ifndef DISABLED_UNALLOCATED_MEMORY_SEND
-		else if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::SEND)
-		{
-			UnallocatedMemoryUnit* pMemoryUnit = (reinterpret_cast<UnallocatedMemoryUnit*>(pClient));
-
-			SendMemoryPool::GetInstance()->PushUnallocatedMemory(pMemoryUnit);
-		}
-#endif
-	}
 }
 
 namespace ERROR_HANDLING
@@ -194,6 +233,18 @@ namespace ERROR_HANDLING
 		{
 			ERROR_DISPLAY((L"RecvOrSend()"));
 		}
+	}
+}
+
+namespace TIME_UTIL {
+	const std::string GetCurrentDateTime() {
+		time_t     now = time(0); //현재 시간을 time_t 타입으로 저장
+		struct tm  tstruct;
+		char       buf[80];
+		localtime_s(&tstruct, &now);
+		strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss 형태의 스트링
+
+		return buf;
 	}
 }
 

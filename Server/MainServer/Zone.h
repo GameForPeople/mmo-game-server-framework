@@ -9,11 +9,14 @@ struct TimerUnit;
 
 class ConnectManager;
 class MoveManager;
+class MonsterModelManager;
 
 class Sector;
 
 struct ZoneContUnit;
 struct ObjectInfo;
+
+class BaseMonster;
 
 /*
 	Zone
@@ -27,14 +30,15 @@ struct ObjectInfo;
 class Zone
 {
 public:
-	void ProcessPacket(SocketInfo* pClient);
 	void ProcessTimerUnit(const int timerManagerContIndex);
 
 	Zone();
 	~Zone();
 
 public: // ConnectManager
-	std::pair<bool, SocketInfo*> /*std::optional<SocketInfo*>*/ TryToEnter();
+	//std::pair<bool, SocketInfo*> /*std::optional<SocketInfo*>*/ TryToEnter();
+	//std::pair<bool, SocketInfo*> OnlyGetUniqueKeyAndMallocSocketInfo();
+	void Enter(SocketInfo*);
 	void Exit(SocketInfo*);
 	void InitViewAndSector(SocketInfo* );
 
@@ -45,23 +49,28 @@ private:
 	void InitSector();
 
 private:
-	void RenewSelfSector(ObjectInfo* pClient);
-	void RenewSelfSectorForNpc(ObjectInfo* pClient);
+	void RenewSelfSector(SocketInfo* pClient);
+	void RenewSelfSectorForNpc(BaseMonster* pClient);
 
 	void RenewPossibleSectors(ObjectInfo* pObjectInfo);
 	void RenewViewListInSectors(SocketInfo* pClient);
-	bool RenewViewListInSectorsForNpc(ObjectInfo* pClient);
 
-	// MoveManager
+	bool RenewViewListInSectorsForNpc(BaseMonster* pClient);
+
+public:
 	void RecvCharacterMove(SocketInfo* pClient);
+	//void RecvLogin(SocketInfo* pClient);
 	void RecvChat(SocketInfo* pClient);
 
 private:
-	std::unique_ptr<ConnectManager> connectManager;
+	//std::unique_ptr<ConnectManager> connectManager;
 	std::unique_ptr<MoveManager> moveManager;
+	std::unique_ptr<MonsterModelManager> monsterModelManager;
 
 	std::vector<std::vector<Sector>> sectorCont;
 
-	ZoneContUnit* zoneContUnit;
 	std::function<void(Zone&, SocketInfo*)>* recvFunctionArr;
+public:
+	// 성능, public하게 접근할 수 있도록 변경.
+	ZoneContUnit* zoneContUnit;
 };

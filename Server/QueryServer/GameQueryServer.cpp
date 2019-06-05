@@ -10,7 +10,7 @@ GameQueryServer::GameQueryServer(bool inNotUse)
 	: wsa()
 	, hIOCP()
 	, socket()
-	, serverAddr()
+	, mainServerAddr()
 	, workerThreadCont()
 	, pRecvMemoryUnit(new MemoryUnit(MEMORY_UNIT_TYPE::RECV))
 	, loadedBuf()
@@ -94,18 +94,25 @@ void GameQueryServer::InitNetwork()
 	if (socket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED)
 		; socket == INVALID_SOCKET) ERROR_QUIT(TEXT("socket()"));
 
-	// 4. 소켓과 입출력 완료 포트 연결
+	// 5. 쿼리 서버 소켓 설정
+	ZeroMemory(&queryServerAddr, sizeof(queryServerAddr));
+	queryServerAddr.sin_family = AF_INET;
+	queryServerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");	// 추후 MainServer Public IP로 변경해야함!
+	queryServerAddr.sin_port = htons(GLOBAL_DEFINE::QUERY_SERVER_PORT);
+	if (::bind(socket, (SOCKADDR *)&queryServerAddr, sizeof(queryServerAddr)) == SOCKET_ERROR) ERROR_QUIT(TEXT("bind()"));
+
+	// 6. 소켓과 입출력 완료 포트 연결
 	CreateIoCompletionPort(reinterpret_cast<HANDLE>(socket), hIOCP, socket, 0);
 
-	// 5. 메인 서버 정보 객체 설정
-	ZeroMemory(&serverAddr, sizeof(serverAddr));
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);	// 추후 MainServer Public IP로 변경해야함!
-	serverAddr.sin_port = htons(GLOBAL_DEFINE::MAIN_SERVER_PORT);
+	// 7. 메인 서버 정보 객체 설정
+	ZeroMemory(&mainServerAddr, sizeof(mainServerAddr));
+	mainServerAddr.sin_family = AF_INET;
+	mainServerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");	// 추후 MainServer Public IP로 변경해야함!
+	mainServerAddr.sin_port = htons(GLOBAL_DEFINE::MAIN_SERVER_PORT);
 
-	// 6. 커넥트!!
-	if (int retVal = connect(socket, (SOCKADDR*)& serverAddr, sizeof(serverAddr))
-		; retVal == SOCKET_ERROR) ERROR_QUIT(L"Connect()");
+	// 8. 커넥트!!
+	if (int retVal = connect(socket, (SOCKADDR*)& mainServerAddr, sizeof(mainServerAddr))
+		; retVal == SOCKET_ERROR) ERROR_QUIT(L"Connect 에러! 아마! 메인서버를 확인해주세요!");
 
 	printf("메인 서버에 정상적으로 연결되었습니다!\n\n");
 }
@@ -361,7 +368,7 @@ void GameQueryServer::ProcessDemandLogin()
 	}
 	else
 	{
-		PACKET_DATA::QUERY_TO_MAIN::LoginTrue loginTrue(tempKey, retPosX, retPosY);
+		PACKET_DATA::QUERY_TO_MAIN::LoginTrue loginTrue(tempKey, tempIdBuffer, retPosX, retPosY);
 		SendPacket(reinterpret_cast<char*>(&loginTrue));
 	}
 }
@@ -371,9 +378,14 @@ void GameQueryServer::ProcessSaveLocation()
 	SQLLEN tempIDType = SQL_NTS;
 	SQLLEN tempIntType = SQL_INTEGER;
 
+	PACKET_DATA::MAIN_TO_QUERY::SavePosition* packet = reinterpret_cast<PACKET_DATA::MAIN_TO_QUERY::SavePosition*>(loadedBuf);
+	
 	SQLWCHAR tempIdBuffer[10]{};
-	SQLINTEGER tempPosX;
-	SQLINTEGER tempPosY;
+
+	memcpy(tempIdBuffer, packet->id, 20);
+
+	SQLINTEGER tempPosX = packet->xPos;
+	SQLINTEGER tempPosY = packet->yPos;
 
 	memcpy(tempIdBuffer, loadedBuf + 4, 20);
 

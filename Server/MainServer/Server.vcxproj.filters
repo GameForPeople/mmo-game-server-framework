@@ -18,21 +18,6 @@
     <Filter Include="GameServer\Zone">
       <UniqueIdentifier>{561e16c5-d6a2-4aad-ad3f-b7ed162a14b2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameServer\Zone\ConnectManager">
-      <UniqueIdentifier>{35037509-3041-411c-83d5-b76a750aff41}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameServer\Zone\MoveManager">
-      <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameServer\Zone\Sector">
-      <UniqueIdentifier>{c963e516-c674-4445-8339-8c6eaf888ef5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameServer\Zone\ChatManager">
-      <UniqueIdentifier>{dc3146ed-3cd0-44e8-a9f4-60aee3c5305d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameServer\Zone\TimerManager">
-      <UniqueIdentifier>{df8006a5-cdab-40be-afcd-161c100d62bd}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Define\Server">
       <UniqueIdentifier>{005dd673-94ad-4a32-b2a5-5ae5cd8051b9}</UniqueIdentifier>
     </Filter>
@@ -66,6 +51,21 @@
     <Filter Include="MemoryType\ClientContUnit">
       <UniqueIdentifier>{a174d95b-145c-4fd4-8348-8dc3688e4b7d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameServer\ConnectManager">
+      <UniqueIdentifier>{35037509-3041-411c-83d5-b76a750aff41}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameServer\MoveManager">
+      <UniqueIdentifier>{2123bc64-3588-4544-abc0-b47caa350bee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameServer\ChatManager">
+      <UniqueIdentifier>{dc3146ed-3cd0-44e8-a9f4-60aee3c5305d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameServer\Sector">
+      <UniqueIdentifier>{c963e516-c674-4445-8339-8c6eaf888ef5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameServer\TimerManager">
+      <UniqueIdentifier>{df8006a5-cdab-40be-afcd-161c100d62bd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -79,7 +79,7 @@
       <Filter>MemoryType\UserData</Filter>
     </ClCompile>
     <ClCompile Include="MoveManager.cpp">
-      <Filter>GameServer\Zone\MoveManager</Filter>
+      <Filter>GameServer\MoveManager</Filter>
     </ClCompile>
     <ClCompile Include="SocketInfo.cpp">
       <Filter>MemoryType\SocketInfo</Filter>
@@ -91,10 +91,10 @@
       <Filter>MemoryType\SendMemoryPool</Filter>
     </ClCompile>
     <ClCompile Include="ConnectManager.cpp">
-      <Filter>GameServer\Zone\ConnectManager</Filter>
+      <Filter>GameServer\ConnectManager</Filter>
     </ClCompile>
     <ClCompile Include="Sector.cpp">
-      <Filter>GameServer\Zone\Sector</Filter>
+      <Filter>GameServer\Sector</Filter>
     </ClCompile>
     <ClCompile Include="ClientContUnit.cpp">
       <Filter>MemoryType\ClientContUnit</Filter>
@@ -103,10 +103,10 @@
       <Filter>GameServer\Zone</Filter>
     </ClCompile>
     <ClCompile Include="ChatManager.cpp">
-      <Filter>GameServer\Zone\ChatManager</Filter>
+      <Filter>GameServer\ChatManager</Filter>
     </ClCompile>
     <ClCompile Include="TimerManager.cpp">
-      <Filter>GameServer\Zone\TimerManager</Filter>
+      <Filter>GameServer\TimerManager</Filter>
     </ClCompile>
     <ClCompile Include="BaseNPC.cpp">
       <Filter>Object\NPC</Filter>
@@ -144,7 +144,7 @@
       <Filter>MemoryType\UserData</Filter>
     </ClInclude>
     <ClInclude Include="MoveManager.h">
-      <Filter>GameServer\Zone\MoveManager</Filter>
+      <Filter>GameServer\MoveManager</Filter>
     </ClInclude>
     <ClInclude Include="MemoryUnit.h">
       <Filter>MemoryType\Memory</Filter>
@@ -153,10 +153,10 @@
       <Filter>MemoryType\SendMemoryPool</Filter>
     </ClInclude>
     <ClInclude Include="ConnectManager.h">
-      <Filter>GameServer\Zone\ConnectManager</Filter>
+      <Filter>GameServer\ConnectManager</Filter>
     </ClInclude>
     <ClInclude Include="Sector.h">
-      <Filter>GameServer\Zone\Sector</Filter>
+      <Filter>GameServer\Sector</Filter>
     </ClInclude>
     <ClInclude Include="ClientContUnit.h">
       <Filter>MemoryType\ClientContUnit</Filter>
@@ -164,12 +164,11 @@
     <ClInclude Include="Zone.h">
       <Filter>GameServer\Zone</Filter>
     </ClInclude>
-    <ClInclude Include="ToDo.hpp" />
     <ClInclude Include="ChatManager.h">
-      <Filter>GameServer\Zone\ChatManager</Filter>
+      <Filter>GameServer\ChatManager</Filter>
     </ClInclude>
     <ClInclude Include="TimerManager.h">
-      <Filter>GameServer\Zone\TimerManager</Filter>
+      <Filter>GameServer\TimerManager</Filter>
     </ClInclude>
     <ClInclude Include="BaseNPC.h">
       <Filter>Object\NPC</Filter>
@@ -192,10 +191,15 @@
     <ClInclude Include="MonsterLoader.h">
       <Filter>Object\Monster</Filter>
     </ClInclude>
+    <ClInclude Include="ToDo.Hello" />
+    <ClInclude Include="ServerDefine.hpp">
+      <Filter>Define\Server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="InHeaderDefine.hh">
       <Filter>Define\Server</Filter>
     </None>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

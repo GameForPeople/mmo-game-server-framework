@@ -7,6 +7,7 @@ struct SendMemoryUnit;
 struct SocketInfo;
 struct TimerMemoryHead;
 
+class ConnectManager;
 class Zone;
 
 /*
@@ -43,23 +44,36 @@ private:	// for Init
 	void PrintServerInfoUI();
 	void InitNetwork();
 
-private:	// for Worker Thread
+private:	// for Aceept
+	static void StartAcceptThread(LPVOID arg);
+	void AcceptThreadFunction();
+	void AcceptQueryServer();
+
+private:	// for Worker
 	static void StartWorkerThread(LPVOID arg);
 	void WorkerThreadFunction();
 
-private:	// for Aceept Thread
-	static void StartAcceptThread(LPVOID arg);
-	void AcceptThreadFunction();
+private: // "Client to Main" Function
+	void MakePacketFromRecvData(SocketInfo* pClient, int restSize);
+	void ProcessPacket(SocketInfo* pClient);
+
+	void RecvLogin(SocketInfo*);
+
+private: // "Query" Function
+	void MakeQueryPacketFromRecvData(int restSize);
+	void ProcessQueryPacket();
+
+	void RecvLoginTrue();
+	void RecvLoginFalse();
 
 private:
-	void ProcessRecvData(SocketInfo* pClient, int restSize);
-
+	void LogOut(SocketInfo*);
 
 private:
 	WSADATA								wsa;
 	HANDLE								hIOCP;
 	SOCKET								listenSocket;
-
+	
 	SOCKADDR_IN							serverAddr;
 
 	std::vector<std::thread>			workerThreadCont;

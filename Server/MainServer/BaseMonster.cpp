@@ -12,6 +12,7 @@ BaseMonster::BaseMonster(_KeyType inKey, _PosType inX, _PosType inY, const Monst
 	, spawnPosX(inX)
 	, spawnPosY(inY)
 	, isDead(false)
+	, isSleep(false)
 	, noDamageTick(0)
 	, faintTick(0)
 	, freezeTick(0)
@@ -27,8 +28,7 @@ BaseMonster::BaseMonster(_KeyType inKey, _PosType inX, _PosType inY, const Monst
 
 BaseMonster::~BaseMonster()
 {
-	// 몬스터 모델은 삭제되서는 안됩니다.
+	// 몬스터 모델은 여기서 삭제되서는 안됩니다.
 	// monsterModel = nullptr;
-
 	delete objectInfo;
 }

@@ -11,6 +11,8 @@
 
 #include "Sector.h"
 
+#include "TimerManager.h"
+
 Sector::Sector(const BYTE inX, const BYTE inY)
 	: indexX(inX)
 	, indexY(inY)
@@ -177,17 +179,17 @@ void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneCon
 
 				// 추가 처리가 요청됩니다. 동기화가 안될 가능성이 큽니다.
 				pClient->viewList.insert(otherClientKey);
-				NETWORK_UTIL::SEND::SendPutPlayer(pOtherClient->objectInfo, pClient);
+				NETWORK_UTIL::SEND::SendPutPlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pOtherClient, pClient);
 				//
 
 				if (pOtherClient->viewList.count(pClient->key) != 0)
 				{
-					NETWORK_UTIL::SEND::SendMovePlayer(pClient, pOtherClient);
+					NETWORK_UTIL::SEND::SendMovePlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::Position>(pClient, pOtherClient);
 				}
 				else
 				{
 					pOtherClient->viewList.insert(pClient->key);
-					NETWORK_UTIL::SEND::SendPutPlayer(pClient, pOtherClient);
+					NETWORK_UTIL::SEND::SendPutPlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pClient, pOtherClient);
 				}
 			}
 		}
@@ -256,9 +258,18 @@ void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneCon
 				auto pMonster = pZoneContUnit->monsterCont[otherMonsterKey - BIT_CONVERTER::NOT_PLAYER_INT];
 
 				pClient->monsterViewList.insert(otherMonsterKey);
-				NETWORK_UTIL::SEND::SendPutPlayer(pMonster, pClient);
+				NETWORK_UTIL::SEND::SendPutPlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pMonster, pClient);
 				
-				// WAKE UP 처리가 필요합니다.
+				// WAKE UP 처리가 필요합니다. // 동기화가 필요합니다.
+				if (ATOMIC_UTIL::T_CAS(&(pMonster->isSleep), false, true))
+				{
+					// 이동 타이머를 등록해줌.
+					auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+					timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
+					timerUnit->objectKey = pMonster->key;
+					TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+				}
+				// 이미 true일 경우 할 것 없어!
 			}
 		}
 	}
@@ -328,12 +339,12 @@ bool Sector::JudgeClientWithViewListForNpc(BaseMonster* pMonster, ZoneContUnit* 
 	{
 		if (pZoneContUnit->clientContArr[clientKey]->monsterViewList.count(pMonster->key))
 		{
-			NETWORK_UTIL::SEND::SendMovePlayer( pMonster->objectInfo, pZoneContUnit->clientContArr[clientKey]);
+			NETWORK_UTIL::SEND::SendMovePlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::Position>( pMonster, pZoneContUnit->clientContArr[clientKey]);
 		}
 		else
 		{
 			pZoneContUnit->clientContArr[clientKey]->monsterViewList.insert(pMonster->key);
-			NETWORK_UTIL::SEND::SendPutPlayer(pMonster, pZoneContUnit->clientContArr[clientKey]);
+			NETWORK_UTIL::SEND::SendPutPlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pMonster, pZoneContUnit->clientContArr[clientKey]);
 		}
 	}
 

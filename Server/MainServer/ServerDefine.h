@@ -16,9 +16,9 @@ struct QueryMemoryUnit;
 
 namespace NETWORK_UTIL
 {
-	SOCKET querySocket;
+	static SOCKET querySocket;
 	//std::unique_ptr<QueryMemoryUnit> queryMemoryUnit;
-	QueryMemoryUnit* queryMemoryUnit;
+	static QueryMemoryUnit* queryMemoryUnit;
 
 	void SendPacket(SocketInfo* pClient, char* packetData);
 	void SendQueryPacket(char* packetData);
@@ -26,18 +26,24 @@ namespace NETWORK_UTIL
 #ifndef DISABLED_UNALLOCATED_MEMORY_SEND
 	void SendUnallocatedPacket(SocketInfo* pClient, char* pOriginData);
 #endif
-	void RecvPacket(SocketInfo* pClient);
+	void RecvPacket(SocketInfo* pOutClient);
 	void RecvQueryPacket();
 
-	//void LogOutProcess(LPVOID pClient);
+	void LogOutProcess(SocketInfo* pClient);
 	//_NODISCARD const bool GetRecvOrSendPacket(const LPVOID);
 
 	namespace SEND
 	{
-		template <class OBJECT> void SendPutPlayer(OBJECT* pPutObject, SocketInfo* pRecvClient);
-		template <class OBJECT> void SendMovePlayer(OBJECT* pPutClient, SocketInfo* pRecvClient);
+		template <class OBJECT, class PACKET_PUT> void SendPutPlayer(OBJECT* pPutObject, SocketInfo* pRecvClient);
+		template <class OBJECT, class PACKET_POSITION> void SendMovePlayer(OBJECT* pPutClient, SocketInfo* pRecvClient);
 		void SendRemovePlayer(const _KeyType pRemoveClient, SocketInfo* pRecvClient);
 	}
+}
+
+#include "ServerDefine.hpp"
+
+namespace ATOMIC_UTIL {
+	template <class TYPE> bool T_CAS(std::atomic<TYPE> *addr, TYPE expected, TYPE new_val);
 }
 
 namespace ERROR_HANDLING {

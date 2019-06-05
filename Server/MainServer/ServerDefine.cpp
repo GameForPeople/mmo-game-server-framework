@@ -117,6 +117,15 @@ namespace NETWORK_UTIL
 		}
 	}
 
+	namespace SEND
+	{
+		void SendRemovePlayer(const _KeyType pRemoveClientID, SocketInfo* pRecvClient)
+		{
+			PACKET_DATA::MAIN_TO_CLIENT::RemovePlayer packet(pRemoveClientID);
+
+			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
+		}
+	}
 	/*
 		LogOutProcess()
 			- 클라이언트의 로그아웃 처리를 합니다.
@@ -129,6 +138,21 @@ namespace NETWORK_UTIL
 
 			#0. 성능상의 이슈로, !0, !1, !2의 nullptr여부를 보장하지 않습니다. ( 적합한 구조일 경우, nullptr참조가 발생하기 어려움 )
 	*/
+
+	void LogOutProcess(SocketInfo* pOutClient)
+	{
+		SOCKADDR_IN clientAddr;
+		int addrLength = sizeof(clientAddr);
+
+		getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
+		std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
+
+		// 애초에 존에 접속도 못했는데, 로그아웃 할 경우를 방지.
+		if (pOutClient->key != -1) pOutClient->Exit(pOutClient);
+
+		closesocket(pOutClient->sock);
+	}
+
 //	void LogOutProcess(LPVOID pClient)
 //	{
 //
@@ -164,43 +188,6 @@ namespace NETWORK_UTIL
 //#endif
 //	}
 
-	namespace SEND
-	{
-		template <class OBJECT>
-		void SendPutPlayer(OBJECT* pPutObject, SocketInfo* pRecvClient)
-		{
-			PACKET_DATA::MAIN_TO_CLIENT::PutPlayer packet(
-				pPutObject->key,
-				//pPutClient->userData->GetPosition().x,
-				//pPutClient->userData->GetPosition().y
-				pPutObject->objectInfo->posX,
-				pPutObject->objectInfo->posY
-			);
-
-			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
-		}
-
-		template <class OBJECT>
-		void SendMovePlayer(OBJECT* pMovedObject, SocketInfo* pRecvClient)
-		{
-			PACKET_DATA::MAIN_TO_CLIENT::Position packet(
-				pMovedObject->key,
-				//pMovedClientKey->userData->GetPosition().x,
-				//pMovedClientKey->userData->GetPosition().y
-				pMovedObject->objectInfo->posX,
-				pMovedObject->objectInfo->posY
-			);
-
-			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
-		}
-
-		void SendRemovePlayer(const _KeyType pRemoveClientID, SocketInfo* pRecvClient)
-		{
-			PACKET_DATA::MAIN_TO_CLIENT::RemovePlayer packet(pRemoveClientID);
-
-			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
-		}
-	}
 }
 
 namespace ERROR_HANDLING

@@ -252,7 +252,7 @@ namespace PACKET_DATA
 			_PosType xPos;
 			_PosType yPos;
 
-			SavePosition(const _IdType const*, const _PosType, const _PosType);
+			SavePosition(const _IdType * const, const _PosType, const _PosType);
 		};
 	}
 

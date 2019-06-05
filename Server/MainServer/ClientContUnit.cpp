@@ -41,8 +41,8 @@ ZoneContUnit::~ZoneContUnit()
 	for (auto& iter : monsterCont)
 		delete iter;
 
-	for (auto& iter : npcCont)
-		delete iter;
+	//for (auto& iter : npcCont)
+	//	delete iter;
 }
 
 //void ZoneContUnit::Enter(SocketInfo* pClient)

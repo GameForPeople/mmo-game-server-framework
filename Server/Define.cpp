@@ -38,8 +38,8 @@ namespace PACKET_DATA
 #endif
 		Chat::Chat(const std::wstring& inNickName, const std::wstring& inMessage)
 		{
-			const BYTE nickNameLength = inNickName.size() * 2; // BYTE
-			const BYTE messageLength = inMessage.size() * 2;	//BYTE
+			const BYTE nickNameLength = static_cast<const BYTE>(inNickName.size() * 2); // BYTE
+			const BYTE messageLength = static_cast<const BYTE>(inMessage.size() * 2);	//BYTE
 
 			message[0] = nickNameLength + messageLength + 4;
 			message[1] = PACKET_TYPE::CLIENT_TO_CHAT::CHAT;

@@ -167,6 +167,7 @@
     <ClInclude Include="MemoryUnit.h" />
     <ClInclude Include="MoveManager.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="ServerDefine.hpp" />
     <ClInclude Include="TimerManager.h" />
     <ClInclude Include="Zone.h" />
     <ClInclude Include="Sector.h" />
@@ -205,6 +206,7 @@
     <ClCompile Include="MonsterModelManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="cpp.hint" />
     <None Include="InHeaderDefine.hh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

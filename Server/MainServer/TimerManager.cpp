@@ -77,7 +77,7 @@ void TimerManager::TimerThread()
 
 		const int tempInt = nowTime;
 
-		if (const int tempContSize = timerCont[tempInt].unsafe_size()
+		if (const int tempContSize = static_cast<int>(timerCont[tempInt].unsafe_size())
 			; tempContSize == 0)
 		{
 

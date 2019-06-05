@@ -31,8 +31,8 @@ Zone::Zone() :
 	moveManager(nullptr),
 	monsterModelManager(nullptr),
 	sectorCont(),
-	zoneContUnit(nullptr),
-	recvFunctionArr(nullptr)
+	recvFunctionArr(nullptr),
+	zoneContUnit(nullptr)
 {
 	InitManagers();
 	InitSector();
@@ -140,24 +140,36 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 		switch (auto[objectType, index] = BIT_CONVERTER::WhatIsYourTypeAndRealKey(pUnit->objectKey); objectType)
 		{
 		case BIT_CONVERTER::OBJECT_TYPE::PLAYER:
+			switch (pUnit->timerType)
+			{
+				case (TIMER_TYPE::PUSH_OLD_KEY):
+				{
+					ConnectManager::GetInstance()->PushOldKey(pUnit->objectKey);
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+				}
+			}
 			break;
 		case BIT_CONVERTER::OBJECT_TYPE::MONSTER:
 			switch (pUnit->timerType)
 			{
 				case (TIMER_TYPE::NPC_MOVE):
 				{
-					ObjectInfo* tempObjectInfo = zoneContUnit->monsterCont[index]->objectInfo;
+					BaseMonster* tempBaseMonster = zoneContUnit->monsterCont[index];
 
-					moveManager->MoveRandom(tempObjectInfo);	// 랜덤으로 움직이고
-					RenewSelfSectorForNpc(zoneContUnit->monsterCont[index]);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
-					RenewPossibleSectors(tempObjectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
+					moveManager->MoveRandom(tempBaseMonster->objectInfo);	// 랜덤으로 움직이고
+					RenewSelfSectorForNpc(tempBaseMonster);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
+					RenewPossibleSectors(tempBaseMonster->objectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
 
-					RenewViewListInSectorsForNpc(zoneContUnit->monsterCont[index])
-						? TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND)
-						: TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
-					//최적화 안할겨 뭐 어쩔겨
-					
-					//TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					// 주변에 클라이언트가 없습니다. 이동을 종료합니다.
+					if (RenewViewListInSectorsForNpc(zoneContUnit->monsterCont[index]))
+					{
+						TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SLIME_MOVE);
+					}
+					else
+					{
+						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					}
 					break;
 				}
 				case (TIMER_TYPE::NPC_ATTACK):
@@ -250,6 +262,11 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 					break;
 				}
 				default:
+					assert(false, L"[ERROR] 정의되지 않은 Tmier Unit이 실행되었습니다. 서버를 종료합니다.");
+
+					// 디버그가 아닐 경우! 실제는 그냥 반납.
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+
 					break;
 			}
 			break;
@@ -317,7 +334,6 @@ void Zone::Exit(SocketInfo* pOutClient)
 	sectorCont[pOutClient->objectInfo->sectorIndexY][pOutClient->objectInfo->sectorIndexX].Exit(pOutClient);
 	
 	// 내 ViewList의 Client에게 나 나간다고 알려주고.
-	
 	//connectManager->LogOutToZone(pOutClient, zoneContUnit);
 
 	for (auto iter : pOutClient->viewList)
@@ -631,7 +647,7 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 	if (moveManager->MoveCharacter(pClient))
 	{
 		// 스스로에게 전송.
-		NETWORK_UTIL::SEND::SendMovePlayer(pClient, pClient);
+		NETWORK_UTIL::SEND::SendMovePlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::Position>(pClient, pClient);
 		//PACKET_DATA::MAIN_TO_CLIENT::Position packet(
 		//	pClient->key,
 		//	pClient->objectInfo->posX,

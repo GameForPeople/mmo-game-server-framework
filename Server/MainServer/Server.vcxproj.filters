@@ -192,10 +192,14 @@
       <Filter>Object\Monster</Filter>
     </ClInclude>
     <ClInclude Include="ToDo.Hello" />
+    <ClInclude Include="ServerDefine.hpp">
+      <Filter>Define\Server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="InHeaderDefine.hh">
       <Filter>Define\Server</Filter>
     </None>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

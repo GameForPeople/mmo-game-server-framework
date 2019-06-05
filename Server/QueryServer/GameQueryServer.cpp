@@ -368,7 +368,7 @@ void GameQueryServer::ProcessDemandLogin()
 	}
 	else
 	{
-		PACKET_DATA::QUERY_TO_MAIN::LoginTrue loginTrue(tempKey, retPosX, retPosY);
+		PACKET_DATA::QUERY_TO_MAIN::LoginTrue loginTrue(tempKey, tempIdBuffer, retPosX, retPosY);
 		SendPacket(reinterpret_cast<char*>(&loginTrue));
 	}
 }
@@ -378,9 +378,14 @@ void GameQueryServer::ProcessSaveLocation()
 	SQLLEN tempIDType = SQL_NTS;
 	SQLLEN tempIntType = SQL_INTEGER;
 
+	PACKET_DATA::MAIN_TO_QUERY::SavePosition* packet = reinterpret_cast<PACKET_DATA::MAIN_TO_QUERY::SavePosition*>(loadedBuf);
+	
 	SQLWCHAR tempIdBuffer[10]{};
-	SQLINTEGER tempPosX;
-	SQLINTEGER tempPosY;
+
+	memcpy(tempIdBuffer, packet->id, 20);
+
+	SQLINTEGER tempPosX = packet->xPos;
+	SQLINTEGER tempPosY = packet->yPos;
 
 	memcpy(tempIdBuffer, loadedBuf + 4, 20);
 

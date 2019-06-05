@@ -9,6 +9,8 @@
 
 namespace NETWORK_UTIL
 {
+	extern SOCKET querySocket;
+	extern QueryMemoryUnit* queryMemoryUnit;
 	/*
 		SendPacket()
 			- WSASend!는 여기에서만 존재할 수 있습니다.

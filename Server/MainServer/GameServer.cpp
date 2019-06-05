@@ -17,6 +17,13 @@
 
 #include "GameServer.h"
 
+// extern!
+namespace NETWORK_UTIL
+{
+	SOCKET querySocket;
+	QueryMemoryUnit* queryMemoryUnit;
+}
+
 GameServer::GameServer(bool)
 	: wsa()
 	, hIOCP()
@@ -354,11 +361,13 @@ void GameServer::WorkerThreadFunction()
 				LogOut(reinterpret_cast<SocketInfo*>(pMemoryUnit));
 				continue;
 			}
-			// 받은 데이터 처리
-			MakePacketFromRecvData(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
-			// 바로 다시 Recv!
-			NETWORK_UTIL::RecvPacket(reinterpret_cast<SocketInfo*>(pMemoryUnit));
-			
+			else
+			{
+				// 받은 데이터 처리
+				MakePacketFromRecvData(reinterpret_cast<SocketInfo*>(pMemoryUnit), cbTransferred);
+				// 바로 다시 Recv!
+				NETWORK_UTIL::RecvPacket(reinterpret_cast<SocketInfo*>(pMemoryUnit));
+			}
 			break;
 		case MEMORY_UNIT_TYPE::RECV_FROM_QUERY:
 			MakeQueryPacketFromRecvData(cbTransferred);

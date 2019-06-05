@@ -148,7 +148,8 @@ SocketInfo::SocketInfo(_KeyType inKey) /*noexcept*/ :
 	//clientKey(-1),
 	//pZone(nullptr),
 	viewList(),
-	monsterViewList()
+	monsterViewList(),
+	objectInfo(nullptr)
 	//contIndex()
 	//sectorArr(),
 	//sectorIndexX(),

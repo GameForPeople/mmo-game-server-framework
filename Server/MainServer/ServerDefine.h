@@ -16,9 +16,8 @@ struct QueryMemoryUnit;
 
 namespace NETWORK_UTIL
 {
-	static SOCKET querySocket;
+
 	//std::unique_ptr<QueryMemoryUnit> queryMemoryUnit;
-	static QueryMemoryUnit* queryMemoryUnit;
 
 	void SendPacket(SocketInfo* pClient, char* packetData);
 	void SendQueryPacket(char* packetData);

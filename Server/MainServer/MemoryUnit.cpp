@@ -43,6 +43,10 @@ MemoryUnit::MemoryUnit(const MEMORY_UNIT_TYPE inMemoryUnitType) :
 	{
 		// 아직 사용되지 않음.
 	}
+	else
+	{
+
+	}
 
 	wsaBuf.buf = dataBuf;
 }

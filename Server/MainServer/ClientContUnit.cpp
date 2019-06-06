@@ -20,6 +20,8 @@ ZoneContUnit::ZoneContUnit() :
 		clientContArr[i] = new SocketInfo(i /* == Key */);
 	}
 
+	std::cout << "#. 접속 가능한 최대 플레이어는 " << GLOBAL_DEFINE::MAX_CLIENT << "입니다. \n";
+
 	// Init Spin Lock 
 	//for (auto& iter : lockArr)
 	//{

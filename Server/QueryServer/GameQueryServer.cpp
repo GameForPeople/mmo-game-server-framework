@@ -20,6 +20,10 @@ GameQueryServer::GameQueryServer(bool inNotUse)
 
 	SendMemoryPool::MakeInstance();
 
+	std::wcout << L"?. Main Server의 Init이 완료되면, 아무 문자를 입력해주세요.\n";
+	int tempInput{};
+	std::cin >> tempInput;
+
 	PrintServerInfoUI();
 	InitNetwork();
 

@@ -37,7 +37,7 @@ TimerManager::TimerManager(HANDLE hIOCP) :
 	SetPostQueuedFunctionCallCountAndTimerMemoryHeadCont(MAX_COOL_TIME);
 
 #ifdef _DEV_MODE_
-	std::wcout << L"!. TimerManager의 초기 할당 사이즈는 " << timerMemoryPool.unsafe_size() << " 입니다." << std::endl;
+	std::wcout << L"!. TimerManager의 초기 할당 사이즈는 " << timerMemoryPool.unsafe_size() << L" 입니다." << std::endl;
 #endif
 }
 

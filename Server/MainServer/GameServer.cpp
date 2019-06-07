@@ -62,6 +62,18 @@ GameServer::~GameServer()
 void GameServer::ServerIntegrityCheck()
 {
 	// 프로그래밍 구조상 오류 유발 제한
+	SocketInfo tempSocketInfo(0);
+	assert((unsigned long)(&tempSocketInfo) == (unsigned long)(&(tempSocketInfo.memoryUnit.overlapped)), L"SocketInfo 구조체의 필드에서, MemoryUnit(Overlap)이 최상단에 생성되지 않아 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다. ");
+	
+	SendMemoryUnit tempSendMemoryUnit{};
+	assert((unsigned long)(&tempSendMemoryUnit) == (unsigned long)(&(tempSendMemoryUnit.memoryUnit.overlapped)), L"SendMemoryUnit 구조체의 필드에서, MemoryUnit(Overlap)이 최상단에 생성되지 않아 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다. ");
+
+	TimerMemoryHead tempTimerMemoryHead{};
+	assert((unsigned long)(&tempTimerMemoryHead) == (unsigned long)(&(tempTimerMemoryHead.memoryUnit.overlapped)), L"TimerMemoryHead 구조체의 필드에서, MemoryUnit(Overlap)이 최상단에 생성되지 않아 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다. ");
+
+	QueryMemoryUnit tempQueryMemoryUnit{};
+	assert((unsigned long)(&tempQueryMemoryUnit) == (unsigned long)(&(tempQueryMemoryUnit.memoryUnit.overlapped)), L"QueryMemoryUnit 구조체의 필드에서, MemoryUnit(Overlap)이 최상단에 생성되지 않아 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다. ");
+
 	static_assert(GLOBAL_DEFINE::MAX_HEIGHT == GLOBAL_DEFINE::MAX_WIDTH,
 		L"MAX_HEIGHT와 MAX_WIDTH가 다르며, 이는 현재로직에서 Sector 계산에서 비정상적인 결과를 도출할 수 있습니다. 서버 실행을 거절하였습니다.");
 
@@ -576,6 +588,14 @@ void GameServer::LogOut(SocketInfo* pOutClient)
 	{
 		zone->Exit(pOutClient);
 		pOutClient->TerminateClient();
+
+		PACKET_DATA::MAIN_TO_QUERY::SavePosition packet(
+			static_cast<PlayerObjectInfo*>(pOutClient->objectInfo)->nickname,
+			pOutClient->objectInfo->posX,
+			pOutClient->objectInfo->posY
+		);
+
+		NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
 	}
 
 	closesocket(pOutClient->sock);
@@ -584,14 +604,6 @@ void GameServer::LogOut(SocketInfo* pOutClient)
 	timerUnit->timerType = TIMER_TYPE::PUSH_OLD_KEY;
 	timerUnit->objectKey = pOutClient->key;
 	TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::MAX_TIME);
-
-	PACKET_DATA::MAIN_TO_QUERY::SavePosition packet(
-		static_cast<PlayerObjectInfo*>(pOutClient->objectInfo)->nickname,
-		pOutClient->objectInfo->posX,
-		pOutClient->objectInfo->posY
-	);
-
-	NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
 }
 
 #pragma region [Legacy Code]

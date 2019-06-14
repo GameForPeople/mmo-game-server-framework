@@ -262,6 +262,7 @@ void GameQueryServer::ProcessPacket()
 	{
 	case MAIN_TO_QUERY::DEMAND_LOGIN:
 		ProcessDemandLogin();
+		//ProcessSaveLocation();
 		break;
 	case MAIN_TO_QUERY::SAVE_LOCATION:
 		ProcessSaveLocation();
@@ -333,50 +334,61 @@ void GameQueryServer::RecvPacket()
 
 void GameQueryServer::ProcessDemandLogin()
 {
+	SQLHSTMT hstmt = 0;
+
 	SQLWCHAR tempIdBuffer[10]{};
 	SQLLEN tempIDType = SQL_NTS;
 	SQLLEN tempIntType = SQL_INTEGER;
 	
 	const int tempKey = (loadedBuf[2] << 24) & 0xFF000000 | (loadedBuf[3] << 16) & 0xFF0000 | (loadedBuf[4] << 8) & 0xFF00 | (loadedBuf[5]) & 0xFF;
-	SQLINTEGER tempPosX = -1;
-	SQLINTEGER tempPosY = -1;
+	SQLINTEGER tempPosX = 10;
+	SQLINTEGER tempPosY = 10;
 
 	memcpy(tempIdBuffer, loadedBuf + 6, 20);
-	tempIdBuffer[9] = NULL;
+
+	wprintf(L"전송하는 ID는 : %s \n", tempIdBuffer);
 
 	SQLRETURN retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
-
-	retcode = SQLBindParameter(hstmt,
-		1,	// Parameter Index
-		SQL_PARAM_INPUT, // Parameter Type
-		SQL_C_WCHAR, // c dataType
-		SQL_WCHAR, // db dataType
-		10, // size?
-		0, // ?
-		tempIdBuffer,
-		sizeof(tempIdBuffer),
-		&tempIDType	// SQL_NTS
-	);
-
-	retcode = SQLBindParameter(hstmt, 2, SQL_PARAM_OUTPUT, SQL_C_LONG, SQL_INTEGER, 1, 0, &tempPosX, sizeof(tempPosX), &tempIntType);
-	retcode = SQLBindParameter(hstmt, 3, SQL_PARAM_OUTPUT, SQL_C_LONG, SQL_INTEGER, 1, 0, &tempPosY, sizeof(tempPosY), &tempIntType);
-	
-	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)L"Exec User_DemandLogin", SQL_NTS);
-	std::cout << "함수실행!" << std::endl;
-
 	if (retcode != 0) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
-	std::cout << "에러는 위참조" << std::endl;
+
+	//retcode = SQLBindParameter(hstmt,
+	//	1,	// Parameter Index
+	//	SQL_PARAM_INPUT, // Parameter Type
+	//	SQL_C_WCHAR, // c dataType
+	//	SQL_WCHAR, // db dataType
+	//	10, // size?
+	//	0, // ?
+	//	tempIdBuffer,
+	//	sizeof(tempIdBuffer),
+	//	&tempIDType	// SQL_NTS
+	//);
+
+	//retcode = SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT_OUTPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &tempPosX, sizeof(tempPosX), &tempIntType);
+	//retcode = SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT_OUTPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &tempPosY, sizeof(tempPosY), &tempIntType);
+
+	//retcode = SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT_OUTPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &tempPosX, 0, NULL);
+	//retcode = SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT_OUTPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &tempPosY, 0, NULL);
+	
+	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec User_DemandLogin AAA" )
+		//+ tempIdBuffer[0] + tempIdBuffer[1] + tempIdBuffer[2] + tempIdBuffer[3]) /*+ tempIdBuffer[3] + tempIdBuffer[4] + tempIdBuffer[5] + tempIdBuffer[6] + tempIdBuffer[7] + tempIdBuffer[8] + tempIdBuffer[9])*/
+		, SQL_NTS);
+	if (retcode != 0) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 
 	SQLINTEGER retPosX{}, retPosY{};
 	SQLLEN intLen = SQL_INTEGER;
+	SQLLEN intLen2 = SQL_INTEGER;
 
-	retcode = SQLBindCol(hstmt, 1, SQL_INTEGER, &retPosX, intLen, &intLen);
-	retcode = SQLBindCol(hstmt, 2, SQL_INTEGER, &retPosY, intLen, &intLen);
+	SQLFetch(hstmt);
+	//retcode = SQLBindCol(hstmt, 1, SQL_INTEGER, &retPosX, intLen, &intLen);
+	//retcode = SQLBindCol(hstmt, 2, SQL_INTEGER, &retPosY, intLen, &intLen2);
+
+	retcode = SQLGetData(hstmt, 1, SQL_INTEGER, &retPosX, intLen, &intLen);
+	retcode = SQLGetData(hstmt, 2, SQL_INTEGER, &retPosY, intLen, &intLen2);
 
 	std::cout << "받은 위치는  x : " << tempPosX << ", y : " << tempPosY << std::endl;
 	std::cout << "받은 위치는  x : " << retPosX << ", y : " << retPosY << std::endl;
 
-	SQLFreeStmt(hstmt, SQL_DROP);
+	//SQLFreeStmt(hstmt, SQL_DROP);
 
 	if (retPosX == -1)
 	{
@@ -401,10 +413,12 @@ void GameQueryServer::ProcessSaveLocation()
 
 	memcpy(tempIdBuffer, packet->id, 20);
 
-	SQLINTEGER tempPosX = packet->xPos;
-	SQLINTEGER tempPosY = packet->yPos;
+	tempIdBuffer[0] = L'A';
+	tempIdBuffer[1] = L'A';
+	tempIdBuffer[2] = L'A';
 
-	memcpy(tempIdBuffer, loadedBuf + 4, 20);
+	SQLINTEGER tempPosX = 100;//packet->xPos;
+	SQLINTEGER tempPosY = 100;//packet->yPos;
 
 	SQLRETURN retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
@@ -442,15 +456,16 @@ bool GameQueryServer::InitAndConnectToDB()
 		if (retcode = SQLSetEnvAttr(henv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER*)SQL_OV_ODBC3, 0)
 			; retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) 
 		{
-			// Set login timeout to 5 seconds  
 			if (retcode = SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc)
 				; retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO)
 			{
+			// Set login timeout to 5 seconds  
 				SQLSetConnectAttr(hdbc, SQL_LOGIN_TIMEOUT, (SQLPOINTER)5, 0);
 
 				// Connect to data source  
 				// Allocate statement handle  
-				if (retcode = SQLConnect(hdbc, (SQLWCHAR*)L"ODBC_2013182027", SQL_NTS, (SQLWCHAR*)L"ACCOUNT_TEST", SQL_NTS, (SQLWCHAR*)L"test1234", SQL_NTS)
+
+				if (retcode = SQLConnect(hdbc, (SQLWCHAR*)L"ODBC_2013182027", SQL_NTS, (SQLWCHAR*)/*L"ACCOUNT_TEST"*/NULL, SQL_NTS, (SQLWCHAR*)/*L"test1234"*/NULL, SQL_NTS)
 					; retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO)
 				{
 					std::cout << "SQL CONNECT!!\n";
@@ -459,7 +474,6 @@ bool GameQueryServer::InitAndConnectToDB()
 			}
 		}
 	}
-
 	PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 	return false;
 }

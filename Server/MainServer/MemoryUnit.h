@@ -129,7 +129,7 @@ public:
 
 public:
 	void RegisterNewClient(SOCKET);
-	void SetNewObjectInfo(PlayerObjectInfo*);
+	void SetNewObjectInfo(_NicknameType* inNewNick, _PosType x, _PosType y);
 	
 	void TerminateClient();
 };

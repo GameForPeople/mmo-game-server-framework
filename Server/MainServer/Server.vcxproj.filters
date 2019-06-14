@@ -201,5 +201,6 @@
       <Filter>Define\Server</Filter>
     </None>
     <None Include="cpp.hint" />
+    <None Include="Logic.Hello" />
   </ItemGroup>
 </Project>

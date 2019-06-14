@@ -40,12 +40,13 @@ public: // ConnectManager
 	//std::pair<bool, SocketInfo*> OnlyGetUniqueKeyAndMallocSocketInfo();
 	void Enter(SocketInfo*);
 	void Exit(SocketInfo*);
+
+private:
 	void InitViewAndSector(SocketInfo* );
 
 private:
 	void InitManagers();
-	void InitClientCont();
-	void InitFunctions();
+	void InitZoneCont();
 	void InitSector();
 
 private:
@@ -69,8 +70,9 @@ private:
 
 	std::vector<std::vector<Sector>> sectorCont;
 
-	std::function<void(Zone&, SocketInfo*)>* recvFunctionArr;
+	//std::function<void(Zone&, SocketInfo*)>* recvFunctionArr;
 public:
+
 	// 성능, public하게 접근할 수 있도록 변경.
 	ZoneContUnit* zoneContUnit;
 };

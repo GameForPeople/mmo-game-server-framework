@@ -162,8 +162,8 @@ SocketInfo::SocketInfo(_KeyType inKey) /*noexcept*/ :
 {
 	viewList.clear();
 	monsterViewList.clear();
-
-	//objectInfo = new ObjectInfo(inKey, GLOBAL_DEFINE::START_POSITION_X, GLOBAL_DEFINE::START_POSITION_Y);
+	
+	objectInfo = new PlayerObjectInfo();
 }
 
 SocketInfo::~SocketInfo()
@@ -187,8 +187,9 @@ void SocketInfo::TerminateClient()
 	viewList.clear();
 	monsterViewList.clear();
 
-	delete objectInfo;
-	objectInfo = nullptr;
+	// 19 06 14 GameServer °³¼±.
+	//delete objectInfo;	//
+	//objectInfo = nullptr;	//
 }
 
 void SocketInfo::RegisterNewClient(SOCKET inSocket)
@@ -196,9 +197,11 @@ void SocketInfo::RegisterNewClient(SOCKET inSocket)
 	sock = inSocket;
 }
 
-void SocketInfo::SetNewObjectInfo(PlayerObjectInfo* inNewClientObjectInfo)
+void SocketInfo::SetNewObjectInfo(_NicknameType* inNewNick, _PosType x, _PosType y)
 {
-	objectInfo = inNewClientObjectInfo;
+	memcpy(objectInfo->nickname, inNewNick, 20);
+	objectInfo->posX = x;
+	objectInfo->posY = y;
 }
 
 //---------------------------------------------------------------------------

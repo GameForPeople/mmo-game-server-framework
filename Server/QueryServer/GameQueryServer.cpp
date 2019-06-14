@@ -6,7 +6,7 @@
 #include "SendMemoryPool.h"
 #include "GameQueryServer.h"
 
-GameQueryServer::GameQueryServer(bool inNotUse)
+GameQueryServer::GameQueryServer(bool inNotUse) 
 	: wsa()
 	, hIOCP()
 	, socket()
@@ -14,7 +14,7 @@ GameQueryServer::GameQueryServer(bool inNotUse)
 	, workerThreadCont()
 	, pRecvMemoryUnit(new MemoryUnit(MEMORY_UNIT_TYPE::RECV))
 	, loadedBuf()
-	, loadedSize(GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET)
+	, loadedSize(/*GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET*/)
 {
 	ServerIntegrityCheck();
 
@@ -117,6 +117,8 @@ void GameQueryServer::InitNetwork()
 	// 8. 커넥트!!
 	if (int retVal = connect(socket, (SOCKADDR*)& mainServerAddr, sizeof(mainServerAddr))
 		; retVal == SOCKET_ERROR) ERROR_QUIT(L"Connect 에러! 아마! 메인서버를 확인해주세요!");
+
+	RecvPacket();
 
 	printf("메인 서버에 정상적으로 연결되었습니다!\n\n");
 }
@@ -333,11 +335,15 @@ void GameQueryServer::ProcessDemandLogin()
 {
 	SQLWCHAR tempIdBuffer[10]{};
 	SQLLEN tempIDType = SQL_NTS;
+	SQLLEN tempIntType = SQL_INTEGER;
 	
-	int tempKey = (loadedBuf[2] << 24) & 0xFF000000 | (loadedBuf[3] << 16) & 0xFF0000 | (loadedBuf[4] << 8) & 0xFF00 | (loadedBuf[5]) & 0xFF;
+	const int tempKey = (loadedBuf[2] << 24) & 0xFF000000 | (loadedBuf[3] << 16) & 0xFF0000 | (loadedBuf[4] << 8) & 0xFF00 | (loadedBuf[5]) & 0xFF;
+	SQLINTEGER tempPosX = -1;
+	SQLINTEGER tempPosY = -1;
 
 	memcpy(tempIdBuffer, loadedBuf + 6, 20);
-	
+	tempIdBuffer[9] = NULL;
+
 	SQLRETURN retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
 	retcode = SQLBindParameter(hstmt,
@@ -351,9 +357,15 @@ void GameQueryServer::ProcessDemandLogin()
 		sizeof(tempIdBuffer),
 		&tempIDType	// SQL_NTS
 	);
+
+	retcode = SQLBindParameter(hstmt, 2, SQL_PARAM_OUTPUT, SQL_C_LONG, SQL_INTEGER, 1, 0, &tempPosX, sizeof(tempPosX), &tempIntType);
+	retcode = SQLBindParameter(hstmt, 3, SQL_PARAM_OUTPUT, SQL_C_LONG, SQL_INTEGER, 1, 0, &tempPosY, sizeof(tempPosY), &tempIntType);
 	
 	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)L"Exec User_DemandLogin", SQL_NTS);
-	PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+	std::cout << "함수실행!" << std::endl;
+
+	if (retcode != 0) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+	std::cout << "에러는 위참조" << std::endl;
 
 	SQLINTEGER retPosX{}, retPosY{};
 	SQLLEN intLen = SQL_INTEGER;
@@ -361,6 +373,7 @@ void GameQueryServer::ProcessDemandLogin()
 	retcode = SQLBindCol(hstmt, 1, SQL_INTEGER, &retPosX, intLen, &intLen);
 	retcode = SQLBindCol(hstmt, 2, SQL_INTEGER, &retPosY, intLen, &intLen);
 
+	std::cout << "받은 위치는  x : " << tempPosX << ", y : " << tempPosY << std::endl;
 	std::cout << "받은 위치는  x : " << retPosX << ", y : " << retPosY << std::endl;
 
 	SQLFreeStmt(hstmt, SQL_DROP);
@@ -411,7 +424,7 @@ void GameQueryServer::ProcessSaveLocation()
 	retcode = SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &tempPosY, sizeof(tempPosY), &tempIntType);
 
 	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)L"Exec User_SaveLocation", SQL_NTS);
-	PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+	if (retcode != 0) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 
 	SQLFreeStmt(hstmt, SQL_DROP);
 }

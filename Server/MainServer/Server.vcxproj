@@ -208,6 +208,7 @@
   <ItemGroup>
     <None Include="cpp.hint" />
     <None Include="InHeaderDefine.hh" />
+    <None Include="Logic.Hello" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

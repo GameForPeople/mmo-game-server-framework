@@ -8,6 +8,7 @@
 struct ObjectInfo
 {
 public:
+	ObjectInfo();
 	ObjectInfo(_PosType,  _PosType);
 	virtual ~ObjectInfo() = default;
 
@@ -31,6 +32,7 @@ struct PlayerObjectInfo : public ObjectInfo
 	_NicknameType nickname[10];
 
 public:
+	PlayerObjectInfo();
 	PlayerObjectInfo(_NicknameType*, _PosType, _PosType);
 	~PlayerObjectInfo() final = default;
 };

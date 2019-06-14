@@ -31,18 +31,18 @@ Zone::Zone() :
 	moveManager(nullptr),
 	monsterModelManager(nullptr),
 	sectorCont(),
-	recvFunctionArr(nullptr),
+	//recvFunctionArr(nullptr),
 	zoneContUnit(nullptr)
 {
+	// 이 순서가 변경될 경우, 서버가 동작하지 않습니다.
 	InitManagers();
 	InitSector();
-	InitClientCont();
-	InitFunctions();
+	InitZoneCont();
 }
 
 Zone::~Zone()
 {
-	delete[] recvFunctionArr;
+	//delete[] recvFunctionArr;
 	delete[] zoneContUnit;
 }
 
@@ -55,42 +55,6 @@ void Zone::InitManagers()
 	moveManager = std::make_unique<MoveManager>();
 	//connectManager = std::make_unique<ConnectManager>();
 	monsterModelManager = std::make_unique<MonsterModelManager>();
-}
-
-/*
-	Zone::InitClientCont()
-		- GamsServer의 생성자에서 호출되며, 클라이언트 컨테이너들을 초기화합니다.
-*/
-void Zone::InitClientCont()
-{
-	zoneContUnit = new ZoneContUnit;
-	_KeyType tempIndex = BIT_CONVERTER::NOT_PLAYER_INT;
-
-	std::cout << "#. 몬스터 "<< zoneContUnit->monsterCont.size() << "ea를 할당중입니다...";
-
-	// 추후 쓰레드 분할
-		for (auto& monster : zoneContUnit->monsterCont)
-		{
-			const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
-			const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
-
-			monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetRenderModel(MONSTER_TYPE::SLIME));
-
-			RenewSelfSectorForNpc(monster); // 비용이 너무 큼.
-			//sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);
-		}
-
-	std::cout << "    할당이 종료되었습니다." << std::endl;
-}
-
-/*
-	Zone::InitFunctions()
-		- GamsServer의 생성자에서 호출되며, 게임과 관련된 데이터들의 초기화를 담당합니다.
-*/
-void Zone::InitFunctions()
-{
-	recvFunctionArr = new std::function<void(Zone&, SocketInfo*)>[PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE];
-	recvFunctionArr[PACKET_TYPE::CLIENT_TO_MAIN::MOVE] = &Zone::RecvCharacterMove;
 }
 
 /*
@@ -119,6 +83,36 @@ void Zone::InitSector()
 		}
 	}
 }
+
+/*
+	Zone::InitZoneCont()
+		- GamsServer의 생성자에서 호출되며, 클라이언트 컨테이너들을 초기화합니다.
+
+	!0. InitSector가 호출된후 호출되어야 합니다.
+*/
+void Zone::InitZoneCont()
+{
+	zoneContUnit = new ZoneContUnit;
+
+	_KeyType tempIndex = BIT_CONVERTER::NOT_PLAYER_INT;
+
+	std::cout << "#. 몬스터 "<< zoneContUnit->monsterCont.size() << " 를 할당중입니다...";
+
+	// 추후 쓰레드 분할
+	for (auto& monster : zoneContUnit->monsterCont)
+	{
+		const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
+		const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
+
+		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetRenderModel(MONSTER_TYPE::SLIME));
+
+		//RenewSelfSectorForNpc(monster); // 비용이 너무 큼.
+		sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster);
+	}
+
+	std::cout << "    할당이 종료되었습니다." << std::endl;
+}
+
 
 void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 {

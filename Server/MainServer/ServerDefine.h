@@ -39,11 +39,11 @@ namespace NETWORK_UTIL
 	}
 }
 
-#include "ServerDefine.hpp"
-
 namespace ATOMIC_UTIL {
 	template <class TYPE> bool T_CAS(std::atomic<TYPE> *addr, TYPE expected, TYPE new_val);
 }
+
+#include "ServerDefine.hpp"
 
 namespace ERROR_HANDLING {
 	_NORETURN void ERROR_QUIT(const WCHAR *msg);
@@ -59,7 +59,8 @@ namespace TIME_UTIL
  namespace GLOBAL_DEFINE
 {
 	constexpr USHORT MAX_CLIENT = 10000;
-	constexpr UINT MAX_MONSTER = 200000;
+	constexpr UINT MAX_MONSTER = 20000;
+	constexpr UINT MAX_TIMER_UNIT = 500000;
 
 	constexpr USHORT START_POSITION_X = 400;
 	constexpr USHORT START_POSITION_Y = 400;

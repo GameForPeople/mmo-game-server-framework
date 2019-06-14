@@ -5,6 +5,18 @@
 
 #include "ObjectInfo.h"
 
+ObjectInfo::ObjectInfo()
+	:
+	posX(),
+	posY(),
+	sectorIndexX(),
+	sectorIndexY(),
+	possibleSectorCount(),
+	sectorArr()
+{
+	// 어짜피 갱신됩니다.
+}
+
 ObjectInfo::ObjectInfo(_PosType inX, _PosType inY)
 	: 
 	posX(inX),
@@ -16,7 +28,15 @@ ObjectInfo::ObjectInfo(_PosType inX, _PosType inY)
 }
 
 //-----------
+//
 //-----------
+
+PlayerObjectInfo::PlayerObjectInfo() 
+	: ObjectInfo()
+	, nickname()
+{
+
+}
 
 PlayerObjectInfo::PlayerObjectInfo(_NicknameType* inNickname, _PosType inX, _PosType inY)
 	: ObjectInfo(inX, inY)

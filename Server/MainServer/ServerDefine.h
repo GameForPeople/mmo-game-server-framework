@@ -16,7 +16,6 @@ struct QueryMemoryUnit;
 
 namespace NETWORK_UTIL
 {
-
 	//std::unique_ptr<QueryMemoryUnit> queryMemoryUnit;
 
 	void SendPacket(SocketInfo* pClient, char* packetData);

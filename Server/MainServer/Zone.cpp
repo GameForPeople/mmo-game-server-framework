@@ -98,11 +98,20 @@ void Zone::InitZoneCont()
 
 	std::cout << "#. 몬스터 "<< zoneContUnit->monsterCont.size() << " 를 할당중입니다...";
 
+	auto tempMapDate = moveManager->GetMapData();
+
 	// 추후 쓰레드 분할
 	for (auto& monster : zoneContUnit->monsterCont)
 	{
-		const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
-		const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
+		_PosType tempPosX;
+		_PosType tempPosY;
+
+		do 
+		{
+			tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
+			tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
+		} 
+		while (tempMapDate[tempPosY][tempPosX] == false);
 
 		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetMonsterModel(MONSTER_TYPE::SLIME));
 

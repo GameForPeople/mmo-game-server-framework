@@ -15,6 +15,9 @@ struct ZoneContUnit;
 */
 class MoveManager
 {
+private:
+	std::vector<std::vector<bool>> mapData;
+
 public:
 	MoveManager() noexcept;
 	~MoveManager() = default;
@@ -25,7 +28,7 @@ public:
 public:
 	bool MoveCharacter(SocketInfo* pClient);
 	bool MoveRandom(ObjectInfo* pClient);
-
+	inline const std::vector<std::vector<bool>>& GetMapData() const noexcept { return mapData; };
 #if _USE_STD_FUNCTION_
 	std::function<void(MoveManager&, ObjectInfo*)> whatIsYourDirection[static_cast<int>(DIRECTION::ENUM_SIZE)];
 	std::function<void(MoveManager&, ObjectInfo*)> moveFunctionArr[static_cast<int>(DIRECTION::ENUM_SIZE)][2 /* Fail or Success */];
@@ -57,6 +60,7 @@ private:
 	inline bool MoveLeft(ObjectInfo* const inUserData) noexcept
 	{
 		if (inUserData->posX == 0) return false;
+		else if (mapData[inUserData->posY][inUserData->posX - 1] == false) return false;
 		else 
 		{
 			--(inUserData->posX);
@@ -67,6 +71,7 @@ private:
 	inline bool MoveUp(ObjectInfo* const inUserData) noexcept
 	{
 		if (inUserData->posY == 0) return false;
+		else if (mapData[inUserData->posY - 1][inUserData->posX] == false) return false;
 		else
 		{
 			--(inUserData->posY);
@@ -77,6 +82,7 @@ private:
 	inline bool MoveRight(ObjectInfo* const inUserData) noexcept
 	{
 		if (inUserData->posX == GLOBAL_DEFINE::MAX_WIDTH - 1) return false;
+		else if (mapData[inUserData->posY][inUserData->posX + 1] == false) return false;
 		else
 		{
 			++(inUserData->posX);
@@ -87,6 +93,7 @@ private:
 	inline bool MoveDown(ObjectInfo* const inUserData) noexcept
 	{
 		if (inUserData->posY == GLOBAL_DEFINE::MAX_HEIGHT - 1) return false;
+		else if (mapData[inUserData->posY + 1][inUserData->posX] == false) return false;
 		else
 		{
 			++(inUserData->posY);

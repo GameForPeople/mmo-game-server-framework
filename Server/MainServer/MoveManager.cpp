@@ -33,6 +33,67 @@ MoveManager::MoveManager() noexcept
 	//MoveManager::moveFunctionArr[DIRECTION::RIGHT] = &MoveManager::MoveRight;
 	//MoveManager::moveFunctionArr[DIRECTION::DOWN] = &MoveManager::MoveDown;
 #endif
+	
+	mapData.reserve(GLOBAL_DEFINE::MAX_HEIGHT /*/ GLOBAL_DEFINE::SECTOR_DISTANCE*/);
+	for (int i = 0; i < GLOBAL_DEFINE::MAX_WIDTH; ++i)
+	{
+		mapData.emplace_back();
+		mapData[i].reserve(GLOBAL_DEFINE::MAX_WIDTH);
+
+		for (int j = 0; j < GLOBAL_DEFINE::MAX_WIDTH; ++j)
+		{
+			mapData[i].emplace_back(true);
+		}
+	}
+
+	for (int i = 0; i < GLOBAL_DEFINE::MAX_WIDTH; ++i)
+	{
+		for (int j = 0; j < GLOBAL_DEFINE::MAX_WIDTH; ++j)
+		{
+			switch (j / GLOBAL_DEFINE::SECTOR_DISTANCE)
+			{
+			case 0:
+			case 5:
+				break;
+			case 1:
+			case 6:
+				if ((i % 10) == 0 && (j % 10) == 0)
+				{
+					mapData[i][j] = false;
+				}
+				break;
+			case 2:
+			case 7:
+				if ((i % 30) >= 10 && (i % 30) <= 19)
+				{
+					if ((j % 30) >= 10 && (j % 30) <= 19)
+						mapData[i][j] = false;
+				}
+				break;
+			case 3:
+			case 8:
+				if ((i % 30) >= 10 && (i % 30) <= 19)
+				{
+					if ((j % 30) >= 5 && (j % 30) <= 24)
+						mapData[i][j] = false;
+				}
+				else if ((j % 30) >= 10 && (j % 30) <= 19)
+				{
+					if ((i % 30) >= 5 && (i % 30) <= 24)
+						mapData[i][j] = false;
+				}
+				break;
+			case 4:
+			case 9:
+				if ((i % 30) == 1 || (i % 30) == 14 || (i % 30) == 15 || (i % 30) == 28)
+				{
+					if (j >= 1 && j <= 28)
+						mapData[i][j] = false;
+				}
+				break;
+			}
+		}
+	}
 }
 
 /*

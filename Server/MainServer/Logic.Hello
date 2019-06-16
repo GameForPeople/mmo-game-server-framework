@@ -80,8 +80,9 @@
 		a. RecvLogin()이 실행됨
 			0. loadedBuffer의 값을 통해 Query Server에 전송할 packet을 제작함
 				- UniqueKey값, id값, pw값을 구조체로 담음
-
+			
 			1. NETWORK_UTIL::SendQueryPacket 함수 호출하여 QueryServer에 전송함.
+			2. 클라이언트로부터 입력받은 값으로, 자신의 소켓 구조체의 닉네임을 갱신함.
 
 	C. QueryServer에서, Login 관련 처리를 한 후, 데이터를 보내, GameServer::ProcessQueryPacket의 Login관련에서 걸림.
 
@@ -92,7 +93,7 @@
 
 		b. QUERY_TO_MAIN::LOGIN_TRUE이 전송됨.
 			0. 전송받은 UniqueKey를 통해, ZoneContUnit의 해당 ClientContArr로 접속하여, ObjectInfo 변경
-				- ObjectInfo : nickName, xPos, yPos
+				- ObjectInfo : nickName, xPos, yPos + 추가사항
 
 			1. 클라에게 정상적으로 로그인 했음을 알림!
 				- MAIN_TO_CLIENT::LoginOk  key, nickName, xPos, yPos

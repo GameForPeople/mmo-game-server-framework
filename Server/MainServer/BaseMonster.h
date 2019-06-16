@@ -16,12 +16,11 @@ public:
 
 	_KeyType key;
 
-	_LevelType level;
+	//_LevelType level;
 	_PosType spawnPosX;
 	_PosType spawnPosY;
 
-	_HpType hp;
-	_DamageType damage;
+	//_DamageType damage;
 
 	//_StateType state;
 	/*std::atomic<bool>*/ bool isDead;

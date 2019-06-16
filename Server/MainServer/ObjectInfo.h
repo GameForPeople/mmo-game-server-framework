@@ -13,9 +13,16 @@ public:
 	virtual ~ObjectInfo() = default;
 
 public:	// 이럴꺼면 님 왜 이거 class했어요? -> 조용히해 -> 결국 Struct...ㅎ
-
 	_PosType posX;
 	_PosType posY;
+
+	_LevelType level;
+	
+	_JobType job;
+
+	_HpType hp;
+
+	_DamageType damage;
 
 	_SectorIndexType sectorIndexX;
 	_SectorIndexType sectorIndexY;
@@ -30,6 +37,12 @@ public:	// 이럴꺼면 님 왜 이거 class했어요? -> 조용히해 -> 결국 Struct...ㅎ
 struct PlayerObjectInfo : public ObjectInfo
 {
 	_NicknameType nickname[10];
+	_MpType mp;
+	_ExpType exp;
+	_MoneyType money;
+	_RedCountType redCount;
+	_BlueCountType blueCount;
+	_TreeCountType treeCount;
 
 public:
 	PlayerObjectInfo();

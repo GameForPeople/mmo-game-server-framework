@@ -321,7 +321,7 @@ void GameServer::WorkerThreadFunction()
 	// 한 번만 선언해서 여러번 씁시다. 아껴써야지...
 	int retVal{};
 	DWORD cbTransferred;
-	unsigned long long Key;
+	unsigned long long Key{};
 	
 	LPVOID pMemoryUnit{nullptr};
 
@@ -368,7 +368,7 @@ void GameServer::WorkerThreadFunction()
 			if (retVal == 0 || cbTransferred == 0)
 			{
 				//NETWORK_UTIL::LogOutProcess(pMemoryUnit);
-				LogOut(reinterpret_cast<SocketInfo*>(pMemoryUnit));
+				LogOut(reinterpret_cast<SocketInfo*>(pMemoryUnit), false);
 				continue;
 			}
 			else
@@ -385,8 +385,7 @@ void GameServer::WorkerThreadFunction()
 			
 			break;
 		default:
-			std::cout << "\n[Error Memory Unit Type] \n";
-			std::cout << "마! 니 뭐여? -> " <<
+			std::cout << "\n[Error Memory Unit Type] : " << "정의되지 않은 메모리 타입 -> " <<
 				static_cast<int>(reinterpret_cast<MemoryUnit*>(pMemoryUnit)->memoryUnitType)
 				<< std::endl;
 			break;
@@ -471,8 +470,8 @@ void GameServer::RecvLogin(SocketInfo* pClient)
 		0
 	);
 
-	wprintf(L"받은 패킷의 ID는 %s \n", packet.id);
-	//std::cout << "받은 패킷의 ID는 ! " << packet.id << std::endl;
+	pClient->RegisterNewNickName(packet.id);
+	//wprintf(L"받은 패킷의 ID는 %s \n", packet.id);
 
 	NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
 }
@@ -532,6 +531,9 @@ void GameServer::ProcessQueryPacket()
 	case QUERY_TO_MAIN::LOGIN_FALSE:
 		RecvLoginFalse();
 		break;
+	case QUERY_TO_MAIN::LOGIN_ALREADY:
+		RecvLoginAlready();
+		break;
 	default:
 		assert(false, "정의되지 않은 Query Packet을 받았습니다. \n");
 		break;
@@ -543,12 +545,24 @@ void GameServer::RecvLoginTrue()
 	PACKET_DATA::QUERY_TO_MAIN::LoginTrue* packet = reinterpret_cast<PACKET_DATA::QUERY_TO_MAIN::LoginTrue*>(NETWORK_UTIL::queryMemoryUnit->loadedBuf);
 	SocketInfo* tempSocketInfo = zone->zoneContUnit->clientContArr[packet->key];
 	
-	// DB에서 받은 데이터로 ObjectInfo 생성. 
-	//tempSocketInfo->objectInfo = new PlayerObjectInfo(packet->nickname, packet->xPos, packet->yPos);
-	tempSocketInfo->SetNewObjectInfo(packet->nickname, packet->xPos, packet->yPos);
+	// 해당 key에 대한 로그아웃처리가 필요함.
+	//if (packet->oldKey != -1)
+	//{
+	//	tempSocketInfo->CopyOtherObjectInfo(zone->zoneContUnit->clientContArr[packet->oldKey]->objectInfo);
+	//	LogOut(zone->zoneContUnit->clientContArr[packet->oldKey]);
+	//}
+	//else
+	//{
+		//tempSocketInfo->objectInfo = new PlayerObjectInfo(packet->nickname, packet->xPos, packet->yPos);
+	tempSocketInfo->SetNewObjectInfo(packet->xPos, packet->yPos, packet->level, packet->exp, packet->job, packet->hp, packet->mp
+		, packet->money, packet->redCount, packet->blueCount, packet->treeCount);
+	//}
 
-	// 클라이언트에게 서버에 접속(Accept) 함을 알림
-	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(packet->key, packet->nickname ,packet->xPos, packet->yPos);
+	// 클라이언트에게 서버에 접속(Accept) 함을 알림	
+	auto tempObjectInfo = tempSocketInfo->objectInfo;
+	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(tempSocketInfo->key, tempObjectInfo->posX, tempObjectInfo->posY, tempObjectInfo->level,
+		tempObjectInfo->exp, tempObjectInfo->job, tempObjectInfo->hp, tempObjectInfo->mp, tempObjectInfo->money, tempObjectInfo->redCount, tempObjectInfo->blueCount, tempObjectInfo->treeCount);
+	
 	NETWORK_UTIL::SendPacket(tempSocketInfo, reinterpret_cast<char*>(&loginPacket));
 
 	// 자신의 캐릭터를 넣어줌. -> LoginOK에 통합.
@@ -575,26 +589,65 @@ void GameServer::RecvLoginFalse()
 
 	NETWORK_UTIL::RecvPacket(tempSocketInfo);
 }
+
+void GameServer::RecvLoginAlready()
+{
+	PACKET_DATA::QUERY_TO_MAIN::LoginAlready* packet = reinterpret_cast<PACKET_DATA::QUERY_TO_MAIN::LoginAlready*>(NETWORK_UTIL::queryMemoryUnit->loadedBuf);
+	SocketInfo* tempSocketInfo = zone->zoneContUnit->clientContArr[packet->key];
+	SocketInfo* oldSocketInfo = zone->zoneContUnit->clientContArr[packet->oldKey];
+
+	tempSocketInfo->CopyOtherObjectInfo(oldSocketInfo->objectInfo);
+	LogOut(oldSocketInfo, true);
+
+	// 클라이언트에게 서버에 접속(Accept) 함을 알림
+	auto tempObjectInfo = tempSocketInfo->objectInfo;
+	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(tempSocketInfo->key, tempObjectInfo->posX, tempObjectInfo->posY, tempObjectInfo->level,
+		tempObjectInfo->exp, tempObjectInfo->job, tempObjectInfo->hp, tempObjectInfo->mp, tempObjectInfo->money, tempObjectInfo->redCount, tempObjectInfo->blueCount, tempObjectInfo->treeCount);
+
+	// 해당 존에 입장!
+	zone->Enter(tempSocketInfo);
+
+	NETWORK_UTIL::SendPacket(tempSocketInfo, reinterpret_cast<char*>(&loginPacket));
+	NETWORK_UTIL::RecvPacket(tempSocketInfo);
+}
 #pragma endregion
 
-void GameServer::LogOut(SocketInfo* pOutClient)
+void GameServer::LogOut(SocketInfo* pOutClient, const bool isForced)
 {
+	{
 	SOCKADDR_IN clientAddr;
 	int addrLength = sizeof(clientAddr);
-
+	
 	getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
 	std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
+	}
 
-	// 애초에 존에 접속도 못했는데, 로그아웃 할 경우를 방지.
-	if (pOutClient->objectInfo != nullptr) 
+	if (isForced)
+	{
+		zone->Exit(pOutClient);
+		pOutClient->TerminateClient();
+	}
+	else 
 	{
 		zone->Exit(pOutClient);
 		pOutClient->TerminateClient();
 
-		PACKET_DATA::MAIN_TO_QUERY::SavePosition packet(
-			static_cast<PlayerObjectInfo*>(pOutClient->objectInfo)->nickname,
-			pOutClient->objectInfo->posX,
-			pOutClient->objectInfo->posY
+		auto pTempObjectInfo = pOutClient->objectInfo;
+
+		PACKET_DATA::MAIN_TO_QUERY::SaveUserInfo packet(
+			0,	// 로그아웃용
+			static_cast<PlayerObjectInfo*>(pTempObjectInfo)->nickname,
+			pTempObjectInfo->posX,
+			pTempObjectInfo->posY,
+			pTempObjectInfo->level,
+			pTempObjectInfo->exp,
+			pTempObjectInfo->job,
+			pTempObjectInfo->hp,
+			pTempObjectInfo->mp,
+			pTempObjectInfo->money,
+			pTempObjectInfo->redCount,
+			pTempObjectInfo->blueCount,
+			pTempObjectInfo->treeCount
 		);
 
 		NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));

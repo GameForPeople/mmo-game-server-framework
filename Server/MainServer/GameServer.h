@@ -65,9 +65,10 @@ private: // "Query" Function
 
 	void RecvLoginTrue();
 	void RecvLoginFalse();
+	void RecvLoginAlready();
 
 private:
-	void LogOut(SocketInfo*);
+	void LogOut(SocketInfo*, bool isForced);
 
 private:
 	WSADATA								wsa;

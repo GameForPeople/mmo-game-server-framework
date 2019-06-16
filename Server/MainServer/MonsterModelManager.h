@@ -33,5 +33,5 @@ public:
 	~MonsterModelManager();
 
 public:
-	MonsterModel* GetRenderModel(MONSTER_TYPE);
+	MonsterModel* GetMonsterModel(MONSTER_TYPE);
 };

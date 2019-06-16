@@ -197,11 +197,40 @@ void SocketInfo::RegisterNewClient(SOCKET inSocket)
 	sock = inSocket;
 }
 
-void SocketInfo::SetNewObjectInfo(_NicknameType* inNewNick, _PosType x, _PosType y)
+void SocketInfo::RegisterNewNickName(_NicknameType* inNewNick)
 {
 	memcpy(objectInfo->nickname, inNewNick, 20);
+}
+
+void SocketInfo::SetNewObjectInfo(_PosType x, _PosType y, _LevelType inlevel, _ExpType inExp, _JobType inJob,
+	_HpType inHp, _MpType inMp, _MoneyType inMoney, _RedCountType inRedCount, _BlueCountType inBlueCount, _TreeCountType inTreeCount)
+{
 	objectInfo->posX = x;
 	objectInfo->posY = y;
+	objectInfo->level = inlevel;
+	objectInfo->exp = inExp;
+	objectInfo->job = inJob;
+	objectInfo->hp = inHp;
+	objectInfo->mp = inMp;
+	objectInfo->money = inMoney;
+	objectInfo->redCount = inRedCount;
+	objectInfo->blueCount = inBlueCount;
+	objectInfo->treeCount = inTreeCount;
+}
+
+void SocketInfo::CopyOtherObjectInfo(PlayerObjectInfo* otherObjectInfo)
+{
+	objectInfo->posX = otherObjectInfo->posX;
+	objectInfo->posY = otherObjectInfo->posY;
+	objectInfo->level = otherObjectInfo->level;
+	objectInfo->exp = otherObjectInfo->exp;
+	objectInfo->job = otherObjectInfo->job;
+	objectInfo->hp = otherObjectInfo->hp;
+	objectInfo->mp = otherObjectInfo->mp;
+	objectInfo->money = otherObjectInfo->money;
+	objectInfo->redCount = otherObjectInfo->redCount;
+	objectInfo->blueCount = otherObjectInfo->blueCount;
+	objectInfo->treeCount = otherObjectInfo->treeCount;
 }
 
 //---------------------------------------------------------------------------

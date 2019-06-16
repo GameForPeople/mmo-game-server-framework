@@ -46,6 +46,7 @@ private:	// DB Functions
 
 	void ProcessDemandLogin();
 	void ProcessSaveLocation();
+	void ProcessSaveUserInfo();
 
 private:	// For Server
 	WSADATA								wsa;
@@ -64,5 +65,5 @@ private:	// For Server
 private:	// For DB
 	SQLHENV henv;
 	SQLHDBC hdbc;
-	SQLHSTMT hstmt = 0;
+	const SQLLEN intLen;
 };

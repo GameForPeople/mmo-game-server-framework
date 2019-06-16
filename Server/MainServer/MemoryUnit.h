@@ -123,14 +123,22 @@ public:
 	SOCKET sock;
 
 	/*Concurrency::concurrent_*/std::unordered_set<_ClientKeyType> viewList;
+	std::shared_mutex viewListLock;
 	/*Concurrency::concurrent_*/std::unordered_set<_MonsterKeyType> monsterViewList;
+	std::shared_mutex monsterViewListLock;
 
 	PlayerObjectInfo * objectInfo;
 
 public:
 	void RegisterNewClient(SOCKET);
-	void SetNewObjectInfo(_NicknameType* inNewNick, _PosType x, _PosType y);
-	
+	void RegisterNewNickName(_NicknameType*);
+
+	// 이 멍청한 함수는 무엇인가.
+	void SetNewObjectInfo(_PosType x, _PosType y, _LevelType inlevel, _ExpType inExp, _JobType inJob,
+		_HpType inHp, _MpType inMp, _MoneyType inMoney, _RedCountType inRedCount, _BlueCountType inBlueCount, _TreeCountType inTreeCount);
+
+	void CopyOtherObjectInfo(PlayerObjectInfo*);
+
 	void TerminateClient();
 };
 

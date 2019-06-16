@@ -56,8 +56,8 @@ private:
 	void RenewPossibleSectors(ObjectInfo* pObjectInfo);
 	void RenewViewListInSectors(SocketInfo* pClient);
 
-	bool RenewViewListInSectorsForNpc(BaseMonster* pClient);
-
+	bool RenewViewListInSectorsForNpc(const std::unordered_set<_KeyType>&, BaseMonster* pClient);
+	void MakeOldViewListForNpc(std::unordered_set<_KeyType>&, BaseMonster*);
 public:
 	void RecvCharacterMove(SocketInfo* pClient);
 	//void RecvLogin(SocketInfo* pClient);

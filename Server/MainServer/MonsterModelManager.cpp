@@ -46,7 +46,7 @@ MonsterModelManager::~MonsterModelManager()
 	}
 }
 
-MonsterModel* MonsterModelManager::GetRenderModel(MONSTER_TYPE inMonsterType)
+MonsterModel* MonsterModelManager::GetMonsterModel(MONSTER_TYPE inMonsterType)
 {
 	return monsterModelCont[static_cast<int>(inMonsterType)];
 }

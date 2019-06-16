@@ -21,8 +21,8 @@ ObjectInfo::ObjectInfo(_PosType inX, _PosType inY)
 	: 
 	posX(inX),
 	posY(inY),
-	sectorIndexX(GLOBAL_DEFINE::START_SECTOR_X),
-	sectorIndexY(GLOBAL_DEFINE::START_SECTOR_Y)
+	sectorIndexX(),
+	sectorIndexY()
 {
 	// 어짜피 갱신됩니다.
 }

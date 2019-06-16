@@ -44,7 +44,7 @@ MoveManager::MoveManager() noexcept
 bool MoveManager::MoveCharacter(SocketInfo* pClient)
 {
 #ifdef _DEV_MODE_
-	std::cout << "움직이는 방향은 : " << int(static_cast<int>(pClient->loadedBuf[2])) << "\n";
+	//std::cout << "움직이는 방향은 : " << int(static_cast<int>(pClient->loadedBuf[2])) << "\n";
 #endif
 
 #if _USE_STD_FUNCTION_

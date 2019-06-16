@@ -104,10 +104,11 @@ void Zone::InitZoneCont()
 		const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
 		const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
 
-		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetRenderModel(MONSTER_TYPE::SLIME));
+		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetMonsterModel(MONSTER_TYPE::SLIME));
 
 		//RenewSelfSectorForNpc(monster); // 비용이 너무 큼.
 		sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster);
+		RenewPossibleSectors(monster->objectInfo);
 	}
 
 	std::cout << "    할당이 종료되었습니다." << std::endl;
@@ -140,12 +141,16 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 				{
 					BaseMonster* tempBaseMonster = zoneContUnit->monsterCont[index];
 
+					//현재 PossibleSector의 경우에는, 이전 움직임의 PossibleSector이므로 유효함
+					std::unordered_set<_KeyType> oldViewList;
+					MakeOldViewListForNpc(oldViewList, zoneContUnit->monsterCont[index]);
+
 					moveManager->MoveRandom(tempBaseMonster->objectInfo);	// 랜덤으로 움직이고
-					RenewSelfSectorForNpc(tempBaseMonster);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
+					RenewSelfSectorForNpc(tempBaseMonster);					// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
 					RenewPossibleSectors(tempBaseMonster->objectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
 
 					// 주변에 클라이언트가 없습니다. 이동을 종료합니다.
-					if (RenewViewListInSectorsForNpc(zoneContUnit->monsterCont[index]))
+					if (RenewViewListInSectorsForNpc(oldViewList, zoneContUnit->monsterCont[index]))
 					{
 						TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SLIME_MOVE);
 					}
@@ -220,7 +225,7 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 					if (zoneContUnit->monsterCont[index]->burnTick != 0)
 					{
 						--(zoneContUnit->monsterCont[index]->burnTick);
-						zoneContUnit->monsterCont[index]->hp -= STATE::DAMAGE::BURN_DAMAGE;
+						zoneContUnit->monsterCont[index]->objectInfo->hp -= STATE::DAMAGE::BURN_DAMAGE;
 
 						if (zoneContUnit->monsterCont[index]->burnTick != 0)
 						{
@@ -300,7 +305,7 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 void Zone::Enter(SocketInfo* pEnteredClient)
 {
 	// 섹터 컨테이너에서 내 정보를 먼저 넣어주고.
-	sectorCont[pEnteredClient->objectInfo->posY / GLOBAL_DEFINE::MAX_HEIGHT ][pEnteredClient->objectInfo->posX / GLOBAL_DEFINE::MAX_WIDTH].Join(pEnteredClient);
+	sectorCont[pEnteredClient->objectInfo->posY / GLOBAL_DEFINE::SECTOR_DISTANCE][pEnteredClient->objectInfo->posX / GLOBAL_DEFINE::SECTOR_DISTANCE].Join(pEnteredClient);
 
 	// PossibleSector와 View 처리
 	InitViewAndSector(pEnteredClient);
@@ -546,11 +551,131 @@ void Zone::RenewPossibleSectors(ObjectInfo* pClient)
 */
 void Zone::RenewViewListInSectors(SocketInfo* pClient)
 {
-	sectorCont[pClient->objectInfo->sectorIndexY][pClient->objectInfo->sectorIndexX].JudgeClientWithViewList(pClient, zoneContUnit);
+	pClient->viewListLock.lock_shared();
+	auto oldViewList = pClient->viewList;
+	pClient->viewListLock.unlock_shared();
+
+	std::unordered_set<_ClientKeyType> newViewList;
+
+	pClient->monsterViewListLock.lock_shared();
+	auto oldMonsterViewList = pClient->monsterViewList;
+	pClient->monsterViewListLock.unlock_shared();
+
+	std::unordered_set<_ClientKeyType> newMonsterViewList;
+	
+	// Make NewViewList
+	sectorCont[pClient->objectInfo->sectorIndexY][pClient->objectInfo->sectorIndexX].MakeNewViewList(newViewList, newMonsterViewList, pClient, zoneContUnit);
 
 	for (int i = 0; i < pClient->objectInfo->possibleSectorCount; ++i)
 	{
-		sectorCont[pClient->objectInfo->sectorArr[i].second][pClient->objectInfo->sectorArr[i].first].JudgeClientWithViewList(pClient, zoneContUnit);
+		sectorCont[pClient->objectInfo->sectorArr[i].second][pClient->objectInfo->sectorArr[i].first].MakeNewViewList(newViewList, newMonsterViewList, pClient, zoneContUnit);
+	}
+
+	// Client
+	for (auto otherClientKey : newViewList)
+	{
+		if (SocketInfo* pOtherClient = zoneContUnit->clientContArr[otherClientKey];
+			oldViewList.count(otherClientKey) != 0)
+		{
+			pOtherClient->viewListLock.lock();
+			if (0 != pOtherClient->viewList.count(pClient->key))
+			{
+				pOtherClient->viewListLock.unlock();
+				NETWORK_UTIL::SEND::SendMovePlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::Position>(pClient, pOtherClient);
+			}
+			else
+			{
+				pOtherClient->viewList.insert(pClient->key);
+				pOtherClient->viewListLock.unlock();
+				NETWORK_UTIL::SEND::SendPutPlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pClient, pOtherClient);
+			}
+		}
+		else
+			// 새로 시야에 들어옴.
+		{
+			pClient->viewListLock.lock();
+			pClient->viewList.insert(otherClientKey);
+			pClient->viewListLock.unlock();
+
+			NETWORK_UTIL::SEND::SendPutPlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pClient, pOtherClient);
+
+			pOtherClient->viewListLock.lock();
+			if (0 != pOtherClient->viewList.count(pClient->key)) {
+				pOtherClient->viewListLock.unlock();
+				NETWORK_UTIL::SEND::SendMovePlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::Position>(pOtherClient, pClient);
+			}
+			else {
+				pOtherClient->viewList.insert(pClient->key);
+				pOtherClient->viewListLock.unlock();
+				NETWORK_UTIL::SEND::SendPutPlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pOtherClient, pClient);
+			}
+		}
+	}
+
+	for (auto otherClientKey : oldViewList)
+	{
+		if (newViewList.count(otherClientKey) != 0) continue;
+
+		pClient->viewListLock.lock();
+		pClient->viewList.erase(otherClientKey);
+		pClient->viewListLock.unlock();
+
+		NETWORK_UTIL::SEND::SendRemovePlayer(otherClientKey, pClient);
+
+		SocketInfo* pOtherClient = zoneContUnit->clientContArr[otherClientKey];
+
+		pOtherClient->viewListLock.lock();
+		if (0 != pOtherClient->viewList.count(pClient->key))
+		{
+			pOtherClient->viewList.erase(pClient->key);
+			 pOtherClient->viewListLock.unlock();
+			NETWORK_UTIL::SEND::SendRemovePlayer(pClient->key, pOtherClient);
+		}
+		else pOtherClient->viewListLock.unlock();
+	}
+
+	// Monster
+
+	for (auto otherMonsterKey : newMonsterViewList)
+	{
+		if (oldMonsterViewList.count(otherMonsterKey) != 0)
+		{
+			// 기존에 있던 친구들.
+			// 몬스터 친구들 안녀엉! 나 움직인다아~~~!!
+		}
+		else
+		{
+			// 새로 시야에 들어옴.
+			auto pMonster = zoneContUnit->monsterCont[otherMonsterKey - BIT_CONVERTER::NOT_PLAYER_INT];
+			pClient->monsterViewListLock.lock();
+			pClient->monsterViewList.insert(otherMonsterKey);
+			pClient->monsterViewListLock.unlock();
+
+			NETWORK_UTIL::SEND::SendPutPlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pMonster, pClient);
+
+			if (ATOMIC_UTIL::T_CAS(&(pMonster->isSleep), false, true))
+			{
+				// 이동 타이머를 등록해줌.
+				auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+				timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
+				timerUnit->objectKey = pMonster->key;
+				TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+			}
+			//else  // 이미 true일 경우 할 것 없어!
+		}
+	}
+
+	for (auto otherMonsterKey : oldMonsterViewList)
+	{
+		auto pMonster = zoneContUnit->monsterCont[otherMonsterKey - BIT_CONVERTER::NOT_PLAYER_INT];
+
+		if (0 != newMonsterViewList.count(otherMonsterKey)) continue;
+
+		pClient->monsterViewListLock.lock();
+		pClient->monsterViewList.erase(otherMonsterKey);
+		pClient->monsterViewListLock.unlock();
+
+		NETWORK_UTIL::SEND::SendRemovePlayer(otherMonsterKey, pClient);
 	}
 }
 
@@ -560,20 +685,82 @@ void Zone::RenewViewListInSectors(SocketInfo* pClient)
 
 	!0. 반드시 이 함수가 호출되기 전에, RenewPossibleSectors가 선행되어야 옳은 ViewList를 획득할 수 있습니다.
 */
-bool Zone::RenewViewListInSectorsForNpc(BaseMonster* pMonster)
+bool Zone::RenewViewListInSectorsForNpc(const std::unordered_set<_KeyType>& oldViewList, BaseMonster* pMonster)
 {
 	bool retValue = false;
 	auto pObjectInfo = pMonster->objectInfo;
+	std::unordered_set<_KeyType> newViewList;
 
-	if (sectorCont[pObjectInfo->sectorIndexY][pObjectInfo->sectorIndexX].JudgeClientWithViewListForNpc(pMonster, zoneContUnit))
-		retValue = true;
+	// make newViewList
+
+	sectorCont[pObjectInfo->sectorIndexY][pObjectInfo->sectorIndexX].MakeNewViewListForNpc(newViewList, pMonster, zoneContUnit);
 
 	for (int i = 0; i < pObjectInfo->possibleSectorCount; ++i)
 	{
-		if (sectorCont[pObjectInfo->sectorArr[i].second][pObjectInfo->sectorArr[i].first].JudgeClientWithViewListForNpc(pMonster, zoneContUnit))
-			retValue = true;
+		sectorCont[pObjectInfo->sectorArr[i].second][pObjectInfo->sectorArr[i].first].MakeNewViewListForNpc(newViewList, pMonster, zoneContUnit);
 	}
-	return retValue;
+
+	// 
+
+	_KeyType monsterKey = pMonster->key;
+	for (auto clientKey : oldViewList)
+	{
+		if (auto pOtherClient = zoneContUnit->clientContArr[clientKey]; 
+			0 != newViewList.count(clientKey)) {
+			pOtherClient->monsterViewListLock.lock();
+			
+			if (pOtherClient->monsterViewList.count(monsterKey)) {
+				pOtherClient->monsterViewListLock.unlock();
+				NETWORK_UTIL::SEND::SendMovePlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::Position>(pMonster, pOtherClient);
+			}
+			else {
+				pOtherClient->monsterViewList.insert(monsterKey);
+				pOtherClient->monsterViewListLock.unlock();
+				NETWORK_UTIL::SEND::SendPutPlayer< BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pMonster, pOtherClient);
+			}
+		}
+		else {
+			pOtherClient->monsterViewListLock.lock();
+
+			if (0 < pOtherClient->monsterViewList.count(monsterKey)) {
+				pOtherClient->monsterViewList.erase(monsterKey);
+				pOtherClient->monsterViewListLock.unlock();
+				NETWORK_UTIL::SEND::SendRemovePlayer(monsterKey, pOtherClient);
+			}
+			else pOtherClient->monsterViewListLock.unlock();
+		}
+	}
+	for (auto clientKey : newViewList)
+	{
+		if (oldViewList.count(clientKey) == 0)
+		{
+			auto pOtherClient = zoneContUnit->clientContArr[clientKey];
+
+			pOtherClient->monsterViewListLock.lock();
+
+			if (0 == pOtherClient->monsterViewList.count(monsterKey)) {
+				pOtherClient->monsterViewList.insert(monsterKey);
+				pOtherClient->monsterViewListLock.unlock();
+				NETWORK_UTIL::SEND::SendPutPlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pMonster, zoneContUnit->clientContArr[clientKey]);
+			}
+			else {
+				pOtherClient->monsterViewListLock.unlock();
+				NETWORK_UTIL::SEND::SendMovePlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::Position>(pMonster, zoneContUnit->clientContArr[clientKey]);
+			}
+		}
+	}
+	// 야 너 주변에 이제 아무도 없다! 쉬어 고생했어 ㅠ
+	return static_cast<bool>(newViewList.size());
+}
+
+void Zone::MakeOldViewListForNpc(std::unordered_set<_KeyType>& retVewList, BaseMonster* pMonster)
+{
+	sectorCont[pMonster->objectInfo->sectorIndexY][pMonster->objectInfo->sectorIndexX].MakeOldViewListForNpc(retVewList, pMonster, zoneContUnit);
+
+	for (int i = 0; i < pMonster->objectInfo->possibleSectorCount; ++i)
+	{
+		sectorCont[pMonster->objectInfo->sectorArr[i].second][pMonster->objectInfo->sectorArr[i].first].MakeOldViewListForNpc(retVewList, pMonster, zoneContUnit);
+	}
 }
 
 
@@ -625,7 +812,7 @@ void Zone::RenewSelfSectorForNpc(BaseMonster* pMonster)
 void Zone::RecvCharacterMove(SocketInfo* pClient)
 {
 #ifdef _DEV_MODE_
-	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[2]) << "\n";
+	//std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[2]) << "\n";
 #endif
 
 	if (moveManager->MoveCharacter(pClient))

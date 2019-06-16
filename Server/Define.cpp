@@ -16,6 +16,13 @@ namespace PACKET_DATA
 		{
 			memcpy(id, pInID, GLOBAL_DEFINE::ID_MAX_SIZE);
 		}
+
+		SignUp::SignUp(const _CharType* const pInNickname, const _JobType inJob) noexcept :
+			size(sizeof(SignUp)), type(PACKET_TYPE::CLIENT_TO_MAIN::SIGN_UP),
+			id(), job(inJob)
+		{
+			memcpy(id, pInNickname, GLOBAL_DEFINE::ID_MAX_SIZE);
+		}
 	}
 
 	namespace CLIENT_TO_CHAT
@@ -109,6 +116,13 @@ namespace PACKET_DATA
 			memcpy(id, inId, GLOBAL_DEFINE::ID_MAX_SIZE);
 		}
 
+		DemandSignUp::DemandSignUp(const _KeyType inKey, const char* inId, const _JobType inJob)
+			: size(sizeof(DemandSignUp)), type(PACKET_TYPE::MAIN_TO_QUERY::DEMAND_SIGNUP),
+			key(inKey), id(), job(inJob)
+		{
+			memcpy(id, inId, GLOBAL_DEFINE::ID_MAX_SIZE);
+		}
+
 		SavePosition::SavePosition(const _CharType* const inId, const _PosType inXPos, const _PosType inYPos)
 			: size(sizeof(SavePosition)), type(PACKET_TYPE::MAIN_TO_QUERY::SAVE_LOCATION),
 			id(), xPos(inXPos), yPos(inYPos)
@@ -153,6 +167,12 @@ namespace PACKET_DATA
 			size(sizeof(LoginAlready)), type(PACKET_TYPE::QUERY_TO_MAIN::LOGIN_ALREADY),
 			key(inKey),
 			oldKey(oldKey)
+		{}
+
+		LoginNew::LoginNew(const _KeyType inKey, const _JobType inJob) noexcept :
+			size(sizeof(LoginNew)), type(PACKET_TYPE::QUERY_TO_MAIN::LOGIN_NEW),
+			key(inKey),
+			job(inJob)
 		{}
 	}
 }

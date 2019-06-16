@@ -58,6 +58,7 @@ private: // "Client to Main" Function
 	void ProcessPacket(SocketInfo* pClient);
 
 	void RecvLogin(SocketInfo*);
+	void RecvSignUp(SocketInfo*);
 
 private: // "Query" Function
 	void MakeQueryPacketFromRecvData(int restSize);
@@ -66,6 +67,7 @@ private: // "Query" Function
 	void RecvLoginTrue();
 	void RecvLoginFalse();
 	void RecvLoginAlready();
+	void RecvLoginNew();
 
 private:
 	void LogOut(SocketInfo*, bool isForced);

@@ -58,7 +58,7 @@ namespace TIME_UTIL
  namespace GLOBAL_DEFINE
 {
 	constexpr USHORT MAX_CLIENT = 10000;
-	constexpr UINT MAX_MONSTER = 20000;
+	constexpr UINT MAX_MONSTER = 10000;
 	constexpr UINT MAX_TIMER_UNIT = 500000;
 
 	constexpr USHORT START_POSITION_X = 150;

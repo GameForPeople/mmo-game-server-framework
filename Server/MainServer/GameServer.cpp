@@ -459,6 +459,9 @@ void GameServer::ProcessPacket(SocketInfo* pClient)
 	case LOGIN:
 		RecvLogin(pClient);
 		break;
+	case SIGN_UP:
+		RecvSignUp(pClient);
+		break;
 	}
 }
 
@@ -473,6 +476,20 @@ void GameServer::RecvLogin(SocketInfo* pClient)
 	pClient->RegisterNewNickName(packet.id);
 	//wprintf(L"받은 패킷의 ID는 %s \n", packet.id);
 
+	NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
+}
+
+void GameServer::RecvSignUp(SocketInfo* pClient)
+{
+	PACKET_DATA::CLIENT_TO_MAIN::SignUp* recvPacket = reinterpret_cast<PACKET_DATA::CLIENT_TO_MAIN::SignUp*>(pClient->loadedBuf);
+
+	PACKET_DATA::MAIN_TO_QUERY::DemandSignUp packet(
+		pClient->key,
+		pClient->loadedBuf + 2,
+		recvPacket->job
+	);
+
+	pClient->RegisterNewNickName(packet.id);
 	NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
 }
 #pragma endregion
@@ -534,6 +551,9 @@ void GameServer::ProcessQueryPacket()
 	case QUERY_TO_MAIN::LOGIN_ALREADY:
 		RecvLoginAlready();
 		break;
+	case QUERY_TO_MAIN::LOGIN_NEW:
+		RecvLoginNew();
+		break;
 	default:
 		assert(false, "정의되지 않은 Query Packet을 받았습니다. \n");
 		break;
@@ -582,10 +602,34 @@ void GameServer::RecvLoginFalse()
 	PACKET_DATA::QUERY_TO_MAIN::LoginFail* packet = reinterpret_cast<PACKET_DATA::QUERY_TO_MAIN::LoginFail*>(NETWORK_UTIL::queryMemoryUnit->loadedBuf);
 	SocketInfo* tempSocketInfo = zone->zoneContUnit->clientContArr[packet->key];
 
-	// 클라이언트에게 서버에 접속(Accept) 함을 알림
+	// 클라이언트에게 서버에 접속(Accept) 실패함을 알림
 	PACKET_DATA::MAIN_TO_CLIENT::LoginFail loginPacket(packet->failReason);
 
 	NETWORK_UTIL::SendPacket(tempSocketInfo, reinterpret_cast<char*>(&loginPacket));
+
+	NETWORK_UTIL::RecvPacket(tempSocketInfo);
+}
+
+void GameServer::RecvLoginNew()
+{
+	PACKET_DATA::QUERY_TO_MAIN::LoginNew* packet = reinterpret_cast<PACKET_DATA::QUERY_TO_MAIN::LoginNew*>(NETWORK_UTIL::queryMemoryUnit->loadedBuf);
+	SocketInfo* tempSocketInfo = zone->zoneContUnit->clientContArr[packet->key];
+
+	// !! 여기에요!! 원성연이 귀찮아서 매직넘버로 박아넣은 거 찾으시죠?? 여ㅛ기에요!!
+	tempSocketInfo->SetNewObjectInfo(165, 165, 1, 0, packet->job, 100, 50
+		, 0, 0, 0, 0);
+
+	// 클라이언트에게 서버에 접속(Accept) 함을 알림
+	auto tempObjectInfo = tempSocketInfo->objectInfo;
+	PACKET_DATA::MAIN_TO_CLIENT::LoginOk loginPacket(tempSocketInfo->key, tempObjectInfo->posX, tempObjectInfo->posY, tempObjectInfo->level,
+		tempObjectInfo->exp, tempObjectInfo->job, tempObjectInfo->hp, tempObjectInfo->mp, tempObjectInfo->money, tempObjectInfo->redCount, tempObjectInfo->blueCount, tempObjectInfo->treeCount);
+
+	NETWORK_UTIL::SendPacket(tempSocketInfo, reinterpret_cast<char*>(&loginPacket));
+
+	std::cout << " [HELLO] 클라이언트 (" << packet->key /*inet_ntoa(clientAddr.sin_addr)*/ << ") 가 접속했습니다. \n";
+
+	// 해당 존에 입장!
+	zone->Enter(tempSocketInfo);
 
 	NETWORK_UTIL::RecvPacket(tempSocketInfo);
 }

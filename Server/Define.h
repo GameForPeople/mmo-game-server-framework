@@ -56,6 +56,7 @@ namespace PACKET_TYPE
 		{
 			MOVE, 	//LEFT, //UP, //RIGHT, //DOWN,
 			LOGIN,
+			SIGN_UP,
 			ENUM_SIZE
 		};
 	}
@@ -88,8 +89,9 @@ namespace PACKET_TYPE
 	{
 		enum
 		{
-			DEMAND_LOGIN,
-			SAVE_LOCATION,
+			DEMAND_LOGIN =0,
+			DEMAND_SIGNUP = 1,
+			SAVE_LOCATION = 2,
 			SAVE_USERINFO
 		};
 	}
@@ -100,7 +102,8 @@ namespace PACKET_TYPE
 		{
 			LOGIN_TRUE,
 			LOGIN_FALSE,
-			LOGIN_ALREADY
+			LOGIN_ALREADY,
+			LOGIN_NEW
 		};
 	}
 
@@ -160,6 +163,15 @@ namespace PACKET_DATA
 
 			Login(const _CharType* const pInNickname) noexcept;
 		};
+
+		struct SignUp {
+			_PacketSizeType size;
+			_PacketTypeType type;
+			_CharType id[GLOBAL_DEFINE::ID_MAX_LEN];
+			_JobType job;
+
+			SignUp(const _CharType* const pInNickname, const _JobType) noexcept;
+		};
 	}
 
 	namespace CLIENT_TO_CHAT
@@ -218,7 +230,7 @@ namespace PACKET_DATA
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			const char failReason;
+			const char failReason;	// 0이면 없는 계정, 1이면 이미 로그인한 계정, 2이면 만들려고 했는데 이미 있는 계정
 
 			LoginFail(const char inFailReason) noexcept;
 		};
@@ -267,6 +279,17 @@ namespace PACKET_DATA
 			int		pw;
 
 			DemandLogin(const _KeyType, const char* inId, const int);
+		};
+
+		struct DemandSignUp
+		{
+			_PacketSizeType size;
+			_PacketTypeType type;
+			_KeyType key;	// 나중에 반납할 때, 이 키를 알려줘야함.
+			_CharType id[10];
+			_JobType job;
+
+			DemandSignUp(const _KeyType, const char* inId, const _JobType);
 		};
 
 		struct SavePosition
@@ -356,6 +379,16 @@ namespace PACKET_DATA
 			_KeyType oldKey;
 
 			LoginAlready(const _KeyType, const _KeyType) noexcept;
+		};
+
+		struct LoginNew
+		{
+			_PacketSizeType size;
+			_PacketTypeType type;
+			_KeyType key;
+			_JobType job;
+
+			LoginNew(const _KeyType, const _JobType) noexcept;
 		};
 	}
 

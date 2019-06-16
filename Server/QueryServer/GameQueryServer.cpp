@@ -20,18 +20,43 @@ GameQueryServer::GameQueryServer(bool inNotUse)
 	ServerIntegrityCheck();
 
 	SendMemoryPool::MakeInstance();
+	std::cout << "\n"
+		<< "	MainServer IP 주소를 선택하세요. \n"
+		<< "		1. Local Host (127.0.0.1) \n"
+		<< "		2. 직접 입력 \n"
+		<< "								==> ";
 
-	std::wcout << L"?. Main Server의 Init이 완료되면, 아무 문자를 입력해주세요.\n";
+	int inputtedIPType{};
+	std::cin >> inputtedIPType;
+
+	std::string inputtedIP{};
+	if (inputtedIPType == 1)
+	{
+		inputtedIP = "127.0.0.1";
+	}
+	else if (inputtedIPType == 2)
+	{
+		std::cout << "MainServer의 Public IP를 입력해주세요. : ";
+		std::cin >> inputtedIP;
+		system("cls");
+	}
+	else
+	{
+		std::cout << "아직 지원하지 않는 기능입니다. 서버를 종료합니다. ";
+		throw ERROR;
+	}
+	
+	std::wcout << L"?. Main Server의 Init이 완료되면, Any 문자를 입력해주세요.\n";
 	int tempInput{};
 	std::cin >> tempInput;
 
-	PrintServerInfoUI();
-	InitNetwork();
+	PrintServerInfoUI(inputtedIP);
+	InitNetwork(inputtedIP);
 
 	if (InitAndConnectToDB() == false)
-	{
-		ERROR_HANDLING::ERROR_QUIT(L"DB 초기화 혹은, 접속에 실패하였습니다.");
-	}
+		{
+			ERROR_HANDLING::ERROR_QUIT(L"DB 초기화 혹은, 접속에 실패하였습니다.");
+		}
 };
 
 GameQueryServer::~GameQueryServer()
@@ -56,15 +81,13 @@ void GameQueryServer::ServerIntegrityCheck()
 	GameServer::PrintServerInfoUI()
 		- GamsServer의 생성자에서 호출되며, 서버의 UI들을 출력합니다.
 */
-void GameQueryServer::PrintServerInfoUI()
+void GameQueryServer::PrintServerInfoUI(const std::string& inString)
 {
 	printf("\n■■■■■■■■■■■■■■■■■■■■■■■■■\n");
 	printf("■ 게임서버프로그래밍 - 쿼리 서버 \n");
 	printf("■                   게임공학과 원성연 2013182027\n");
 	printf("■\n");
-
-	// 추후 퍼블릭 IP로 변경.
-	printf("■ IP : LocalHost(127.0.0.1)\n");
+	printf("■ IP : %s \n", inString.c_str());
 	printf("■ Listen Port : %d \n", GLOBAL_DEFINE::QUERY_SERVER_PORT );
 	printf("■■■■■■■■■■■■■■■■■■■■■■■■■\n");
 }
@@ -73,7 +96,7 @@ void GameQueryServer::PrintServerInfoUI()
 	GameServer::InitNetwork()
 		- GamsServer의 생성자에서 호출되며, 네트워크 통신과 관련된 초기화를 담당합니다.
 */
-void GameQueryServer::InitNetwork()
+void GameQueryServer::InitNetwork(const std::string& inString)
 {
 	using namespace ERROR_HANDLING;
 
@@ -102,7 +125,7 @@ void GameQueryServer::InitNetwork()
 	// 5. 쿼리 서버 소켓 설정
 	ZeroMemory(&queryServerAddr, sizeof(queryServerAddr));
 	queryServerAddr.sin_family = AF_INET;
-	queryServerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");	// 추후 MainServer Public IP로 변경해야함!
+	queryServerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");	
 	queryServerAddr.sin_port = htons(GLOBAL_DEFINE::QUERY_SERVER_PORT);
 	if (::bind(socket, (SOCKADDR *)&queryServerAddr, sizeof(queryServerAddr)) == SOCKET_ERROR) ERROR_QUIT(TEXT("bind()"));
 
@@ -112,12 +135,12 @@ void GameQueryServer::InitNetwork()
 	// 7. 메인 서버 정보 객체 설정
 	ZeroMemory(&mainServerAddr, sizeof(mainServerAddr));
 	mainServerAddr.sin_family = AF_INET;
-	mainServerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");	// 추후 MainServer Public IP로 변경해야함!
+	mainServerAddr.sin_addr.s_addr = inet_addr(inString.c_str());	// 추후 MainServer Public IP로 변경해야함!
 	mainServerAddr.sin_port = htons(GLOBAL_DEFINE::MAIN_SERVER_PORT);
 
 	// 8. 커넥트!!
 	if (int retVal = connect(socket, (SOCKADDR*)& mainServerAddr, sizeof(mainServerAddr))
-		; retVal == SOCKET_ERROR) ERROR_QUIT(L"Connect 에러! 아마! 메인서버를 확인해주세요!");
+		; retVal == SOCKET_ERROR) ERROR_QUIT(L"Connect 에러 뭐여!! 메인서버를 확인해주세요!");
 
 	RecvPacket();
 
@@ -264,7 +287,9 @@ void GameQueryServer::ProcessPacket()
 	{
 	case MAIN_TO_QUERY::DEMAND_LOGIN:
 		ProcessDemandLogin();
-		//ProcessSaveLocation();
+		break;
+	case MAIN_TO_QUERY::DEMAND_SIGNUP:
+		ProcessDemandSignUp();
 		break;
 	case MAIN_TO_QUERY::SAVE_LOCATION:
 		ProcessSaveLocation();
@@ -345,7 +370,7 @@ void GameQueryServer::ProcessDemandLogin()
 
 	PACKET_DATA::MAIN_TO_QUERY::DemandLogin* packet = reinterpret_cast<PACKET_DATA::MAIN_TO_QUERY::DemandLogin*>(loadedBuf);
 	
-	if (SQLRETURN retcode{ SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec User_DemandLogin " + std::wstring(packet->id) + L", " + std::to_wstring(packet->key)).c_str(), SQL_NTS) }
+	if (SQLRETURN retcode{ SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec DB_2013182027.dbo.User_DemandLogin " + std::wstring(packet->id) + L", " + std::to_wstring(packet->key)).c_str(), SQL_NTS) }
 		; retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 
 	SQLINTEGER retIsExits{ -1 };
@@ -356,11 +381,11 @@ void GameQueryServer::ProcessDemandLogin()
 	SQLRETURN retcode = SQLGetData(hstmt, 1, SQL_INTEGER, &retIsExits, intLen, &intExits);
 	if (retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 
-	if (retIsExits == -2)
+	if (retIsExits == -2)	// 없는 계정일 경우.
 	{
 		SQLFreeStmt(hstmt, SQL_DROP);
 
-		PACKET_DATA::QUERY_TO_MAIN::LoginFail loginFail(packet->key, 1);
+		PACKET_DATA::QUERY_TO_MAIN::LoginFail loginFail(packet->key, 0);
 		SendPacket(reinterpret_cast<char*>(&loginFail));
 	}
 	else if(retIsExits == -1)
@@ -387,10 +412,43 @@ void GameQueryServer::ProcessDemandLogin()
 	}
 	else	// 이미 로그인한 계정일 경우.
 	{
+		SQLFreeStmt(hstmt, SQL_DROP);
 		PACKET_DATA::QUERY_TO_MAIN::LoginFail loginFail(packet->key, 1);
 		SendPacket(reinterpret_cast<char*>(&loginFail));
 	}
 }
+
+void GameQueryServer::ProcessDemandSignUp()
+{
+	SQLHSTMT hstmt{ 0 };
+	if (SQLRETURN retcode{ SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt) }
+	; retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+
+	PACKET_DATA::MAIN_TO_QUERY::DemandSignUp* packet = reinterpret_cast<PACKET_DATA::MAIN_TO_QUERY::DemandSignUp*>(loadedBuf);
+	
+	if (SQLRETURN retcode{ SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec DB_2013182027.dbo.User_DemandSingUp " + std::wstring(packet->id) + L", " + std::to_wstring(packet->key) + L", " + std::to_wstring(packet->job)).c_str(), SQL_NTS) }
+	; retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+
+	SQLINTEGER retIsExits{ -1 };
+	SQLLEN intExits{ SQL_INTEGER };
+
+	SQLFetch(hstmt);
+	SQLRETURN retcode = SQLGetData(hstmt, 1, SQL_INTEGER, &retIsExits, intLen, &intExits);
+	if (retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+	SQLFreeStmt(hstmt, SQL_DROP);
+
+	if (retIsExits == -1)	// 해당하는 계정이 이미 있는 경우
+	{
+		PACKET_DATA::QUERY_TO_MAIN::LoginFail loginFail(packet->key, 2);
+		SendPacket(reinterpret_cast<char*>(&loginFail));
+	}
+	else if (retIsExits == 0) // 계정생성 성공!
+	{
+		PACKET_DATA::QUERY_TO_MAIN::LoginNew loginNew(packet->key, packet->job);
+		SendPacket(reinterpret_cast<char*>(&loginNew));
+	}
+}
+
 
 void GameQueryServer::ProcessSaveLocation()
 {
@@ -399,7 +457,7 @@ void GameQueryServer::ProcessSaveLocation()
 
 	PACKET_DATA::MAIN_TO_QUERY::SavePosition* packet = reinterpret_cast<PACKET_DATA::MAIN_TO_QUERY::SavePosition*>(loadedBuf);
 
-	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec User_SaveLocation " + std::wstring(packet->id) + L" " + std::to_wstring(packet->xPos) + L" " + std::to_wstring(packet->yPos)).c_str(), SQL_NTS);
+	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec DB_2013182027.dbo.User_SaveLocation " + std::wstring(packet->id) + L" " + std::to_wstring(packet->xPos) + L" " + std::to_wstring(packet->yPos)).c_str(), SQL_NTS);
 	if (retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 
 	SQLFreeStmt(hstmt, SQL_DROP);
@@ -413,7 +471,7 @@ void GameQueryServer::ProcessSaveUserInfo()
 	PACKET_DATA::MAIN_TO_QUERY::SaveUserInfo* packet = reinterpret_cast<PACKET_DATA::MAIN_TO_QUERY::SaveUserInfo*>(loadedBuf);
 
 	retcode = SQLExecDirect(hstmt, 
-		(SQLWCHAR*)(L"Exec User_SaveUserInfo " 
+		(SQLWCHAR*)(L"Exec DB_2013182027.dbo.User_SaveUserInfo " 
 			+ std::to_wstring(packet->isOut) + L", " 
 			+ std::wstring(packet->id) + L", " 
 			+ std::to_wstring(packet->xPos) + L", " 

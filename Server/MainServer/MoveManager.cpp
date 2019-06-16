@@ -87,8 +87,10 @@ MoveManager::MoveManager() noexcept
 			case 9:
 				if ((i % 30) == 1 || (i % 30) == 14 || (i % 30) == 15 || (i % 30) == 28)
 				{
-					if (j >= 1 && j <= 28)
+					if ((j % 30 )> 0 && ((j % 30) < 29)) 
+					{
 						mapData[i][j] = false;
+					}
 				}
 				break;
 			}

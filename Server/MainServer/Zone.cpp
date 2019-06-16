@@ -105,7 +105,7 @@ void Zone::InitZoneCont()
 	{
 		_PosType tempPosX;
 		_PosType tempPosY;
-
+		
 		do 
 		{
 			tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
@@ -115,7 +115,6 @@ void Zone::InitZoneCont()
 
 		monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetMonsterModel(MONSTER_TYPE::SLIME));
 
-		//RenewSelfSectorForNpc(monster); // 비용이 너무 큼.
 		sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster);
 		RenewPossibleSectors(monster->objectInfo);
 	}

@@ -52,6 +52,7 @@ namespace DAMAGE
 }
 
 namespace JOB {
+	constexpr UINT MAX_LEVEL = 50;
 	constexpr UINT MAX_EXP_PER_LEVEL = 100;
 
 	constexpr UINT BASE_HP = 100;

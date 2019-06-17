@@ -135,7 +135,7 @@ public:
 
 	// 이 멍청한 함수는 무엇인가.
 	void SetNewObjectInfo(_PosType x, _PosType y, _LevelType_T inlevel, _ExpType_T inExp, _JobType inJob,
-		_HpType_T inHp, _MpType_T inMp, _MoneyType inMoney, _CountType_T inRedCount, _CountType_T inBlueCount, _TreeCountType inTreeCount);
+		_HpType_T inHp, _MpType_T inMp, _MoneyType_T inMoney, _CountType_T inRedCount, _CountType_T inBlueCount, _TreeCountType inTreeCount);
 
 	_DEPRECATED void CopyOtherObjectInfo(PlayerObjectInfo*);
 

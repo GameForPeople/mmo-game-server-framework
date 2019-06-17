@@ -5,7 +5,6 @@
 
 	!0. 해당 헤더는, 유일하게 다른 헤더 파일에 포함되는 헤더입니다.
 */
-
 #define _DEV_MODE_
 
 namespace std {
@@ -49,7 +48,8 @@ using _ExpType = std::atomic<unsigned int>;
 using _ExpType_T = unsigned int;
 
 using _JobType = unsigned int;
-using _MoneyType = unsigned int;
+using _MoneyType = std::atomic<unsigned int>;
+using _MoneyType_T = unsigned int;
 
 using _CountType = std::atomic<unsigned int>;
 using _CountType_T = unsigned int;

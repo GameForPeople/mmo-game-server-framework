@@ -28,24 +28,6 @@ namespace GLOBAL_DEFINE
 	constexpr BYTE CHAT_MAX_LEN = 50;
 }
 
-namespace STAT_CHANGE
-{
-	enum
-	{
-		HP,
-		MP,
-		LEVEL,
-		EXP,
-		RED_P,
-		BLUE_P,
-		MONEY,
-		MOVE_OK,
-		ATTACK_OK,
-		SKILL_1_OK,
-		SKILL_2_OK
-	};
-}
-
 namespace NETWORK_TYPE
 {
 	enum /*class NETWORK_TYPE : BYTE */
@@ -150,6 +132,24 @@ namespace PACKET_TYPE
 			ENUM_SIZE
 		};
 	}
+}
+
+namespace STAT_CHANGE
+{
+	enum
+	{
+		HP,
+		MP,
+		LEVEL,
+		EXP,
+		RED_P,
+		BLUE_P,
+		MONEY,
+		MOVE_OK,
+		ATTACK_OK,
+		SKILL_1_OK,
+		SKILL_2_OK
+	};
 }
 
 namespace PACKET_DATA

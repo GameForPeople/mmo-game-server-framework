@@ -54,9 +54,11 @@ GameQueryServer::GameQueryServer(bool inNotUse)
 	InitNetwork(inputtedIP);
 
 	if (InitAndConnectToDB() == false)
-		{
+	{
 			ERROR_HANDLING::ERROR_QUIT(L"DB 초기화 혹은, 접속에 실패하였습니다.");
-		}
+	}
+
+	ProcessDoAllUserLogOut();
 };
 
 GameQueryServer::~GameQueryServer()
@@ -198,6 +200,7 @@ void GameQueryServer::WorkerThreadFunction()
 		//ERROR_CLIENT_DISCONNECT:
 		if (retVal == 0 || cbTransferred == 0)
 		{
+			std::cout << "메인 서버가 종료되었습니다. 이제 이 서버는 무슨 짓을 할지 모릅니다.";
 			assert(false, L"MainServer가 비정상적입니다. 확인이 필요합니다.");
 			ERROR_HANDLING::ERROR_QUIT(L"MainServer가 비정상적입니다. 확인이 필요합니다.");
 			//NETWORK_UTIL::LogOutProcess(pMemoryUnit);
@@ -449,6 +452,16 @@ void GameQueryServer::ProcessDemandSignUp()
 	}
 }
 
+void GameQueryServer::ProcessDoAllUserLogOut()
+{
+	SQLHSTMT hstmt = 0;
+	SQLRETURN retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec DB_2013182027.dbo.User_DoAllUserLogOut"), SQL_NTS);
+	if (retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+
+	SQLFreeStmt(hstmt, SQL_DROP);
+}
 
 void GameQueryServer::ProcessSaveLocation()
 {

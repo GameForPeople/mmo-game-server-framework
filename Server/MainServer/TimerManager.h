@@ -9,7 +9,6 @@ struct TimerMemoryHead;
 		- 타이머에서 사용되는 메모리 단위입니다.
 */
 
-
 enum class TIME : /*unsigned short*/ int
 {
 	MAX_TIME = 600,

@@ -104,12 +104,12 @@ int LuaManager::API_do_attack(lua_State *L)
 		
 		if (oldHp > 0)
 		{
-			unsigned short newHp = oldHp - monsterDamage;
+			short newHp = oldHp - monsterDamage;
 			if (newHp < 0) newHp = 0;
 
 			if (pZoneContUnit->clientContArr[playerKey]->objectInfo->noDamageFlag) return 0;
 			if (ATOMIC_UTIL::T_CAS(&(pZoneContUnit->clientContArr[playerKey]->objectInfo->hp)
-				, oldHp, newHp))
+				, oldHp, static_cast<unsigned short>(newHp)))
 			{
 				NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, newHp, pZoneContUnit->clientContArr[playerKey]);
 
@@ -129,6 +129,7 @@ int LuaManager::API_do_attack(lua_State *L)
 						}
 					}
 					// Sector에서 내보내주고.
+					LuaManager::GetInstance()->pZone->Death(pZoneContUnit->clientContArr[playerKey]);
 
 					// 마 너 죽었어 임마!
 					auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
@@ -136,6 +137,7 @@ int LuaManager::API_do_attack(lua_State *L)
 					timerUnit->objectKey = playerKey;
 					TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::CHARACTER_REVIVAL);
 
+					NETWORK_UTIL::SEND::SendRemovePlayer(playerKey, pZoneContUnit->clientContArr[playerKey]);
 					NETWORK_UTIL::SEND::SendChatMessage(L"가 당신을 사망시켰습니다.", monsterKey, pZoneContUnit->clientContArr[playerKey]);
 				}
 				else

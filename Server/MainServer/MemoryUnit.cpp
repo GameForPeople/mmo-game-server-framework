@@ -185,9 +185,13 @@ void SocketInfo::TerminateClient()
 		여기서 원래.. 뭔말인지 알지? 몬스터는 상관없는데, 클라 뷰리스트에는 상대방에게 알려줘야해!
 	*/
 
+	viewListLock.lock();
 	viewList.clear();
-	monsterViewList.clear();
+	viewListLock.unlock();
 
+	monsterViewListLock.lock();
+	monsterViewList.clear();
+	monsterViewListLock.unlock();
 	// 19 06 14 GameServer 개선.
 	//delete objectInfo;	//
 	//objectInfo = nullptr;	//
@@ -204,7 +208,7 @@ void SocketInfo::RegisterNewNickName(_NicknameType* inNewNick)
 }
 
 void SocketInfo::SetNewObjectInfo(_PosType x, _PosType y, _LevelType_T inlevel, _ExpType_T inExp, _JobType inJob,
-	_HpType_T inHp, _MpType_T inMp, _MoneyType inMoney, _CountType_T inRedCount, _CountType_T inBlueCount, _TreeCountType inTreeCount)
+	_HpType_T inHp, _MpType_T inMp, _MoneyType_T inMoney, _CountType_T inRedCount, _CountType_T inBlueCount, _TreeCountType inTreeCount)
 {
 	objectInfo->posX = x;
 	objectInfo->posY = y;
@@ -222,8 +226,8 @@ void SocketInfo::SetNewObjectInfo(_PosType x, _PosType y, _LevelType_T inlevel, 
 	objectInfo->selfHealFlag= false;
 	objectInfo->moveFlag = true;
 	objectInfo->attackFlag = true;
-	objectInfo->skill1Flag = false;
-	objectInfo->skill2Flag = false;
+	objectInfo->skill1Flag = true;
+	objectInfo->skill2Flag = true;
 	objectInfo->redTickCount = 0;
 	objectInfo->blueTickCount = 0;
 }
@@ -237,7 +241,7 @@ void SocketInfo::CopyOtherObjectInfo(PlayerObjectInfo* otherObjectInfo)
 	objectInfo->job = otherObjectInfo->job;
 	//objectInfo->hp = otherObjectInfo->hp;
 	//objectInfo->mp = otherObjectInfo->mp;
-	objectInfo->money = otherObjectInfo->money;
+	//objectInfo->money = otherObjectInfo->money;
 	//objectInfo->redCount = otherObjectInfo->redCount;
 	//objectInfo->blueCount = otherObjectInfo->blueCount;
 	objectInfo->treeCount = otherObjectInfo->treeCount;

@@ -48,6 +48,7 @@ private:	// DB Functions
 	void ProcessDemandSignUp();
 	void ProcessSaveLocation();
 	void ProcessSaveUserInfo();
+	void ProcessDoAllUserLogOut();
 
 private:	// For Server
 	WSADATA								wsa;

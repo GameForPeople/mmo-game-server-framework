@@ -387,6 +387,11 @@ void GameServer::WorkerThreadFunction()
 			}
 			break;
 		case MEMORY_UNIT_TYPE::RECV_FROM_QUERY:
+			if (retVal == 0 || cbTransferred == 0)
+			{
+				std::cout << "쿼리서버가 종료되었습니다. 이제 이 서버는 무슨 짓을 할지 모릅니다.";
+				break;
+			}
 			MakeQueryPacketFromRecvData(cbTransferred);
 			NETWORK_UTIL::RecvQueryPacket();
 			
@@ -461,6 +466,8 @@ void GameServer::ProcessPacket(SocketInfo* pClient)
 	switch (pClient->loadedBuf[1])
 	{
 	case MOVE:
+		if (pClient->objectInfo->hp == 0) break;
+		if (pClient->objectInfo->moveFlag == false) break;
 		zone->RecvCharacterMove(pClient);
 		break;
 	case LOGIN:
@@ -510,391 +517,574 @@ void GameServer::RecvSignUp(SocketInfo* pClient)
 
 void GameServer::RecvAttack(SocketInfo* pClient)
 {
-	PACKET_DATA::CLIENT_TO_MAIN::Attack* packet = reinterpret_cast<PACKET_DATA::CLIENT_TO_MAIN::Attack*>(pClient->loadedBuf);
-
-	if (packet->attackType == 0)	// 평타
+	if (pClient->objectInfo->hp)
 	{
-		if (pClient->objectInfo->attackFlag == false) return; // 공격 아직 못함
-		if (pClient->objectInfo->hp == 0) return;	// [NOT_CAS] 여기서 안죽었으면, 떄리는거 정도는 허용하겠다.
-		
-		if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->attackFlag), true, false))
+		PACKET_DATA::CLIENT_TO_MAIN::Attack* packet = reinterpret_cast<PACKET_DATA::CLIENT_TO_MAIN::Attack*>(pClient->loadedBuf);
+
+		if (packet->attackType == 0)	// 평타
 		{
-			auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-			timerUnit->objectKey = pClient->key;
-			timerUnit->timerType = TIMER_TYPE::PLAYER_ATTACK;
-			TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SECOND);
+			if (pClient->objectInfo->attackFlag == false) return; // 공격 아직 못함
+			if (pClient->objectInfo->hp == 0) return;	// [NOT_CAS] 여기서 안죽었으면, 떄리는거 정도는 허용하겠다.
 
-			pClient->monsterViewListLock.lock_shared();				// ++++++++++++++++++++++++++++++++++++1
-			auto localMonsterviewList = pClient->monsterViewList;
-			pClient->monsterViewListLock.unlock_shared();			// ------------------------------------0
-
-			// [NOT_CAS]  이 함수 후 레벨업을 한다면, 레벨업 전 공격 데미지를 적용하겠다.
-			const int baseDamage = JOB::GetDamage(pClient->objectInfo->job, pClient->objectInfo->level);
-
-			for (auto iterKey : localMonsterviewList)
+			if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->attackFlag), true, false))
 			{
-				auto pMonster = zone->zoneContUnit->monsterCont[BIT_CONVERTER::WhatIsYourTypeAndRealKey(iterKey).second];
+				auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+				timerUnit->objectKey = pClient->key;
+				timerUnit->timerType = TIMER_TYPE::PLAYER_ATTACK;
+				TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SECOND);
 
-				// [NOT_CAS] 이 함수 후, 캐릭터가 상태 변경을 하더라도 상태변경 전 데미지를 적용하겠다.
-				int realDamage = baseDamage;
-				if (pMonster->electricTick) realDamage *= DAMAGE::ELECTRIC_DAMAGE_NUMBER;
+				pClient->monsterViewListLock.lock_shared();				// ++++++++++++++++++++++++++++++++++++1
+				auto localMonsterviewList = pClient->monsterViewList;
+				pClient->monsterViewListLock.unlock_shared();			// ------------------------------------0
 
-				// [NOT_CAS] 이 복사 후, 몬스터, 캐릭터가 이동한다 해도, 이전 위치값으로 처리하겠다.
-				if (JOB::IsAttack(pClient->objectInfo->job, packet->attackType, pClient, pMonster))
+				// [NOT_CAS]  이 함수 후 레벨업을 한다면, 레벨업 전 공격 데미지를 적용하겠다.
+				const int baseDamage = JOB::GetDamage(pClient->objectInfo->job, pClient->objectInfo->level);
+
+				for (auto iterKey : localMonsterviewList)
 				{
-					while (7)
+					auto pMonster = zone->zoneContUnit->monsterCont[BIT_CONVERTER::WhatIsYourTypeAndRealKey(iterKey).second];
+
+					// [NOT_CAS] 이 복사 후, 몬스터, 캐릭터가 이동한다 해도, 이전 위치값으로 처리하겠다.
+					if (JOB::IsAttack(pClient->objectInfo->job, packet->attackType, pClient, pMonster))
 					{
-						unsigned short oldHp = pMonster->objectInfo->hp;
-						if (oldHp > 0)
+						// [NOT_CAS] 이 함수 후, 캐릭터가 상태 변경을 하더라도 상태변경 전 데미지를 적용하겠다.
+						int realDamage = baseDamage;
+						if (pMonster->electricTick) realDamage *= DAMAGE::ELECTRIC_DAMAGE_NUMBER;
+
+						while (7)
 						{
-							unsigned short newHp = oldHp - realDamage;
-							if (newHp < 0) newHp = 0;
-
-							// 데미지를 적용하려합니다. 성공하겠습니까?
-							if (ATOMIC_UTIL::T_CAS(&(pMonster->objectInfo->hp), oldHp, newHp))
+							unsigned short oldHp = pMonster->objectInfo->hp;
+							if (oldHp > 0)
 							{
-								if (newHp == 0)
-								{
-									unsigned int gettedExp = pMonster->objectInfo->level * pMonster->monsterModel->expPerLevel;
-									bool isLevelUp{ false };
+								short newHp = oldHp - realDamage;
+								if (newHp < 0) newHp = 0;
 
-									while (7)
+								// 데미지를 적용하려합니다. 성공하겠습니까?
+								if (ATOMIC_UTIL::T_CAS(&(pMonster->objectInfo->hp), oldHp, static_cast<unsigned short>(newHp)))
+								{
+									if (newHp == 0)
 									{
-										unsigned int oldExp = pClient->objectInfo->exp;
-										unsigned int newExp = oldExp + gettedExp;
+										unsigned int gettedExp = pMonster->objectInfo->level * pMonster->monsterModel->expPerLevel;
+										bool isLevelUp{ false };
 
-										// [OK_CAS] 이 함수 도중, 캐릭터가 레벨업하면 어짜피 Fail함. 메롱
-										if (newExp > JOB::MAX_EXP_PER_LEVEL * pClient->objectInfo->level) newExp = 0;
-
-										// 경험치를 변경하려합니다. 성공하겠습니까?
-										if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->exp), oldExp, newExp))
+										while (7)
 										{
-											if (newExp == 0)
+											unsigned int oldExp = pClient->objectInfo->exp;
+											unsigned int newExp = oldExp + gettedExp;
+
+											// [OK_CAS] 이 함수 도중, 캐릭터가 레벨업하면 어짜피 Fail함. 메롱
+											if (newExp > JOB::MAX_EXP_PER_LEVEL * pClient->objectInfo->level) newExp = 0;
+
+											// 경험치를 변경하려합니다. 성공하겠습니까?
+											if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->exp), oldExp, newExp))
 											{
-												pClient->objectInfo->level.fetch_add(1);	// 이거는 CAS 안써도돼!... 진짜?
-												isLevelUp = true; // 이 지옥같은 CAS 나가서 레벨업했다고 알려줄꺼야
+												if (newExp == 0)
+												{
+													if(pClient->objectInfo->level < JOB::MAX_LEVEL) pClient->objectInfo->level.fetch_add(1);	// 이거는 CAS 안써도돼!... 진짜?
+
+													// 이부분에서, hp = 0 일때 문제가 될수 있을듯 한데..이걸 어케처리해야하지..
+													pClient->objectInfo->hp = JOB::GetMaxHP(pClient->objectInfo->job, pClient->objectInfo->level);
+													pClient->objectInfo->mp = JOB::GetMaxMP(pClient->objectInfo->job, pClient->objectInfo->level);
+
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, pClient->objectInfo->hp, pClient);
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MP, pClient->objectInfo->mp, pClient);
+
+													//재화획득 처리
+													switch (pMonster->objectInfo->posY % 6)
+													{
+													case 0:
+													case 1:
+													case 2:
+														// 너넨 국물도 없어!
+														break;
+													case 3:
+													{
+														// 돈줄겡
+														pClient->objectInfo->money.fetch_add(pMonster->monsterModel->moneyPerLevel * pMonster->objectInfo->level);
+														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MONEY, pClient->objectInfo->money, pClient);
+														break;
+													}
+													case 4:
+													{
+														// 포션줄겡
+														pClient->objectInfo->redCount.fetch_add(1);
+														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::RED_P, pClient->objectInfo->redCount, pClient);
+														break;
+													}
+													case 5:
+													{
+														// 포션줄겡
+														pClient->objectInfo->blueCount.fetch_add(1);
+														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::BLUE_P, pClient->objectInfo->blueCount, pClient);
+														break;
+													}
+													}
+
+													auto pTempObjectInfo = pClient->objectInfo;
+
+													PACKET_DATA::MAIN_TO_QUERY::SaveUserInfo packet(
+														1,	// 백업용
+														static_cast<PlayerObjectInfo*>(pTempObjectInfo)->nickname,
+														pTempObjectInfo->posX,
+														pTempObjectInfo->posY,
+														pTempObjectInfo->level,
+														pTempObjectInfo->exp,
+														pTempObjectInfo->job,
+														pTempObjectInfo->hp,
+														pTempObjectInfo->mp,
+														pTempObjectInfo->money,
+														pTempObjectInfo->redCount,
+														pTempObjectInfo->blueCount,
+														pTempObjectInfo->treeCount
+													);
+
+													NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
+													isLevelUp = true; // 이 지옥같은 CAS 나가서 레벨업했다고 알려줄꺼야
+												}
+
+												NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::EXP, newExp, pClient);
+												// 카스 지옥 으악
+												break;
 											}
-
-											// 카스 지옥 으악
-											break;
 										}
+										
+										// 몬스터 Sector에서 내보내주고. 몬스터 죽었다고 주변에도 알려주고
+										zone->DeathForNpc(pMonster);
+
+										auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+										timerUnit->timerType = TIMER_TYPE::REVIVAL;
+										timerUnit->objectKey = iterKey;
+										TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::MONSTER_REVIVAL);
+
+										NETWORK_UTIL::SEND::SendChatMessage((L"를 사냥하여," + std::to_wstring(gettedExp) + L"의 경험치를 획득했습니다.").c_str(), iterKey, pClient);
+
+										if (isLevelUp) NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::LEVEL, pClient->objectInfo->level, pClient);
 									}
-
-									// 몬스터 Sector에서 내보내주고. 몬스터 죽었다고 주변에도 알려주고
-
-									auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-									timerUnit->timerType = TIMER_TYPE::REVIVAL;
-									timerUnit->objectKey = iterKey;
-									TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::MONSTER_REVIVAL);
-
-									NETWORK_UTIL::SEND::SendChatMessage((L"를 사냥하여," + std::to_wstring(gettedExp) + L"의 경험치를 획득했습니다.").c_str(), iterKey, pClient);
-
-									//레벨업 메세지 보내줘야해요!! 
-									if (isLevelUp);
+									else
+									{
+										NETWORK_UTIL::SEND::SendChatMessage((L"를 공격하여," + std::to_wstring(realDamage) + L"의 데미지를 입혔습니다.").c_str(), iterKey, pClient);
+									}
+									break;
 								}
-								else
-								{
-									NETWORK_UTIL::SEND::SendChatMessage((L"를 공격하여," + std::to_wstring(realDamage) + L"의 데미지를 입혔습니다.").c_str(), iterKey, pClient);
-								}
+							}
+							else
+							{
+								// 이미돌아가셧습니다.
 								break;
 							}
-						}
-						else
-						{
-							// 이미돌아가셧습니다.
-							break;
 						}
 					}
 				}
 			}
 		}
-	}
-	else if (packet->attackType == 1)
-	{
-		if (pClient->objectInfo->skill1Flag == false) return; // 아직 쿨타임
-		if (pClient->objectInfo->hp == 0) return;	// [NOT_CAS] 여기서 안죽었으면, 떄리는거 정도는 허용하겠다.
-
-		if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->skill1Flag), true, false))
+		else if (packet->attackType == 1)
 		{
-			if (pClient->objectInfo->job == JOB_TYPE::KNIGHT)
+			if (pClient->objectInfo->skill1Flag == false) return; // 아직 쿨타임
+			if (pClient->objectInfo->hp == 0) return;	// [NOT_CAS] 여기서 안죽었으면, 떄리는거 정도는 허용하겠다.
+
+			if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->skill1Flag), true, false))
 			{
-				pClient->objectInfo->noDamageFlag = true;
-				if (pClient->objectInfo->hp > 0)
+				if (pClient->objectInfo->job == JOB_TYPE::KNIGHT)
+				{
+					pClient->objectInfo->noDamageFlag = true;
+					if (pClient->objectInfo->hp > 0)
+					{
+						auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+						timerUnit->objectKey = pClient->key;
+						timerUnit->timerType = TIMER_TYPE::SKILL_1_COOLTIME;
+						TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::KNIGHT_SKILL_1);
+
+						NETWORK_UTIL::SEND::SendChatMessage(L" : 전사스킬 1 [단단해요 국산갑옷] 5초간 무적 발동!", pClient->key, pClient);
+
+						auto timerUnit2 = TimerManager::GetInstance()->PopTimerUnit();
+						timerUnit2->objectKey = pClient->key;
+						timerUnit2->timerType = TIMER_TYPE::CC_NODAMAGE;
+						TimerManager::GetInstance()->AddTimerEvent(timerUnit2, TIME::CC_NODAMAGE);
+					}
+					else // 데미지가 무적보다 우선순위를 높게 하겠다.
+					{
+						// 죽은거여 다른거는 몬스터가 처리할거여
+						pClient->objectInfo->noDamageFlag = false;
+					}
+					return; // 저는! 공격스킬 아니에여!
+				}
+				else if (pClient->objectInfo->job == JOB_TYPE::ARCHER)
 				{
 					auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
 					timerUnit->objectKey = pClient->key;
 					timerUnit->timerType = TIMER_TYPE::SKILL_1_COOLTIME;
-					TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::KNIGHT_SKILL_1);
+					TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::ARCHER_SKILL_1);
 
-					NETWORK_UTIL::SEND::SendChatMessage(L" : 전사스킬 1 [단단해요 국산갑옷] 5초간 무적 발동!", pClient->key, pClient);
-					
-					auto timerUnit2 = TimerManager::GetInstance()->PopTimerUnit();
-					timerUnit2->objectKey = pClient->key;
-					timerUnit2->timerType = TIMER_TYPE::CC_NODAMAGE;
-					TimerManager::GetInstance()->AddTimerEvent(timerUnit2, TIME::CC_NODAMAGE);
+					NETWORK_UTIL::SEND::SendChatMessage(L" : 궁수스킬 1 [아이스 아메리카노] 피격대상 3초간 동결!", pClient->key, pClient);
 				}
-				else // 데미지가 무적보다 우선순위를 높게 하겠다.
+				else if (pClient->objectInfo->job == JOB_TYPE::WITCH)
 				{
-					// 죽은거여 다른거는 몬스터가 처리할거여
-					pClient->objectInfo->noDamageFlag = false;
+					auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+					timerUnit->objectKey = pClient->key;
+					timerUnit->timerType = TIMER_TYPE::SKILL_1_COOLTIME;
+					TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::WITCH_SKILL_1);
+
+					NETWORK_UTIL::SEND::SendChatMessage(L" : 마녀스킬 1 [전기 통닭] 피격대상 3초간 감전!", pClient->key, pClient);
 				}
-				return; // 저는! 공격스킬 아니에여!
-			}
-			else if (pClient->objectInfo->job == JOB_TYPE::ARCHER)
-			{
-				auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-				timerUnit->objectKey = pClient->key;
-				timerUnit->timerType = TIMER_TYPE::SKILL_1_COOLTIME;
-				TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::ARCHER_SKILL_1);
 
-				NETWORK_UTIL::SEND::SendChatMessage(L" : 궁수스킬 1 [아이스 아메리카노] 피격대상 3초간 동결!", pClient->key, pClient);
-			}
-			else if (pClient->objectInfo->job == JOB_TYPE::WITCH)
-			{
-				auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-				timerUnit->objectKey = pClient->key;
-				timerUnit->timerType = TIMER_TYPE::SKILL_1_COOLTIME;
-				TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::WITCH_SKILL_1);
+				pClient->monsterViewListLock.lock_shared();				// ++++++++++++++++++++++++++++++++++++1
+				auto localMonsterviewList = pClient->monsterViewList;
+				pClient->monsterViewListLock.unlock_shared();			// ------------------------------------0
 
-				NETWORK_UTIL::SEND::SendChatMessage(L" : 마녀스킬 1 [전기 통닭] 피격대상 3초간 감전!", pClient->key, pClient);
-			}
+				// [NOT_CAS]  이 함수 후 레벨업을 한다면, 레벨업 전 공격 데미지를 적용하겠다.
+				const int baseDamage = JOB::GetDamage(pClient->objectInfo->job, pClient->objectInfo->level);
 
-			pClient->monsterViewListLock.lock_shared();				// ++++++++++++++++++++++++++++++++++++1
-			auto localMonsterviewList = pClient->monsterViewList;
-			pClient->monsterViewListLock.unlock_shared();			// ------------------------------------0
-
-			// [NOT_CAS]  이 함수 후 레벨업을 한다면, 레벨업 전 공격 데미지를 적용하겠다.
-			const int baseDamage = JOB::GetDamage(pClient->objectInfo->job, pClient->objectInfo->level);
-
-			for (auto iterKey : localMonsterviewList)
-			{
-				auto pMonster = zone->zoneContUnit->monsterCont[BIT_CONVERTER::WhatIsYourTypeAndRealKey(iterKey).second];
-
-				// [NOT_CAS] 이 함수 후, 캐릭터가 상태 변경을 하더라도 상태변경 전 데미지를 적용하겠다.
-				int realDamage = baseDamage;
-				if (pMonster->electricTick) realDamage *= DAMAGE::ELECTRIC_DAMAGE_NUMBER;
-
-				// [NOT_CAS] 이 복사 후, 몬스터, 캐릭터가 이동한다 해도, 이전 위치값으로 처리하겠다.
-				if (JOB::IsAttack(pClient->objectInfo->job, packet->attackType, pClient, pMonster))
+				for (auto iterKey : localMonsterviewList)
 				{
-					while (7)
+					auto pMonster = zone->zoneContUnit->monsterCont[BIT_CONVERTER::WhatIsYourTypeAndRealKey(iterKey).second];
+
+					// [NOT_CAS] 이 복사 후, 몬스터, 캐릭터가 이동한다 해도, 이전 위치값으로 처리하겠다.
+					if (JOB::IsAttack(pClient->objectInfo->job, packet->attackType, pClient, pMonster))
 					{
-						unsigned short oldHp = pMonster->objectInfo->hp;
-						if (oldHp > 0)
+						// [NOT_CAS] 이 함수 후, 캐릭터가 상태 변경을 하더라도 상태변경 전 데미지를 적용하겠다.
+						int realDamage = baseDamage;
+						if (pMonster->electricTick) realDamage *= DAMAGE::ELECTRIC_DAMAGE_NUMBER;
+
+						while (7)
 						{
-							unsigned short newHp = oldHp - realDamage;
-							if (newHp < 0) newHp = 0;
-
-							// 데미지를 적용하려합니다. 성공하겠습니까?
-							if (ATOMIC_UTIL::T_CAS(&(pMonster->objectInfo->hp), oldHp, newHp))
+							unsigned short oldHp = pMonster->objectInfo->hp;
+							if (oldHp > 0)
 							{
-								if (newHp == 0)
+								short newHp = oldHp - realDamage;
+								if (newHp < 0) newHp = 0;
+
+								// 데미지를 적용하려합니다. 성공하겠습니까?
+								if (ATOMIC_UTIL::T_CAS(&(pMonster->objectInfo->hp), oldHp, static_cast<unsigned short>(newHp)))
 								{
-									unsigned int gettedExp = pMonster->objectInfo->level * pMonster->monsterModel->expPerLevel;
-									bool isLevelUp{ false };
-
-									while (7)
+									if (newHp == 0)
 									{
-										unsigned int oldExp = pClient->objectInfo->exp;
-										unsigned int newExp = oldExp + gettedExp;
+										unsigned int gettedExp = pMonster->objectInfo->level * pMonster->monsterModel->expPerLevel;
+										bool isLevelUp{ false };
 
-										// [OK_CAS] 이 함수 도중, 캐릭터가 레벨업하면 어짜피 Fail함. 메롱
-										if (newExp > JOB::MAX_EXP_PER_LEVEL * pClient->objectInfo->level) newExp = 0;
-
-										// 경험치를 변경하려합니다. 성공하겠습니까?
-										if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->exp), oldExp, newExp))
+										while (7)
 										{
-											if (newExp == 0)
+											unsigned int oldExp = pClient->objectInfo->exp;
+											unsigned int newExp = oldExp + gettedExp;
+
+											// [OK_CAS] 이 함수 도중, 캐릭터가 레벨업하면 어짜피 Fail함. 메롱
+											if (newExp > JOB::MAX_EXP_PER_LEVEL * pClient->objectInfo->level) newExp = 0;
+
+											// 경험치를 변경하려합니다. 성공하겠습니까?
+											if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->exp), oldExp, newExp))
 											{
-												pClient->objectInfo->level.fetch_add(1);	// 이거는 CAS 안써도돼!... 진짜?
-												isLevelUp = true; // 이 지옥같은 CAS 나가서 레벨업했다고 알려줄꺼야
+												if (newExp == 0)
+												{
+													if (pClient->objectInfo->level < JOB::MAX_LEVEL) pClient->objectInfo->level.fetch_add(1);	// 이거는 CAS 안써도돼!... 진짜?
+
+													// 이부분에서, hp = 0 일때 문제가 될수 있을듯 한데..이걸 어케처리해야하지..
+													pClient->objectInfo->hp = JOB::GetMaxHP(pClient->objectInfo->job, pClient->objectInfo->level);
+													pClient->objectInfo->mp = JOB::GetMaxMP(pClient->objectInfo->job, pClient->objectInfo->level);
+
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, pClient->objectInfo->hp, pClient);
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MP, pClient->objectInfo->mp, pClient);
+
+													//재화획득 처리
+													switch (pMonster->objectInfo->posY % 6)
+													{
+													case 0:
+													case 1:
+													case 2:
+														// 너넨 국물도 없어!
+														break;
+													case 3:
+													{
+														// 돈줄겡
+														pClient->objectInfo->money.fetch_add(pMonster->monsterModel->moneyPerLevel * pMonster->objectInfo->level);
+														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MONEY, pClient->objectInfo->money, pClient);
+														break;
+													}
+													case 4:
+													{
+														// 포션줄겡
+														pClient->objectInfo->redCount.fetch_add(1);
+														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::RED_P, pClient->objectInfo->redCount, pClient);
+														break;
+													}
+													case 5:
+													{
+														// 포션줄겡
+														pClient->objectInfo->blueCount.fetch_add(1);
+														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::BLUE_P, pClient->objectInfo->blueCount, pClient);
+														break;
+													}
+													}
+
+													auto pTempObjectInfo = pClient->objectInfo;
+
+													PACKET_DATA::MAIN_TO_QUERY::SaveUserInfo packet(
+														1,	// 백업용
+														static_cast<PlayerObjectInfo*>(pTempObjectInfo)->nickname,
+														pTempObjectInfo->posX,
+														pTempObjectInfo->posY,
+														pTempObjectInfo->level,
+														pTempObjectInfo->exp,
+														pTempObjectInfo->job,
+														pTempObjectInfo->hp,
+														pTempObjectInfo->mp,
+														pTempObjectInfo->money,
+														pTempObjectInfo->redCount,
+														pTempObjectInfo->blueCount,
+														pTempObjectInfo->treeCount
+													);
+
+													NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
+
+													isLevelUp = true; // 이 지옥같은 CAS 나가서 레벨업했다고 알려줄꺼야
+												}
+
+												NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::EXP, newExp, pClient);
+
+												// 카스 지옥 으악
+												break;
 											}
-											// 카스 지옥 으악
-											break;
+										}
+
+										// 몬스터 Sector에서 내보내주고. 몬스터 죽었다고 주변에도 알려주고
+										zone->DeathForNpc(pMonster);
+
+										auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+										timerUnit->timerType = TIMER_TYPE::REVIVAL;
+										timerUnit->objectKey = iterKey;
+										TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::MONSTER_REVIVAL);
+
+										NETWORK_UTIL::SEND::SendChatMessage((L"를 사냥하여," + std::to_wstring(gettedExp) + L"의 경험치를 획득했습니다.").c_str(), iterKey, pClient);
+
+										if (isLevelUp) NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::LEVEL, pClient->objectInfo->level, pClient);
+									}
+									else
+									{
+										// 전사는 1번 스킬 공격 스킬 아니에요~ 
+										// 안죽었으면 CC를 맞아랏!
+										if (pClient->objectInfo->job == JOB_TYPE::ARCHER)
+										{
+											pMonster->freezeTick.fetch_add(1);
+											auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+											timerUnit->timerType = TIMER_TYPE::CC_FREEZE;
+											timerUnit->objectKey = iterKey;
+											TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::CC_FREEZE);
+
+											NETWORK_UTIL::SEND::SendChatMessage((L"를 공격하여," + std::to_wstring(realDamage) + L"의 데미지와 동결상태로 만들었습니다.").c_str(), iterKey, pClient);
+										}
+										else if (pClient->objectInfo->job == JOB_TYPE::WITCH)
+										{
+											pMonster->electricTick.fetch_add(1);
+											auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+											timerUnit->timerType = TIMER_TYPE::CC_ELECTRIC;
+											timerUnit->objectKey = iterKey;
+											TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::CC_ELECTRIC);
+
+											NETWORK_UTIL::SEND::SendChatMessage((L"를 공격하여," + std::to_wstring(realDamage) + L"의 데미지와 감전상태로 만들었습니다.").c_str(), iterKey, pClient);
 										}
 									}
-
-									// 몬스터 Sector에서 내보내주고. 몬스터 죽었다고 주변에도 알려주고
-
-									auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-									timerUnit->timerType = TIMER_TYPE::REVIVAL;
-									timerUnit->objectKey = iterKey;
-									TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::MONSTER_REVIVAL);
-
-									NETWORK_UTIL::SEND::SendChatMessage((L"를 사냥하여," + std::to_wstring(gettedExp) + L"의 경험치를 획득했습니다.").c_str(), iterKey, pClient);
-
-									//레벨업 메세지 보내줘야해요!! 
-									if (isLevelUp);
+									break;
 								}
-								else
-								{
-									// 전사는 1번 스킬 공격 스킬 아니에요~ 
-									// 안죽었으면 CC를 맞아랏!
-									if (pClient->objectInfo->job == JOB_TYPE::ARCHER)
-									{
-										pMonster->freezeTick.fetch_add(1);
-										auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-										timerUnit->timerType = TIMER_TYPE::CC_FREEZE;
-										timerUnit->objectKey = iterKey;
-										TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::CC_FREEZE);
-										
-										NETWORK_UTIL::SEND::SendChatMessage((L"를 공격하여," + std::to_wstring(realDamage) + L"의 데미지와 동결상태로 만들었습니다.").c_str(), iterKey, pClient);
-									}
-									else if (pClient->objectInfo->job == JOB_TYPE::WITCH)
-									{
-										pMonster->electricTick.fetch_add(1);
-										auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-										timerUnit->timerType = TIMER_TYPE::CC_ELECTRIC;
-										timerUnit->objectKey = iterKey;
-										TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::CC_ELECTRIC);
-
-										NETWORK_UTIL::SEND::SendChatMessage((L"를 공격하여," + std::to_wstring(realDamage) + L"의 데미지와 감전상태로 만들었습니다.").c_str(), iterKey, pClient);
-									}
-								}
+							}
+							else
+							{
+								// 이미돌아가셧습니다.
 								break;
 							}
-						}
-						else
-						{
-							// 이미돌아가셧습니다.
-							break;
 						}
 					}
 				}
 			}
 		}
-	}
-	else if (packet->attackType == 2)
-	{
-		if (pClient->objectInfo->skill2Flag == false) return; //아직 쿨타임
-		if (pClient->objectInfo->hp == 0) return;	// [NOT_CAS] 여기서 안죽었으면, 떄리는거 정도는 허용하겠다.
-
-		if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->skill2Flag), true, false))
+		else if (packet->attackType == 2)
 		{
-			auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-			timerUnit->objectKey = pClient->key;
-			timerUnit->timerType = TIMER_TYPE::SKILL_2_COOLTIME;
+			if (pClient->objectInfo->skill2Flag == false) return; //아직 쿨타임
+			if (pClient->objectInfo->hp == 0) return;	// [NOT_CAS] 여기서 안죽었으면, 떄리는거 정도는 허용하겠다.
 
-			if (pClient->objectInfo->job == JOB_TYPE::KNIGHT)
+			if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->skill2Flag), true, false))
 			{
-				TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::KNIGHT_SKILL_2);
-				NETWORK_UTIL::SEND::SendChatMessage(L" : 전사스킬 2 [단단해요 국산 방패] 피격대상 2초간 기절!", pClient->key, pClient);
-			}
-			else if (pClient->objectInfo->job == JOB_TYPE::ARCHER)
-			{
-				TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::ARCHER_SKILL_2);
-				NETWORK_UTIL::SEND::SendChatMessage(L" : 궁수스킬 2 [여기 샷 추가요] 3번 연속 공격!", pClient->key, pClient);
-			}
-			else if (pClient->objectInfo->job == JOB_TYPE::WITCH)
-			{
-				TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::WITCH_SKILL_2);
-				NETWORK_UTIL::SEND::SendChatMessage(L" : 마녀스킬 2 [불닭] 피격대상 5초간 화상!", pClient->key, pClient);
-			}
+				auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+				timerUnit->objectKey = pClient->key;
+				timerUnit->timerType = TIMER_TYPE::SKILL_2_COOLTIME;
 
-			pClient->monsterViewListLock.lock_shared();				// ++++++++++++++++++++++++++++++++++++1
-			auto localMonsterviewList = pClient->monsterViewList;
-			pClient->monsterViewListLock.unlock_shared();			// ------------------------------------0
-
-			// [NOT_CAS]  이 함수 후 레벨업을 한다면, 레벨업 전 공격 데미지를 적용하겠다.
-			const int baseDamage = JOB::GetDamage(pClient->objectInfo->job, pClient->objectInfo->level);
-
-			for (auto iterKey : localMonsterviewList)
-			{
-				auto pMonster = zone->zoneContUnit->monsterCont[BIT_CONVERTER::WhatIsYourTypeAndRealKey(iterKey).second];
-				
-				// [NOT_CAS] 이 함수 후, 몬스터가 상태 변경을 하더라도 상태변경 전 데미지를 적용하겠다.
-				int realDamage = baseDamage;
-				if (pMonster->electricTick) realDamage *= DAMAGE::ELECTRIC_DAMAGE_NUMBER;
-				
-				// 여기는 2렙스킬이며 궁수스킬일 경우 3번 연속 공격 합니다.
-				if (pClient->objectInfo->job == JOB_TYPE::ARCHER) realDamage *= 3;
-
-				// [NOT_CAS] 이 복사 후, 몬스터, 캐릭터가 이동한다 해도, 이전 위치값으로 처리하겠다.
-				if (JOB::IsAttack(pClient->objectInfo->job, packet->attackType, pClient, pMonster))
+				if (pClient->objectInfo->job == JOB_TYPE::KNIGHT)
 				{
-					while (7)
+					TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::KNIGHT_SKILL_2);
+					NETWORK_UTIL::SEND::SendChatMessage(L" : 전사스킬 2 [단단해요 국산 방패] 피격대상 2초간 기절!", pClient->key, pClient);
+				}
+				else if (pClient->objectInfo->job == JOB_TYPE::ARCHER)
+				{
+					TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::ARCHER_SKILL_2);
+					NETWORK_UTIL::SEND::SendChatMessage(L" : 궁수스킬 2 [여기 샷 추가요] 3번 연속 공격!", pClient->key, pClient);
+				}
+				else if (pClient->objectInfo->job == JOB_TYPE::WITCH)
+				{
+					TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::WITCH_SKILL_2);
+					NETWORK_UTIL::SEND::SendChatMessage(L" : 마녀스킬 2 [불닭] 피격대상 5초간 화상!", pClient->key, pClient);
+				}
+
+				pClient->monsterViewListLock.lock_shared();				// ++++++++++++++++++++++++++++++++++++1
+				auto localMonsterviewList = pClient->monsterViewList;
+				pClient->monsterViewListLock.unlock_shared();			// ------------------------------------0
+
+				// [NOT_CAS]  이 함수 후 레벨업을 한다면, 레벨업 전 공격 데미지를 적용하겠다.
+				const int baseDamage = JOB::GetDamage(pClient->objectInfo->job, pClient->objectInfo->level);
+
+				for (auto iterKey : localMonsterviewList)
+				{
+					auto pMonster = zone->zoneContUnit->monsterCont[BIT_CONVERTER::WhatIsYourTypeAndRealKey(iterKey).second];
+
+					// [NOT_CAS] 이 복사 후, 몬스터, 캐릭터가 이동한다 해도, 이전 위치값으로 처리하겠다.
+					if (JOB::IsAttack(pClient->objectInfo->job, packet->attackType, pClient, pMonster))
 					{
-						unsigned short oldHp = pMonster->objectInfo->hp;
-						if (oldHp > 0)
+						// [NOT_CAS] 이 함수 후, 몬스터가 상태 변경을 하더라도 상태변경 전 데미지를 적용하겠다.
+						int realDamage = baseDamage;
+						if (pMonster->electricTick) realDamage *= DAMAGE::ELECTRIC_DAMAGE_NUMBER;
+
+						// 여기는 2렙스킬이며 궁수스킬일 경우 3번 연속 공격 합니다.
+						if (pClient->objectInfo->job == JOB_TYPE::ARCHER) realDamage *= 3;
+
+						while (7)
 						{
-							unsigned short newHp = oldHp - realDamage;
-							if (newHp < 0) newHp = 0;
-
-							// 데미지를 적용하려합니다. 성공하겠습니까?
-							if (ATOMIC_UTIL::T_CAS(&(pMonster->objectInfo->hp), oldHp, newHp))
+							unsigned short oldHp = pMonster->objectInfo->hp;
+							if (oldHp > 0)
 							{
-								if (newHp == 0)
+								short newHp = oldHp - realDamage;
+								if (newHp < 0) newHp = 0;
+
+								// 데미지를 적용하려합니다. 성공하겠습니까?
+								if (ATOMIC_UTIL::T_CAS(&(pMonster->objectInfo->hp), oldHp, static_cast<unsigned short>(newHp)))
 								{
-									unsigned int gettedExp = pMonster->objectInfo->level * pMonster->monsterModel->expPerLevel;
-									bool isLevelUp{ false };
-
-									while (7)
+									if (newHp == 0)
 									{
-										unsigned int oldExp = pClient->objectInfo->exp;
-										unsigned int newExp = oldExp + gettedExp;
+										unsigned int gettedExp = pMonster->objectInfo->level * pMonster->monsterModel->expPerLevel;
+										bool isLevelUp{ false };
 
-										// [OK_CAS] 이 함수 도중, 캐릭터가 레벨업하면 어짜피 Fail함. 메롱
-										if (newExp > JOB::MAX_EXP_PER_LEVEL * pClient->objectInfo->level) newExp = 0;
-
-										// 경험치를 변경하려합니다. 성공하겠습니까?
-										if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->exp), oldExp, newExp))
+										while (7)
 										{
-											if (newExp == 0)
-											{
-												pClient->objectInfo->level.fetch_add(1);	// 이거는 CAS 안써도돼!... 진짜?
-												isLevelUp = true; // 이 지옥같은 CAS 나가서 레벨업했다고 알려줄꺼야
-											}
+											unsigned int oldExp = pClient->objectInfo->exp;
+											unsigned int newExp = oldExp + gettedExp;
 
-											// 카스 지옥 으악
-											break;
+											// [OK_CAS] 이 함수 도중, 캐릭터가 레벨업하면 어짜피 Fail함. 메롱
+											if (newExp > JOB::MAX_EXP_PER_LEVEL * pClient->objectInfo->level) newExp = 0;
+
+											// 경험치를 변경하려합니다. 성공하겠습니까?
+											if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->exp), oldExp, newExp))
+											{
+												if (newExp == 0)
+												{
+													if (pClient->objectInfo->level < JOB::MAX_LEVEL) pClient->objectInfo->level.fetch_add(1);	// 이거는 CAS 안써도돼!... 진짜?
+
+													// 이부분에서, hp = 0 일때 문제가 될수 있을듯 한데..이걸 어케처리해야하지..
+													pClient->objectInfo->hp = JOB::GetMaxHP(pClient->objectInfo->job, pClient->objectInfo->level);
+													pClient->objectInfo->mp = JOB::GetMaxMP(pClient->objectInfo->job, pClient->objectInfo->level);
+
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, pClient->objectInfo->hp, pClient);
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MP, pClient->objectInfo->mp, pClient);
+
+													//재화획득 처리
+													switch (pMonster->objectInfo->posY % 6)
+													{
+													case 0:
+													case 1:
+													case 2:
+														// 너넨 국물도 없어!
+														break;
+													case 3:
+													{
+														// 돈줄겡
+														pClient->objectInfo->money.fetch_add(pMonster->monsterModel->moneyPerLevel * pMonster->objectInfo->level);
+														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MONEY, pClient->objectInfo->money, pClient);
+														break;
+													}
+													case 4:
+													{
+														// 포션줄겡
+														pClient->objectInfo->redCount.fetch_add(1);
+														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::RED_P, pClient->objectInfo->redCount, pClient);
+														break;
+													}
+													case 5:
+													{
+														// 포션줄겡
+														pClient->objectInfo->blueCount.fetch_add(1);
+														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::BLUE_P, pClient->objectInfo->blueCount, pClient);
+														break;
+													}
+													}
+
+													auto pTempObjectInfo = pClient->objectInfo;
+
+													PACKET_DATA::MAIN_TO_QUERY::SaveUserInfo packet(
+														1,	// 백업용
+														static_cast<PlayerObjectInfo*>(pTempObjectInfo)->nickname,
+														pTempObjectInfo->posX,
+														pTempObjectInfo->posY,
+														pTempObjectInfo->level,
+														pTempObjectInfo->exp,
+														pTempObjectInfo->job,
+														pTempObjectInfo->hp,
+														pTempObjectInfo->mp,
+														pTempObjectInfo->money,
+														pTempObjectInfo->redCount,
+														pTempObjectInfo->blueCount,
+														pTempObjectInfo->treeCount
+													);
+
+													NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
+													isLevelUp = true; // 이 지옥같은 CAS 나가서 레벨업했다고 알려줄꺼야
+												}
+
+												NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::EXP, newExp, pClient);
+												// 카스 지옥 으악
+												break;
+											}
+										}
+										// 몬스터 Sector에서 내보내주고. 나 죽었다고 주변에도 알려주고
+										zone->DeathForNpc(pMonster);
+
+										// 마 너 죽었어 임마!
+										auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+										timerUnit->timerType = TIMER_TYPE::REVIVAL;
+										timerUnit->objectKey = iterKey;
+										TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::MONSTER_REVIVAL);
+
+										NETWORK_UTIL::SEND::SendChatMessage((L"를 사냥하여," + std::to_wstring(gettedExp) + L"의 경험치를 획득했습니다.").c_str(), iterKey, pClient);
+
+										if (isLevelUp) NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::LEVEL, pClient->objectInfo->level, pClient);
+									}
+									else
+									{
+										if (pClient->objectInfo->job == JOB_TYPE::KNIGHT)
+										{
+											pMonster->objectInfo->faintTick.fetch_add(1);
+											auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+											timerUnit->timerType = TIMER_TYPE::CC_FAINT;
+											timerUnit->objectKey = iterKey;
+											TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::CC_FAINT);
+											NETWORK_UTIL::SEND::SendChatMessage((L"를 공격하여," + std::to_wstring(realDamage) + L"의 데미지와 기절상태로 만들었습니다.").c_str(), iterKey, pClient);
+										}
+										else if (pClient->objectInfo->job == JOB_TYPE::ARCHER)
+										{
+											NETWORK_UTIL::SEND::SendChatMessage((L"를 3번 연속 공격하여," + std::to_wstring(realDamage) + L"의 데미지를 입혔습니다.").c_str(), iterKey, pClient);
+										}
+										else if (pClient->objectInfo->job == JOB_TYPE::WITCH)
+										{
+											pMonster->objectInfo->burnTick.fetch_add(1);
+											auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+											timerUnit->timerType = TIMER_TYPE::CC_BURN_3;
+											timerUnit->objectKey = iterKey;
+											TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::CC_BURN);
+
+											NETWORK_UTIL::SEND::SendChatMessage((L"를 공격하여," + std::to_wstring(realDamage) + L"의 데미지와 화상상태로 만들었습니다.").c_str(), iterKey, pClient);
 										}
 									}
-									// 몬스터 Sector에서 내보내주고. 나 죽었다고 주변에도 알려주고
-
-									// 마 너 죽었어 임마!
-									auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-									timerUnit->timerType = TIMER_TYPE::REVIVAL;
-									timerUnit->objectKey = iterKey;
-									TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::MONSTER_REVIVAL);
-
-									NETWORK_UTIL::SEND::SendChatMessage((L"를 사냥하여," + std::to_wstring(gettedExp) + L"의 경험치를 획득했습니다.").c_str(), iterKey, pClient);
-
-									//레벨업 메세지 보내줘야해요!! 
-									if (isLevelUp);
+									break;
 								}
-								else
-								{
-									if (pClient->objectInfo->job == JOB_TYPE::KNIGHT)
-									{
-										pMonster->objectInfo->faintTick.fetch_add(1);
-										auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-										timerUnit->timerType = TIMER_TYPE::CC_FAINT;
-										timerUnit->objectKey = iterKey;
-										TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::CC_FAINT);
-										NETWORK_UTIL::SEND::SendChatMessage((L"를 공격하여," + std::to_wstring(realDamage) + L"의 데미지와 기절상태로 만들었습니다.").c_str(), iterKey, pClient);
-									}
-									else if (pClient->objectInfo->job == JOB_TYPE::ARCHER)
-									{
-										NETWORK_UTIL::SEND::SendChatMessage((L"를 3번 연속 공격하여," + std::to_wstring(realDamage) + L"의 데미지를 입혔습니다.").c_str(), iterKey, pClient);
-									}
-									else if (pClient->objectInfo->job == JOB_TYPE::WITCH)
-									{
-										pMonster->objectInfo->burnTick.fetch_add(1);
-										auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-										timerUnit->timerType = TIMER_TYPE::CC_BURN_3;
-										timerUnit->objectKey = iterKey;
-										TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::CC_BURN);
-
-										NETWORK_UTIL::SEND::SendChatMessage((L"를 공격하여," + std::to_wstring(realDamage) + L"의 데미지와 화상상태로 만들었습니다.").c_str(), iterKey, pClient);
-									}
-								}
+							}
+							else
+							{
+								// 이미돌아가셧습니다.
 								break;
 							}
-						}
-						else
-						{
-							// 이미돌아가셧습니다.
-							break;
 						}
 					}
 				}
@@ -905,106 +1095,109 @@ void GameServer::RecvAttack(SocketInfo* pClient)
 
 void GameServer::RecvItem(SocketInfo* pClient)
 {
-	PACKET_DATA::CLIENT_TO_MAIN::Item* packet = reinterpret_cast<PACKET_DATA::CLIENT_TO_MAIN::Item*>(pClient->loadedBuf);
-
-	if (packet->useItemType == 0)
+	if (pClient->objectInfo->hp)
 	{
-		if (pClient->objectInfo->redCount == 0)
+		PACKET_DATA::CLIENT_TO_MAIN::Item* packet = reinterpret_cast<PACKET_DATA::CLIENT_TO_MAIN::Item*>(pClient->loadedBuf);
+
+		if (packet->useItemType == 0)
 		{
-			// 거지에요!
-			return;
-		}
-		else if (pClient->objectInfo->hp == JOB::GetMaxHP(pClient->objectInfo->job, pClient->objectInfo->level))
-		{
-			// 풀피에요!
-			return;
-		}
-		else
-		{
-			while (7)
+			if (pClient->objectInfo->redCount == 0)
 			{
-				unsigned int oldRedCount = pClient->objectInfo->redCount;
-				unsigned int newRedCount = oldRedCount - 1;
-				
-				if (oldRedCount == 0) return; // 님 지금 거지에요~
-
-				if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->redCount), oldRedCount, newRedCount))
+				// 거지에요!
+				return;
+			}
+			else if (pClient->objectInfo->hp == JOB::GetMaxHP(pClient->objectInfo->job, pClient->objectInfo->level))
+			{
+				// 풀피에요!
+				return;
+			}
+			else
+			{
+				while (7)
 				{
-					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::RED_P, newRedCount, pClient);
+					unsigned int oldRedCount = pClient->objectInfo->redCount;
+					unsigned int newRedCount = oldRedCount - 1;
 
-					while (7)
+					if (oldRedCount == 0) return; // 님 지금 거지에요~
+
+					if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->redCount), oldRedCount, newRedCount))
 					{
-						// 여기 tick Count 오버플로우 될수 있는데 확인하지 않겠음.
+						NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::RED_P, newRedCount, pClient);
 
-						unsigned char oldTickCount = pClient->objectInfo->redTickCount;
-						unsigned char newTickCount = oldTickCount + 5;
-
-						if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->redTickCount), oldTickCount, newTickCount))
+						while (7)
 						{
-							if (oldTickCount == 0)
+							// 여기 tick Count 오버플로우 될수 있는데 확인하지 않겠음.
+
+							unsigned char oldTickCount = pClient->objectInfo->redTickCount;
+							unsigned char newTickCount = oldTickCount + 5;
+
+							if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->redTickCount), oldTickCount, newTickCount))
 							{
-								// 타이머에 등록필요함.
-								auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-								timerUnit->objectKey = pClient->key;
-								timerUnit->timerType = TIMER_TYPE::ITEM_HP;
-								TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::ITEM_HP);
+								if (oldTickCount == 0)
+								{
+									// 타이머에 등록필요함.
+									auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+									timerUnit->objectKey = pClient->key;
+									timerUnit->timerType = TIMER_TYPE::ITEM_HP;
+									TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::ITEM_HP);
+								}
+								// 아니면 원래 타이머가 알아서 해줄겨.
+								break;
 							}
-							// 아니면 원래 타이머가 알아서 해줄겨.
-							break;
 						}
+						break;
 					}
-					break;
 				}
 			}
 		}
-	}
-	else if (packet->useItemType == 1)
-	{
-		if (pClient->objectInfo->blueCount == 0)
+		else if (packet->useItemType == 1)
 		{
-			// 거지에요!
-			return;
-		}
-		else if (pClient->objectInfo->mp == JOB::GetMaxMP(pClient->objectInfo->job, pClient->objectInfo->level))
-		{
-			// 풀마나에요!
-			return;
-		}
-		else
-		{
-			while (7)
+			if (pClient->objectInfo->blueCount == 0)
 			{
-				unsigned int oldBlueCount = pClient->objectInfo->blueCount;
-				unsigned int newBlueCount = oldBlueCount - 1;
-
-				if (oldBlueCount == 0) return; // 님 지금 거지에요~
-
-				if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->blueCount), oldBlueCount, newBlueCount))
+				// 거지에요!
+				return;
+			}
+			else if (pClient->objectInfo->mp == JOB::GetMaxMP(pClient->objectInfo->job, pClient->objectInfo->level))
+			{
+				// 풀마나에요!
+				return;
+			}
+			else
+			{
+				while (7)
 				{
-					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::BLUE_P, newBlueCount, pClient);
+					unsigned int oldBlueCount = pClient->objectInfo->blueCount;
+					unsigned int newBlueCount = oldBlueCount - 1;
 
-					while (7)
+					if (oldBlueCount == 0) return; // 님 지금 거지에요~
+
+					if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->blueCount), oldBlueCount, newBlueCount))
 					{
-						// 여기 tick Count 오버플로우 될수 있는데 확인하지 않겠음.
+						NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::BLUE_P, newBlueCount, pClient);
 
-						unsigned char oldTickCount = pClient->objectInfo->blueTickCount;
-						unsigned char newTickCount = oldTickCount + 5;
-
-						if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->blueTickCount), oldTickCount, newTickCount))
+						while (7)
 						{
-							if (oldTickCount == 0)
+							// 여기 tick Count 오버플로우 될수 있는데 확인하지 않겠음.
+
+							unsigned char oldTickCount = pClient->objectInfo->blueTickCount;
+							unsigned char newTickCount = oldTickCount + 5;
+
+							if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->blueTickCount), oldTickCount, newTickCount))
 							{
-								// 타이머에 등록필요함.
-								auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-								timerUnit->objectKey = pClient->key;
-								timerUnit->timerType = TIMER_TYPE::ITEM_MP;
-								TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::ITEM_MP);
+								if (oldTickCount == 0)
+								{
+									// 타이머에 등록필요함.
+									auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+									timerUnit->objectKey = pClient->key;
+									timerUnit->timerType = TIMER_TYPE::ITEM_MP;
+									TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::ITEM_MP);
+								}
+								// 아니면 원래 타이머가 알아서 해줄겨.
+								break;
 							}
-							// 아니면 원래 타이머가 알아서 해줄겨.
-							break;
 						}
+						break;
 					}
-					break;
 				}
 			}
 		}

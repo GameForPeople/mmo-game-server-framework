@@ -122,6 +122,40 @@ void Zone::InitZoneCont()
 	std::cout << "    할당이 종료되었습니다." << std::endl;
 }
 
+void Zone::Death(SocketInfo* pClient)
+{
+	sectorCont[pClient->objectInfo->sectorIndexY][pClient->objectInfo->sectorIndexX].Exit(pClient);
+
+	pClient->viewListLock.lock();
+	auto localViewList = pClient->viewList;
+	pClient->viewList.clear();
+	pClient->viewListLock.unlock();
+
+	// 지금 당장! 지워주기만 가만히 있는 클라들에게서도 지워주기만 해!! 지네 뷰리스트는 지네가 지울꺼야
+	for (auto iterKey : localViewList)
+	{
+		NETWORK_UTIL::SEND::SendRemovePlayer(pClient->key, zoneContUnit->clientContArr[iterKey]);
+	}
+
+	pClient->monsterViewListLock.lock();
+	pClient->monsterViewList.clear();
+	pClient->monsterViewListLock.unlock();
+}
+
+// 존재를 지워드립니다.
+void Zone::DeathForNpc(BaseMonster* pMonster)
+{
+	sectorCont[pMonster->objectInfo->sectorIndexY][pMonster->objectInfo->sectorIndexX].ExitForNpc(pMonster);
+
+	std::unordered_set<_KeyType> localViewList;
+	MakeOldViewListForNpc(localViewList, pMonster);
+
+	// 지금 당장! 지워주기만 가만히 있는 클라들에게서도 지워주기만 해!! 지네 뷰리스트는 지네가 지울꺼야
+	for (auto iterKey : localViewList)
+	{
+		NETWORK_UTIL::SEND::SendRemovePlayer(pMonster->key, zoneContUnit->clientContArr[iterKey]);
+	}
+}
 
 void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 {
@@ -150,12 +184,14 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 				}
 				case (TIMER_TYPE::PLAYER_MOVE):
 				{
-
+					zoneContUnit->clientContArr[index]->objectInfo->moveFlag = true;
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
 					break;
 				}
 				case (TIMER_TYPE::PLAYER_ATTACK):
 				{
-
+					zoneContUnit->clientContArr[index]->objectInfo->attackFlag = true;
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
 					break;
 				}
 				case (TIMER_TYPE::SELF_HEAL):
@@ -184,7 +220,7 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 
 							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldHp, newHp))
 							{
-								// 피회복한거 보내야함.
+								NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, newHp, zoneContUnit->clientContArr[index]);
 								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SELF_HEAL);
 								break;
 							}
@@ -226,7 +262,7 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 
 							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldHp, newHp))
 							{
-								// 피회복한거 보내야함.
+								NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, newHp, zoneContUnit->clientContArr[index]);
 								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::ITEM_HP);
 								break;
 							}
@@ -260,14 +296,134 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 						}
 						else if (newMp > maxMp) newMp = maxMp;
 
-						if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldMp, newMp))
+						if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->mp), oldMp, newMp))
 						{
-							// 마나회복한거 보내야함.
+							NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MP, newMp, zoneContUnit->clientContArr[index]);
 							TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::ITEM_MP);
 							break;
 						}
 					}
 
+					break;
+				}
+				case (TIMER_TYPE::CC_BURN_3):
+				{
+					while (7)
+					{
+						unsigned short oldHp = zoneContUnit->clientContArr[index]->objectInfo->hp;
+						unsigned short newHp = oldHp - (oldHp / 100);
+
+						if (oldHp > 0)
+						{
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldHp, newHp))
+							{
+								NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, newHp, zoneContUnit->clientContArr[index]);
+								pUnit->timerType = TIMER_TYPE::CC_BURN_2;
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
+								break;
+							}
+						}
+						else
+						{
+							zoneContUnit->clientContArr[index]->objectInfo->burnTick.fetch_sub(1);
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							break;
+						}
+					}
+					break;
+				}
+				case (TIMER_TYPE::CC_BURN_2):
+				{
+					while (7)
+					{
+						unsigned short oldHp = zoneContUnit->clientContArr[index]->objectInfo->hp;
+						unsigned short newHp = oldHp - (oldHp / 100);
+
+						if (oldHp > 0)
+						{
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldHp, newHp))
+							{
+								NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, newHp, zoneContUnit->clientContArr[index]);
+								pUnit->timerType = TIMER_TYPE::CC_BURN_1;
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
+								break;
+							}
+						}
+						else
+						{
+							zoneContUnit->clientContArr[index]->objectInfo->burnTick.fetch_sub(1);
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							break;
+						}
+					}
+					break;
+				}
+				case (TIMER_TYPE::CC_BURN_1):
+				{
+					while (7)
+					{
+						unsigned short oldHp = zoneContUnit->clientContArr[index]->objectInfo->hp;
+						unsigned short newHp = oldHp - (oldHp / 100);
+
+						if (oldHp > 0)
+						{
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldHp, newHp))
+							{
+								NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, newHp, zoneContUnit->clientContArr[index]);
+								zoneContUnit->clientContArr[index]->objectInfo->burnTick.fetch_sub(1);
+								TimerManager::GetInstance()->PushTimerUnit(pUnit);
+								break;
+							}
+						}
+						else
+						{
+							zoneContUnit->clientContArr[index]->objectInfo->burnTick.fetch_sub(1);
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							break;
+						}
+					}
+					break;
+				}
+				case (TIMER_TYPE::SKILL_1_COOLTIME):
+				{
+					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::SKILL_1_OK, 1, zoneContUnit->clientContArr[index]);
+					zoneContUnit->clientContArr[index]->objectInfo->skill1Flag = true;
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::SKILL_2_COOLTIME):
+				{
+					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::SKILL_2_OK, 1, zoneContUnit->clientContArr[index]);
+					zoneContUnit->clientContArr[index]->objectInfo->skill2Flag = true;
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::REVIVAL):
+				{
+					auto pObjectInfo = zoneContUnit->clientContArr[index]->objectInfo;
+					pObjectInfo->hp = JOB::GetMaxHP(pObjectInfo->job, pObjectInfo->level);
+					pObjectInfo->mp = JOB::GetMaxMP(pObjectInfo->job, pObjectInfo->level);
+					pObjectInfo->posX = GLOBAL_DEFINE::START_POSITION_X;
+					pObjectInfo->posY = GLOBAL_DEFINE::START_POSITION_Y;
+					pObjectInfo->attackFlag = true;
+					pObjectInfo->burnTick = 0;
+					pObjectInfo->faintTick = 0;
+					pObjectInfo->moveFlag = true;
+					pObjectInfo->selfHealFlag = false;
+					pObjectInfo->skill1Flag = true;
+					pObjectInfo->skill2Flag = true;
+					
+					NETWORK_UTIL::SEND::SendPutPlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(zoneContUnit->clientContArr[index], zoneContUnit->clientContArr[index]);
+					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::SKILL_2_OK, 1, zoneContUnit->clientContArr[index]);
+
+					Enter(zoneContUnit->clientContArr[index]);
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_FAINT):
+				{
+					zoneContUnit->clientContArr[index]->objectInfo->faintTick.fetch_sub(1);
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
 					break;
 				}
 			}
@@ -278,6 +434,13 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 				case (TIMER_TYPE::NPC_MOVE):
 				{
 					BaseMonster* tempBaseMonster = zoneContUnit->monsterCont[index];
+
+					if (tempBaseMonster->objectInfo->hp == 0)
+					{
+						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						break;
+					}
 
 					//현재 PossibleSector의 경우에는, 이전 움직임의 PossibleSector이므로 유효함
 					std::unordered_set<_KeyType> oldViewList;
@@ -303,16 +466,19 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 				{
 					break;
 				}
-				case (TIMER_TYPE::SKILL_1_COOLTIME):
-				{
-					break;
-				}
-				case (TIMER_TYPE::SKILL_2_COOLTIME):
-				{
-					break;
-				}
 				case (TIMER_TYPE::REVIVAL):
 				{
+					// 이상태면 바로 안보이고 한 틱 이동 후 보일 수 있음.
+					BaseMonster* pMonster = zoneContUnit->monsterCont[index];
+
+					pMonster->objectInfo->posY = pMonster->spawnPosY;
+					pMonster->objectInfo->posX = pMonster->spawnPosX;
+					pMonster->isSleep = false;
+					pMonster->objectInfo->hp = pMonster->monsterModel->hpPerLevel * pMonster->objectInfo->level;
+
+					sectorCont[pMonster->spawnPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][pMonster->spawnPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(pMonster);
+					RenewPossibleSectors(pMonster->objectInfo);
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
 					break;
 				}
 				case (TIMER_TYPE::CC_FAINT):
@@ -782,7 +948,7 @@ void Zone::RenewViewListInSectors(SocketInfo* pClient)
 		if (0 != pOtherClient->viewList.count(pClient->key))
 		{
 			pOtherClient->viewList.erase(pClient->key);
-			 pOtherClient->viewListLock.unlock();
+			pOtherClient->viewListLock.unlock();
 			NETWORK_UTIL::SEND::SendRemovePlayer(pClient->key, pOtherClient);
 		}
 		else pOtherClient->viewListLock.unlock();
@@ -968,9 +1134,14 @@ void Zone::RecvCharacterMove(SocketInfo* pClient)
 #ifdef _DEV_MODE_
 	//std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[2]) << "\n";
 #endif
-
 	if (moveManager->MoveCharacter(pClient))
 	{
+		auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+		timerUnit->objectKey = pClient->key;
+		timerUnit->timerType = TIMER_TYPE::PLAYER_MOVE;
+		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SECOND);
+		pClient->objectInfo->moveFlag = false;
+
 		// 스스로에게 전송.
 		NETWORK_UTIL::SEND::SendMovePlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::Position>(pClient, pClient);
 		//PACKET_DATA::MAIN_TO_CLIENT::Position packet(

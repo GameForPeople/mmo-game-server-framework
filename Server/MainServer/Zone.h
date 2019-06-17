@@ -41,6 +41,9 @@ public: // ConnectManager
 	void Enter(SocketInfo*);
 	void Exit(SocketInfo*);
 
+	void Death(SocketInfo*);
+	void DeathForNpc(BaseMonster*);
+
 private:
 	void InitViewAndSector(SocketInfo* );
 

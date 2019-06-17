@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="헤더 파일">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Defnie">
+      <UniqueIdentifier>{6a187ea5-2b13-448a-97c2-92278b6b5c54}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameFramework">
+      <UniqueIdentifier>{3e2eaf91-a8f1-4b89-aafe-d4925852b1f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NetworkManager">
+      <UniqueIdentifier>{9c96bcf4-29e1-4a86-8d86-244f20eb74c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ObjectClass">
+      <UniqueIdentifier>{1334b0b6-4b2f-488a-b304-7959ee468803}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RenderModelManager">
+      <UniqueIdentifier>{f37d74be-d123-4e03-b8b6-d894856a8332}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RenderModelManager\RenderModel">
+      <UniqueIdentifier>{da8e3de5-d3be-4ae2-b2c4-b787b2fb7320}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="targetver.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Define.h">
+      <Filter>Defnie</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework.h">
+      <Filter>GameFramework</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseActor.h">
+      <Filter>ObjectClass</Filter>
+    </ClInclude>
+    <ClInclude Include="Pawn.h">
+      <Filter>ObjectClass</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkManager.h">
+      <Filter>NetworkManager</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientDefine.h">
+      <Filter>Defnie</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Defnie</Filter>
+    </ClInclude>
+    <ClInclude Include="Client.h" />
+    <ClInclude Include="MemoryUnit.h">
+      <Filter>NetworkManager</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderModelManager.h">
+      <Filter>RenderModelManager</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseModel.h">
+      <Filter>RenderModelManager\RenderModel</Filter>
+    </ClInclude>
+    <ClInclude Include="BitModel.h">
+      <Filter>RenderModelManager\RenderModel</Filter>
+    </ClInclude>
+    <ClInclude Include="StretchModel.h">
+      <Filter>RenderModelManager\RenderModel</Filter>
+    </ClInclude>
+    <ClInclude Include="TransparentModel.h">
+      <Filter>RenderModelManager\RenderModel</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="GameFramework.cpp">
+      <Filter>GameFramework</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseActor.cpp">
+      <Filter>ObjectClass</Filter>
+    </ClCompile>
+    <ClCompile Include="Pawn.cpp">
+      <Filter>ObjectClass</Filter>
+    </ClCompile>
+    <ClCompile Include="NetworkManager.cpp">
+      <Filter>NetworkManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Define.cpp">
+      <Filter>Defnie</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientDefine.cpp">
+      <Filter>Defnie</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Defnie</Filter>
+    </ClCompile>
+    <ClCompile Include="Client.cpp" />
+    <ClCompile Include="MemoryUnit.cpp">
+      <Filter>NetworkManager</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderModelManager.cpp">
+      <Filter>RenderModelManager</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseModel.cpp">
+      <Filter>RenderModelManager\RenderModel</Filter>
+    </ClCompile>
+    <ClCompile Include="BitModel.cpp">
+      <Filter>RenderModelManager\RenderModel</Filter>
+    </ClCompile>
+    <ClCompile Include="StretchModel.cpp">
+      <Filter>RenderModelManager\RenderModel</Filter>
+    </ClCompile>
+    <ClCompile Include="TransparentModel.cpp">
+      <Filter>RenderModelManager\RenderModel</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Client.rc">
+      <Filter>리소스 파일</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="small.ico">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="Client.ico">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="Warp.ico">
+      <Filter>리소스 파일</Filter>
+    </Image>
+  </ItemGroup>
+</Project>

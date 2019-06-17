@@ -59,6 +59,9 @@ private: // "Client to Main" Function
 
 	void RecvLogin(SocketInfo*);
 	void RecvSignUp(SocketInfo*);
+	void RecvAttack(SocketInfo*);
+	void RecvItem(SocketInfo*);
+	void RecvChat(SocketInfo*);
 
 private: // "Query" Function
 	void MakeQueryPacketFromRecvData(int restSize);
@@ -80,7 +83,8 @@ private:
 	SOCKADDR_IN							serverAddr;
 
 	std::vector<std::thread>			workerThreadCont;
-	std::unique_ptr<Zone>				zone;
+	//std::unique_ptr<Zone>				zone;	// ㅡㅡ 그놈의 루아떄문에 ㅡㅡ
+	Zone*								zone;
 };
 
 #pragma region [Legacy Code]

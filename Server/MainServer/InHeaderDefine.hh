@@ -26,21 +26,34 @@ using _NpcKeyType = _KeyType;
 using _NicknameType = WCHAR;
 
 using _PosType = unsigned short;
-using _HpType = unsigned short;
-using _MpType = unsigned short;
-using _LevelType = unsigned char;
+
+using _HpType = std::atomic<unsigned short>;
+using _HpType_T = unsigned short;
+using _MpType = std::atomic<unsigned short>;
+using _MpType_T = unsigned short;
+
+using _LevelType = std::atomic<unsigned char>;
+using _LevelType_T = unsigned char;
+
 using _DamageType = unsigned short;
 using _StateType = unsigned char;
-
 using _SectorIndexType = unsigned char;
 
-using _TickCountType = unsigned char;
+using _FlagType = std::atomic<bool>;
+using _FlagType_T = bool;
 
-using _ExpType = unsigned int;
+using _TickCountType = std::atomic<unsigned char>;
+using _TickCountType_T = unsigned char;
+
+using _ExpType = std::atomic<unsigned int>;
+using _ExpType_T = unsigned int;
+
 using _JobType = unsigned int;
 using _MoneyType = unsigned int;
-using _RedCountType = unsigned int;
-using _BlueCountType = unsigned int;
+
+using _CountType = std::atomic<unsigned int>;
+using _CountType_T = unsigned int;
+
 using _TreeCountType = unsigned int;
 
 enum class OBJECT_TYPE : unsigned char

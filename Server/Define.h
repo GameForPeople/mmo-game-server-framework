@@ -24,6 +24,26 @@ namespace GLOBAL_DEFINE
 
 	constexpr BYTE ID_MAX_LEN = 10;
 	constexpr BYTE ID_MAX_SIZE = ID_MAX_LEN * 2;
+
+	constexpr BYTE CHAT_MAX_LEN = 50;
+}
+
+namespace STAT_CHANGE
+{
+	enum
+	{
+		HP,
+		MP,
+		LEVEL,
+		EXP,
+		RED_P,
+		BLUE_P,
+		MONEY,
+		MOVE_OK,
+		ATTACK_OK,
+		SKILL_1_OK,
+		SKILL_2_OK
+	};
 }
 
 namespace NETWORK_TYPE
@@ -57,6 +77,9 @@ namespace PACKET_TYPE
 			MOVE, 	//LEFT, //UP, //RIGHT, //DOWN,
 			LOGIN,
 			SIGN_UP,
+			ATTACK,
+			USE_ITEM,
+			CHAT,
 			ENUM_SIZE
 		};
 	}
@@ -81,6 +104,8 @@ namespace PACKET_TYPE
 			LOGIN_FAIL,
 			PUT_PLAYER,
 			REMOVE_PLAYER,
+			CHAT,
+			STAT_CHANGE,
 			ENUM_SIZE
 		};
 	}
@@ -171,6 +196,30 @@ namespace PACKET_DATA
 			_JobType job;
 
 			SignUp(const _CharType* const pInNickname, const _JobType) noexcept;
+		};
+
+		struct Attack {
+			_PacketSizeType size;
+			_PacketTypeType type;
+			unsigned char attackType; //0이면 기본공격, 1이면 스킬1, 2이면 스킬2
+
+			Attack(const unsigned char) noexcept;
+		};
+
+		struct Item {
+			_PacketSizeType size;
+			_PacketTypeType type;
+			unsigned char useItemType;	//0이면 레드포션, 1이면 블루포션
+
+			Item(const unsigned char) noexcept;
+		};
+
+		struct Chat {
+			_PacketSizeType size;
+			_PacketTypeType type;
+			_CharType message[GLOBAL_DEFINE::CHAT_MAX_LEN];
+
+			Chat(_CharType*);
 		};
 	}
 
@@ -265,6 +314,28 @@ namespace PACKET_DATA
 			_PosType y;
 
 			Position(const _KeyType inMovedClientKey, const _PosType inX, const _PosType inY) noexcept;
+		};
+
+		struct Chat
+		{
+			_PacketSizeType size;
+			_PacketTypeType type;
+			_KeyType key;
+			_CharType message[GLOBAL_DEFINE::CHAT_MAX_LEN];
+
+			Chat(const _KeyType inSenderKey, const _CharType* const pInMessage) noexcept;
+		};
+
+		struct StatChange
+		{
+			_PacketSizeType size;
+			_PacketTypeType type;
+			char changedStatType;	
+			// 0 체력, 1 마나, 2 레벨, 3. 경험치, 4. 빨물, 
+			//5.파물, 6.돈, 7. 이동가능여부, 8. 공격가능여부, 9. 스킬1가능여부, 10. 스킬2가능여부
+			int newValue;
+
+			StatChange(char /* STAT_CHANGE */, int ) noexcept;
 		};
 	}
 

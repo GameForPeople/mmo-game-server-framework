@@ -13,23 +13,23 @@ public:
 public:
 	ObjectInfo* objectInfo;
 	const MonsterModel* monsterModel;
+	lua_State* luaState;
 
 	_KeyType key;
+
+	_KeyType wakeUpClientKey;
 
 	//_LevelType level;
 	_PosType spawnPosX;
 	_PosType spawnPosY;
 
 	//_DamageType damage;
+	_TickCountType freezeTick;
+	_TickCountType electricTick;
 
 	//_StateType state;
 	/*std::atomic<bool>*/ bool isDead;
 	std::atomic<bool> /*bool*/ isSleep;
-	_TickCountType noDamageTick;
-	_TickCountType faintTick;
-	_TickCountType freezeTick;
-	_TickCountType electricTick;
-	_TickCountType burnTick;
 };
 
 namespace STATE
@@ -42,12 +42,6 @@ namespace STATE
 		isFreeze = 1 << 3,
 		isElectric = 1 << 4,
 	};
-
-	namespace DAMAGE
-	{
-		constexpr _DamageType BURN_DAMAGE = 5;
-		constexpr float ELECTRIC_DAMAGE_NUMBER = 1.5f;
-	}
 
 	inline constexpr bool IsDead(const _StateType inState) noexcept { return (inState & isDead); }
 	inline constexpr bool IsNoDamage(const _StateType inState) noexcept { return (inState & isNoDamage); }

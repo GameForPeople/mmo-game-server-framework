@@ -139,6 +139,136 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 				{
 					ConnectManager::GetInstance()->PushOldKey(pUnit->objectKey);
 					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_NODAMAGE):
+				{
+					//이거는 항상 보장됨. if - CAS 문 안걸어도됨.
+					zoneContUnit->clientContArr[index]->objectInfo->noDamageFlag = false;
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::PLAYER_MOVE):
+				{
+
+					break;
+				}
+				case (TIMER_TYPE::PLAYER_ATTACK):
+				{
+
+					break;
+				}
+				case (TIMER_TYPE::SELF_HEAL):
+				{
+					auto playerObjectInfo = zoneContUnit->clientContArr[index]->objectInfo;
+					if (zoneContUnit->clientContArr[index]->objectInfo->hp > 0)
+					{
+						const int maxHp = JOB::GetMaxHP(playerObjectInfo->job, playerObjectInfo->level);
+
+						while (7) 
+						{
+							unsigned short oldHp = zoneContUnit->clientContArr[index]->objectInfo->hp;
+							unsigned short newHp = zoneContUnit->clientContArr[index]->objectInfo->hp + (maxHp / 10);
+
+							if (oldHp == 0)
+							{
+								TimerManager::GetInstance()->PushTimerUnit(pUnit);
+								break;
+							}
+							else if (oldHp == maxHp) 
+							{
+								TimerManager::GetInstance()->PushTimerUnit(pUnit);
+								break;
+							}
+							else if (newHp > maxHp) newHp = maxHp;
+
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldHp, newHp))
+							{
+								// 피회복한거 보내야함.
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SELF_HEAL);
+								break;
+							}
+						}
+					}
+					else
+					{
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					}
+					break;
+				}
+				case (TIMER_TYPE::ITEM_HP):
+				{
+					zoneContUnit->clientContArr[index]->objectInfo->redTickCount.fetch_sub(1);
+
+					auto playerObjectInfo = zoneContUnit->clientContArr[index]->objectInfo;
+					if (zoneContUnit->clientContArr[index]->objectInfo->hp > 0)
+					{
+						const int maxHp = JOB::GetMaxHP(playerObjectInfo->job, playerObjectInfo->level);
+
+						while (7)
+						{
+							unsigned short oldHp = zoneContUnit->clientContArr[index]->objectInfo->hp;
+							unsigned short newHp = zoneContUnit->clientContArr[index]->objectInfo->hp + ITEM::RED_PER_TICK;
+
+							if (oldHp == 0)
+							{
+								TimerManager::GetInstance()->PushTimerUnit(pUnit);
+								zoneContUnit->clientContArr[index]->objectInfo->redTickCount = 0;
+								break;
+							}
+							else if (oldHp == maxHp)
+							{
+								TimerManager::GetInstance()->PushTimerUnit(pUnit);
+								zoneContUnit->clientContArr[index]->objectInfo->redTickCount = 0;
+								break;
+							}
+							else if (newHp > maxHp) newHp = maxHp;
+
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldHp, newHp))
+							{
+								// 피회복한거 보내야함.
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::ITEM_HP);
+								break;
+							}
+						}
+					}
+					else
+					{
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						zoneContUnit->clientContArr[index]->objectInfo->redTickCount = 0;
+					}
+					break;
+				}
+				case (TIMER_TYPE::ITEM_MP):
+				{
+					zoneContUnit->clientContArr[index]->objectInfo->redTickCount.fetch_sub(1);
+
+					auto playerObjectInfo = zoneContUnit->clientContArr[index]->objectInfo;
+
+					const int maxMp = JOB::GetMaxMP(playerObjectInfo->job, playerObjectInfo->level);
+
+					while (7)
+					{
+						unsigned short oldMp = zoneContUnit->clientContArr[index]->objectInfo->mp;
+						unsigned short newMp = zoneContUnit->clientContArr[index]->objectInfo->mp + ITEM::BLUE_PER_TICK;
+
+						if (oldMp == maxMp)
+						{
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							zoneContUnit->clientContArr[index]->objectInfo->blueTickCount = 0;
+							break;
+						}
+						else if (newMp > maxMp) newMp = maxMp;
+
+						if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldMp, newMp))
+						{
+							// 마나회복한거 보내야함.
+							TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::ITEM_MP);
+							break;
+						}
+					}
+
+					break;
 				}
 			}
 			break;
@@ -181,81 +311,97 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 				{
 					break;
 				}
-				case (TIMER_TYPE::SELF_HEAL):
-				{
-					break;
-				}
 				case (TIMER_TYPE::REVIVAL):
 				{
 					break;
 				}
-				case (TIMER_TYPE::CC_NODAMAGE):
-				{
-					if (zoneContUnit->monsterCont[index]->noDamageTick != 0)
-					{
-						--(zoneContUnit->monsterCont[index]->noDamageTick);
-					}
-					
-					TimerManager::GetInstance()->PushTimerUnit(pUnit);
-					break;
-				}
 				case (TIMER_TYPE::CC_FAINT):
 				{
-					if (zoneContUnit->monsterCont[index]->faintTick != 0)
-					{
-						--(zoneContUnit->monsterCont[index]->faintTick);
-					}
-					
+					zoneContUnit->monsterCont[index]->objectInfo->faintTick.fetch_sub(1);
 					TimerManager::GetInstance()->PushTimerUnit(pUnit);
 					break;
 				}
 				case (TIMER_TYPE::CC_FREEZE):
 				{
-					if (zoneContUnit->monsterCont[index]->freezeTick != 0)
-					{
-						--(zoneContUnit->monsterCont[index]->freezeTick);
-					}
-					
+					zoneContUnit->monsterCont[index]->freezeTick.fetch_sub(1);
 					TimerManager::GetInstance()->PushTimerUnit(pUnit);
 					break;
 				}
 				case (TIMER_TYPE::CC_ELECTRIC):
 				{
-					if (zoneContUnit->monsterCont[index]->electricTick != 0)
-					{
-						--(zoneContUnit->monsterCont[index]->electricTick);
-					}
+					zoneContUnit->monsterCont[index]->electricTick.fetch_sub(1);
 					TimerManager::GetInstance()->PushTimerUnit(pUnit);
 					break;
 				}
-				case (TIMER_TYPE::CC_BURN):
+				case (TIMER_TYPE::CC_BURN_3):
 				{
-					if (zoneContUnit->monsterCont[index]->burnTick != 0)
+					while (7) 
 					{
-						--(zoneContUnit->monsterCont[index]->burnTick);
-						zoneContUnit->monsterCont[index]->objectInfo->hp -= STATE::DAMAGE::BURN_DAMAGE;
+						unsigned short oldHp = zoneContUnit->monsterCont[index]->objectInfo->hp;
+						unsigned short newHp = oldHp - (oldHp / 100);
 
-						if (zoneContUnit->monsterCont[index]->burnTick != 0)
+						if (oldHp > 0)
 						{
-							TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->monsterCont[index]->objectInfo->hp), oldHp, newHp))
+							{
+								pUnit->timerType = TIMER_TYPE::CC_BURN_2;
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
+								break;
+							}
 						}
 						else
 						{
 							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							break;
 						}
 					}
-					else
+					break;
+				}
+				case (TIMER_TYPE::CC_BURN_2):
+				{
+					while (7)
 					{
-						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						unsigned short oldHp = zoneContUnit->monsterCont[index]->objectInfo->hp;
+						unsigned short newHp = oldHp - (oldHp / 100);
+
+						if (oldHp > 0)
+						{
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->monsterCont[index]->objectInfo->hp), oldHp, newHp))
+							{
+								pUnit->timerType = TIMER_TYPE::CC_BURN_1;
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
+								break;
+							}
+						}
+						else
+						{
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							break;
+						}
 					}
 					break;
 				}
-				case (TIMER_TYPE::ITEM_HP):
+				case (TIMER_TYPE::CC_BURN_1):
 				{
-					break;
-				}
-				case (TIMER_TYPE::ITEM_MP):
-				{
+					while (7)
+					{
+						unsigned short oldHp = zoneContUnit->monsterCont[index]->objectInfo->hp;
+						unsigned short newHp = oldHp - (oldHp / 100);
+
+						if (oldHp > 0)
+						{
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->monsterCont[index]->objectInfo->hp), oldHp, newHp))
+							{
+								TimerManager::GetInstance()->PushTimerUnit(pUnit);
+								break;
+							}
+						}
+						else
+						{
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							break;
+						}
+					}
 					break;
 				}
 				default:
@@ -785,7 +931,7 @@ void Zone::RenewSelfSector(SocketInfo* pClient)
 	_SectorIndexType tempX = static_cast<_SectorIndexType>(tempObjectInfo->posX / GLOBAL_DEFINE::SECTOR_DISTANCE);
 	_SectorIndexType tempY = static_cast<_SectorIndexType>(tempObjectInfo->posY / GLOBAL_DEFINE::SECTOR_DISTANCE);
 
-	if (tempX != tempObjectInfo->sectorIndexX || tempObjectInfo->sectorIndexY)
+	if (tempX != tempObjectInfo->sectorIndexX || tempY != tempObjectInfo->sectorIndexY)
 	{
 		sectorCont[tempObjectInfo->sectorIndexY][tempObjectInfo->sectorIndexX].Exit(pClient);
 		//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].Join(pClient);
@@ -846,4 +992,10 @@ void Zone::RecvChat(SocketInfo* pClient)
 	std::cout << "[AfterRecv] 채팅 버퍼를 받았습니다. \n";
 #endif
 	//chatManager->ChatProcess(pClient, zoneContUnit);
+}
+
+
+const std::vector<std::vector<bool>>& Zone::GetMapData()
+{
+	return moveManager->GetMapData();
 }

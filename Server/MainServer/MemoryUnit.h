@@ -134,10 +134,10 @@ public:
 	void RegisterNewNickName(_NicknameType*);
 
 	// 이 멍청한 함수는 무엇인가.
-	void SetNewObjectInfo(_PosType x, _PosType y, _LevelType inlevel, _ExpType inExp, _JobType inJob,
-		_HpType inHp, _MpType inMp, _MoneyType inMoney, _RedCountType inRedCount, _BlueCountType inBlueCount, _TreeCountType inTreeCount);
+	void SetNewObjectInfo(_PosType x, _PosType y, _LevelType_T inlevel, _ExpType_T inExp, _JobType inJob,
+		_HpType_T inHp, _MpType_T inMp, _MoneyType inMoney, _CountType_T inRedCount, _CountType_T inBlueCount, _TreeCountType inTreeCount);
 
-	void CopyOtherObjectInfo(PlayerObjectInfo*);
+	_DEPRECATED void CopyOtherObjectInfo(PlayerObjectInfo*);
 
 	void TerminateClient();
 };

@@ -65,14 +65,14 @@ public:
 
 private:
 	//std::unique_ptr<ConnectManager> connectManager;
-	std::unique_ptr<MoveManager> moveManager;
 	std::unique_ptr<MonsterModelManager> monsterModelManager;
 
 	std::vector<std::vector<Sector>> sectorCont;
 
 	//std::function<void(Zone&, SocketInfo*)>* recvFunctionArr;
 public:
-
+	std::unique_ptr<MoveManager> moveManager;	// 이것도 루아떄문에;;;
+	const std::vector<std::vector<bool>>& GetMapData();
 	// 성능, public하게 접근할 수 있도록 변경.
 	ZoneContUnit* zoneContUnit;
 };

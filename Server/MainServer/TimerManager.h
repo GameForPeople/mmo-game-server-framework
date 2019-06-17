@@ -22,7 +22,10 @@ enum class TIME : /*unsigned short*/ int
 
 	GOLEM_ATTACK = 20,
 
+	SELF_HEAL = 50,
+	
 	MONSTER_REVIVAL = 300,
+	CHARACTER_REVIVAL = 300,
 
 	// ÄðÅ¸ÀÓ
 	KNIGHT_SKILL_1 = 300,
@@ -43,8 +46,9 @@ enum class TIME : /*unsigned short*/ int
 	CC_FAINT = 20,
 	CC_FREEZE = 30,
 	CC_ELECTRIC = 30,
-	CC_BURN = 50
+	CC_BURN = 10,
 
+	CC_GOLEM_FAINT = 15
 	//KNIGHT_CC_NODAMAGE_COOLTIME = 50,
 	//KNIGHT_CC_FAINT_COOLTIME = 20,
 	//ARCHER_CC_FREEZE_COOLTIME = 30,
@@ -67,10 +71,15 @@ enum class TIMER_TYPE
 	CC_FAINT,
 	CC_FREEZE,
 	CC_ELECTRIC,
-	CC_BURN,
+	CC_BURN_3,
+	CC_BURN_2,
+	CC_BURN_1,
 
 	ITEM_HP,
 	ITEM_MP,
+
+	PLAYER_MOVE,
+	PLAYER_ATTACK,
 
 	PUSH_OLD_KEY
 };

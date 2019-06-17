@@ -6,6 +6,7 @@
 #include "Zone.h"
 #include "ObjectInfo.h"
 #include "ServerDefine.h"
+#include "BaseMonster.h"
 
 namespace NETWORK_UTIL
 {
@@ -127,6 +128,18 @@ namespace NETWORK_UTIL
 
 			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
 		}
+
+		void SendChatMessage(const WCHAR* message, const _KeyType senderKey, SocketInfo* pRecvClient)
+		{
+			PACKET_DATA::MAIN_TO_CLIENT::Chat packet(senderKey, message);
+			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
+		}
+
+		void SendStatChange(const char inStatChangeType, const int inNewValue, SocketInfo* pRecvClient)
+		{
+			PACKET_DATA::MAIN_TO_CLIENT::StatChange packet(inStatChangeType, inNewValue);
+			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
+		}
 	}
 	/*
 		LogOutProcess()
@@ -221,7 +234,7 @@ namespace ERROR_HANDLING
 
 		//C603 형식 문자열이 일치하지 않습니다. 와이드 문자열이 _Param_(3)으로 전달되었습니다.
 		//printf(" [%s]  %s", msg, (LPTSTR)&lpMsgBuf);
-		std::wcout << L" Error no." << msg << L" - " << lpMsgBuf;
+		std::wcout << L"[Error-DISPLAY]" << msg << L" - " << lpMsgBuf;
 		LocalFree(lpMsgBuf);
 	};
 
@@ -238,6 +251,121 @@ namespace ERROR_HANDLING
 	}
 }
 
+namespace JOB
+{
+	unsigned short GetMaxHP(_JobType inJob, unsigned char inLevel) noexcept
+	{
+		unsigned short  maxHp = BASE_HP; // 기본 체력
+
+		if (inJob == JOB_TYPE::KNIGHT)
+		{
+			maxHp = maxHp + (inLevel * KNIGHT_HP_PER_LEVEL);
+		}
+		else if (inJob == JOB_TYPE::ARCHER)
+		{
+			maxHp = maxHp + (inLevel * ARCHER_HP_PER_LEVEL);
+		}
+		else if (inJob == JOB_TYPE::WITCH)
+		{
+			maxHp = maxHp + (inLevel * WITCH_HP_PER_LEVEL);
+		}
+
+		return maxHp;
+	}
+
+	unsigned short GetMaxMP(_JobType inJob, unsigned char inLevel) noexcept
+	{
+		unsigned short  maxMp = BASE_MP; // 기본 마나
+
+		if (inJob == JOB_TYPE::KNIGHT)
+		{
+			maxMp = maxMp + (inLevel * KNIGHT_MP_PER_LEVEL);
+		}
+		else if (inJob == JOB_TYPE::ARCHER)
+		{
+			maxMp = maxMp + (inLevel * ARCHER_MP_PER_LEVEL);
+		}
+		else if (inJob == JOB_TYPE::WITCH)
+		{
+			maxMp = maxMp + (inLevel * WITCH_MP_PER_LEVEL);
+		}
+
+		return maxMp;
+	}
+
+	unsigned short GetDamage(_JobType inJob, /*_LevelType*/ unsigned char inLevel) noexcept
+	{
+		unsigned short retDamage = BASE_DAMAGE; // 기본 마나
+
+		if (inJob == JOB_TYPE::KNIGHT)
+		{
+			retDamage = retDamage + (inLevel * KNIGHT_DAMAGE_PER_LEVEL);
+		}
+		else if (inJob == JOB_TYPE::ARCHER)
+		{
+			retDamage = retDamage + (inLevel * ARCHER_DAMAGE_PER_LEVEL);
+		}
+		else if (inJob == JOB_TYPE::WITCH)
+		{
+			retDamage = retDamage + (inLevel * WITCH_DAMAGE_PER_LEVEL);
+		}
+		return retDamage;
+	}
+
+	bool IsInAttackRange(int range, SocketInfo* pHitter, BaseMonster* pMonster)
+	{
+		return (range >= abs(pHitter->objectInfo->posX - pMonster->objectInfo->posX) + abs(pHitter->objectInfo->posY - pMonster->objectInfo->posY));
+	}
+
+	bool IsAttack(_JobType inJob, unsigned char inAttackkType, SocketInfo* pClient, BaseMonster* pMonster) noexcept
+	{
+		if (inJob == JOB_TYPE::KNIGHT)
+		{
+			if (inAttackkType == 0)
+			{
+				return IsInAttackRange(KNIGHT_ATTACK_0_RANGE, pClient, pMonster);
+			}
+			else if (inAttackkType == 2)
+			{
+				return IsInAttackRange(KNIGHT_ATTACK_2_RANGE, pClient, pMonster);
+			}
+		}
+		else if (inJob == JOB_TYPE::ARCHER)
+		{
+			// 모두 동일함
+			if (inAttackkType == 0 || inAttackkType == 1 || inAttackkType == 2)
+			{
+				return IsInAttackRange(ARCHER_ATTACK_0_RANGE, pClient, pMonster);
+			}
+		}
+		else if (inJob == JOB_TYPE::WITCH)
+		{
+			if (inAttackkType == 0)
+			{
+				return IsInAttackRange(WITCH_ATTACK_0_RANGE, pClient, pMonster);
+			}
+			else if (inAttackkType == 1)
+			{
+				return IsInAttackRange(WITCH_ATTACK_1_RANGE, pClient, pMonster);
+			}
+			else if (inAttackkType == 2)
+			{
+				return IsInAttackRange(WITCH_ATTACK_2_RANGE, pClient, pMonster);
+			}
+		}
+		return false;
+	}
+}
+
+namespace LUA_UTIL
+{
+	void PrintError(lua_State* L)
+	{
+		std::cout << lua_tostring(L, -1);
+		lua_pop(L, -1);
+	}
+}
+
 namespace TIME_UTIL {
 	const std::string GetCurrentDateTime() {
 		time_t     now = time(0); //현재 시간을 time_t 타입으로 저장
@@ -249,4 +377,3 @@ namespace TIME_UTIL {
 		return buf;
 	}
 }
-

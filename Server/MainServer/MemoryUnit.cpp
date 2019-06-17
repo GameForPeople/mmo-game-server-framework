@@ -184,6 +184,7 @@ void SocketInfo::TerminateClient()
 	/*
 		여기서 원래.. 뭔말인지 알지? 몬스터는 상관없는데, 클라 뷰리스트에는 상대방에게 알려줘야해!
 	*/
+
 	viewList.clear();
 	monsterViewList.clear();
 
@@ -202,8 +203,8 @@ void SocketInfo::RegisterNewNickName(_NicknameType* inNewNick)
 	memcpy(objectInfo->nickname, inNewNick, 20);
 }
 
-void SocketInfo::SetNewObjectInfo(_PosType x, _PosType y, _LevelType inlevel, _ExpType inExp, _JobType inJob,
-	_HpType inHp, _MpType inMp, _MoneyType inMoney, _RedCountType inRedCount, _BlueCountType inBlueCount, _TreeCountType inTreeCount)
+void SocketInfo::SetNewObjectInfo(_PosType x, _PosType y, _LevelType_T inlevel, _ExpType_T inExp, _JobType inJob,
+	_HpType_T inHp, _MpType_T inMp, _MoneyType inMoney, _CountType_T inRedCount, _CountType_T inBlueCount, _TreeCountType inTreeCount)
 {
 	objectInfo->posX = x;
 	objectInfo->posY = y;
@@ -216,21 +217,39 @@ void SocketInfo::SetNewObjectInfo(_PosType x, _PosType y, _LevelType inlevel, _E
 	objectInfo->redCount = inRedCount;
 	objectInfo->blueCount = inBlueCount;
 	objectInfo->treeCount = inTreeCount;
+
+	objectInfo->noDamageFlag = false;
+	objectInfo->selfHealFlag= false;
+	objectInfo->moveFlag = true;
+	objectInfo->attackFlag = true;
+	objectInfo->skill1Flag = false;
+	objectInfo->skill2Flag = false;
+	objectInfo->redTickCount = 0;
+	objectInfo->blueTickCount = 0;
 }
 
 void SocketInfo::CopyOtherObjectInfo(PlayerObjectInfo* otherObjectInfo)
 {
 	objectInfo->posX = otherObjectInfo->posX;
 	objectInfo->posY = otherObjectInfo->posY;
-	objectInfo->level = otherObjectInfo->level;
-	objectInfo->exp = otherObjectInfo->exp;
+	//objectInfo->level = otherObjectInfo->level;
+	//objectInfo->exp = otherObjectInfo->exp;
 	objectInfo->job = otherObjectInfo->job;
-	objectInfo->hp = otherObjectInfo->hp;
-	objectInfo->mp = otherObjectInfo->mp;
+	//objectInfo->hp = otherObjectInfo->hp;
+	//objectInfo->mp = otherObjectInfo->mp;
 	objectInfo->money = otherObjectInfo->money;
-	objectInfo->redCount = otherObjectInfo->redCount;
-	objectInfo->blueCount = otherObjectInfo->blueCount;
+	//objectInfo->redCount = otherObjectInfo->redCount;
+	//objectInfo->blueCount = otherObjectInfo->blueCount;
 	objectInfo->treeCount = otherObjectInfo->treeCount;
+
+	objectInfo->noDamageFlag = false;
+	objectInfo->selfHealFlag = false;
+	objectInfo->moveFlag = true;
+	objectInfo->attackFlag = true;
+	objectInfo->skill1Flag = false;
+	objectInfo->skill2Flag = false;
+	objectInfo->redTickCount = 0;
+	objectInfo->blueTickCount = 0;
 }
 
 //---------------------------------------------------------------------------

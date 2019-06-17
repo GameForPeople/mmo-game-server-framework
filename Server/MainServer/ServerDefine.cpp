@@ -248,6 +248,7 @@ namespace ERROR_HANDLING
 	void HandleRecvError()
 	{
 		auto retValue = WSAGetLastError();
+
 		if (retValue == ERROR_IO_PENDING)
 		{
 			return;
@@ -267,6 +268,7 @@ namespace ERROR_HANDLING
 	bool HandleSendError()
 	{
 		auto retValue = WSAGetLastError();
+
 		if (retValue == ERROR_IO_PENDING)
 		{
 			return false;
@@ -279,7 +281,7 @@ namespace ERROR_HANDLING
 		{
 			return true;
 		}
-
+		
 		ERROR_DISPLAY(((L"HandleSendError() : " + std::to_wstring(retValue)).c_str()));
 	}
 }

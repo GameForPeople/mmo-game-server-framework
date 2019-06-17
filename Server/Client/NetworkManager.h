@@ -22,7 +22,9 @@ private:
 	void WorkerThreadFunction();
 
 	// for Send Recv
+public:
 	void SendPacket(char* packetData);
+private:
 	void RecvPacket();
 
 	void AfterRecv(/*MemoryUnit* pClient,*/ int cbTransferred);

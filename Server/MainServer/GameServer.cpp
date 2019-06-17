@@ -1291,6 +1291,8 @@ void GameServer::RecvLoginTrue()
 	PACKET_DATA::QUERY_TO_MAIN::LoginTrue* packet = reinterpret_cast<PACKET_DATA::QUERY_TO_MAIN::LoginTrue*>(NETWORK_UTIL::queryMemoryUnit->loadedBuf);
 	SocketInfo* tempSocketInfo = zone->zoneContUnit->clientContArr[packet->key];
 	
+	if (packet->hp == 0) packet->hp = 10;
+
 	tempSocketInfo->SetNewObjectInfo(packet->xPos, packet->yPos, packet->level, packet->exp, packet->job, packet->hp, packet->mp
 		, packet->money, packet->redCount, packet->blueCount, packet->treeCount);
 

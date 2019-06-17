@@ -36,7 +36,7 @@ namespace PACKET_DATA
 		{
 		}
 
-		Chat::Chat(_CharType* pInMessage) :
+		Chat::Chat(const _CharType* pInMessage) :
 			size(sizeof(Chat)), type(PACKET_TYPE::CLIENT_TO_MAIN::CHAT),
 			message()
 		{

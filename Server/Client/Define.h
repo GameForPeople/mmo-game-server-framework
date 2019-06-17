@@ -228,7 +228,7 @@ namespace PACKET_DATA
 			_PacketTypeType type;
 			_CharType message[GLOBAL_DEFINE::CHAT_MAX_LEN];
 
-			Chat(_CharType*);
+			Chat(const _CharType*);
 		};
 	}
 

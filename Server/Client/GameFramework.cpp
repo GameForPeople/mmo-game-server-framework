@@ -41,6 +41,8 @@ WGameFramework::~WGameFramework()
 {
 	otherPlayerCont.clear();
 	monsterCont.clear();
+
+	//chatThread.join();
 }
 
 void WGameFramework::Create(HWND hWnd)

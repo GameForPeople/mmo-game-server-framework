@@ -7,6 +7,7 @@
 #include "ObjectInfo.h"
 #include "ServerDefine.h"
 #include "BaseMonster.h"
+#include "LuaManager.h"
 
 namespace NETWORK_UTIL
 {
@@ -37,11 +38,14 @@ namespace NETWORK_UTIL
         //ERROR_HANDLING::errorRecvOrSendArr[
 		//	static_cast<bool>(
 				//1 + 
-		if (SOCKET_ERROR ==
-			WSASend(pClient->sock, &(sendMemoryUnit->memoryUnit.wsaBuf), 1, NULL, 0, &(sendMemoryUnit->memoryUnit.overlapped), NULL)
-			)
+		if (SOCKET_ERROR == WSASend(pClient->sock, &(sendMemoryUnit->memoryUnit.wsaBuf), 1, NULL, 0, &(sendMemoryUnit->memoryUnit.overlapped), NULL) )
 		{
-			ERROR_HANDLING::ERROR_DISPLAY(L"SendPacket()");
+			if (ERROR_HANDLING::HandleSendError())
+			{
+				LuaManager::GetInstance()->pZone->Death(pClient);
+				closesocket(pClient->sock);
+				SendMemoryPool::GetInstance()->PushMemory(sendMemoryUnit);
+			}
 		}
 			//]();
 	}
@@ -59,6 +63,11 @@ namespace NETWORK_UTIL
 			WSASend(querySocket, &(sendMemoryUnit->memoryUnit.wsaBuf), 1, NULL, 0, &(sendMemoryUnit->memoryUnit.overlapped), NULL)
 			)
 		{
+			if (auto retValue = WSAGetLastError(); 
+				retValue == ERROR_IO_PENDING)
+			{
+				return;
+			}
 			ERROR_HANDLING::ERROR_DISPLAY(L"SendQuery()");
 		}
 	}
@@ -102,7 +111,7 @@ namespace NETWORK_UTIL
 				//1 + 
 		if (SOCKET_ERROR == WSARecv(pClient->sock, &(pClient->memoryUnit.wsaBuf), 1, NULL, &flag /* NULL*/, &(pClient->memoryUnit.overlapped), NULL))
 		{
-			ERROR_HANDLING::HandleRecvOrSendError();
+			ERROR_HANDLING::HandleRecvError();
 			//ERROR_HANDLING::ERROR_DISPLAY("못받았어요....");
 		}
 		//		)
@@ -115,7 +124,7 @@ namespace NETWORK_UTIL
 		ZeroMemory(&(queryMemoryUnit->memoryUnit.overlapped), sizeof(queryMemoryUnit->memoryUnit.overlapped));
 		if (SOCKET_ERROR == WSARecv(querySocket, &(queryMemoryUnit->memoryUnit.wsaBuf), 1, NULL, &flag /* NULL*/, &(queryMemoryUnit->memoryUnit.overlapped), NULL))
 		{
-			ERROR_HANDLING::HandleRecvOrSendError();
+			ERROR_HANDLING::HandleRecvError();
 			//ERROR_HANDLING::ERROR_DISPLAY("못받았어요....");
 		}
 	}
@@ -223,18 +232,12 @@ namespace ERROR_HANDLING
 	{
 		LPVOID lpMsgBuf;
 		FormatMessage(
-			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-			NULL,
-			WSAGetLastError(),
+			FORMAT_MESSAGE_ALLOCATE_BUFFER |
+			FORMAT_MESSAGE_FROM_SYSTEM,
+			NULL, WSAGetLastError(),
 			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			(LPTSTR)&lpMsgBuf,
-			0,
-			NULL
-		);
-
-		//C603 형식 문자열이 일치하지 않습니다. 와이드 문자열이 _Param_(3)으로 전달되었습니다.
-		//printf(" [%s]  %s", msg, (LPTSTR)&lpMsgBuf);
-		std::wcout << L"[Error-DISPLAY]" << msg << L" - " << lpMsgBuf;
+			(LPTSTR)&lpMsgBuf, 0, NULL);
+		wprintf(L"[%s] %s", msg, (WCHAR*)lpMsgBuf);
 		LocalFree(lpMsgBuf);
 	};
 
@@ -242,12 +245,42 @@ namespace ERROR_HANDLING
 		HandleRecvOrSendError
 			- Send Or Recv 실패 시 출력되는 함수로, 에러를 출력합니다.
 	*/
-	void HandleRecvOrSendError()
+	void HandleRecvError()
 	{
-		if (WSAGetLastError() != ERROR_IO_PENDING)
+		auto retValue = WSAGetLastError();
+		if (retValue == ERROR_IO_PENDING)
 		{
-			ERROR_DISPLAY((L"RecvOrSend()"));
+			return;
 		}
+		if (retValue == WSAECONNRESET)
+		{
+			return;
+		}
+		if (retValue == WSAENOTSOCK)
+		{
+			return;
+		}
+
+		ERROR_DISPLAY(((L"HandleRecvError() : " + std::to_wstring(retValue)).c_str()));
+	}
+
+	bool HandleSendError()
+	{
+		auto retValue = WSAGetLastError();
+		if (retValue == ERROR_IO_PENDING)
+		{
+			return false;
+		}
+		if (retValue == WSAECONNRESET)
+		{
+			return true;
+		}
+		if (retValue == WSAENOTSOCK)
+		{
+			return true;
+		}
+
+		ERROR_DISPLAY(((L"HandleSendError() : " + std::to_wstring(retValue)).c_str()));
 	}
 }
 

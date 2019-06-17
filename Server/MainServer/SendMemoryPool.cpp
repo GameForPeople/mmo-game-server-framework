@@ -60,7 +60,7 @@ SendMemoryUnit* SendMemoryPool::PopMemory()
 */
 void SendMemoryPool::PushMemory(SendMemoryUnit* inMemoryUnit)
 {
-	sendMemoryPool.push(/*std::move(*/inMemoryUnit/*)*/);
+	sendMemoryPool.push(std::move(inMemoryUnit));
 }
 
 #ifndef DISABLED_UNALLOCATED_MEMORY_SEND

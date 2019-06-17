@@ -1291,18 +1291,8 @@ void GameServer::RecvLoginTrue()
 	PACKET_DATA::QUERY_TO_MAIN::LoginTrue* packet = reinterpret_cast<PACKET_DATA::QUERY_TO_MAIN::LoginTrue*>(NETWORK_UTIL::queryMemoryUnit->loadedBuf);
 	SocketInfo* tempSocketInfo = zone->zoneContUnit->clientContArr[packet->key];
 	
-	// 해당 key에 대한 로그아웃처리가 필요함.
-	//if (packet->oldKey != -1)
-	//{
-	//	tempSocketInfo->CopyOtherObjectInfo(zone->zoneContUnit->clientContArr[packet->oldKey]->objectInfo);
-	//	LogOut(zone->zoneContUnit->clientContArr[packet->oldKey]);
-	//}
-	//else
-	//{
-		//tempSocketInfo->objectInfo = new PlayerObjectInfo(packet->nickname, packet->xPos, packet->yPos);
 	tempSocketInfo->SetNewObjectInfo(packet->xPos, packet->yPos, packet->level, packet->exp, packet->job, packet->hp, packet->mp
 		, packet->money, packet->redCount, packet->blueCount, packet->treeCount);
-	//}
 
 	// 클라이언트에게 서버에 접속(Accept) 함을 알림	
 	auto tempObjectInfo = tempSocketInfo->objectInfo;
@@ -1314,7 +1304,10 @@ void GameServer::RecvLoginTrue()
 	// 자신의 캐릭터를 넣어줌. -> LoginOK에 통합.
 	//PACKET_DATA::MAIN_TO_CLIENT::PutPlayer putPacket(pClient->objectInfo->key, pClient->objectInfo->posX, pClient->objectInfo->posY);
 	//NETWORK_UTIL::SendPacket(pClient, reinterpret_cast<char*>(&putPacket));
+
+#ifdef _DEV_MODE_
 	std::cout << " [HELLO] 클라이언트 (" << packet->key /*inet_ntoa(clientAddr.sin_addr)*/ << ") 가 접속했습니다. \n";
+#endif
 
 	// 해당 존에 입장!
 	zone->Enter(tempSocketInfo);
@@ -1341,10 +1334,18 @@ void GameServer::RecvLoginNew()
 	PACKET_DATA::QUERY_TO_MAIN::LoginNew* packet = reinterpret_cast<PACKET_DATA::QUERY_TO_MAIN::LoginNew*>(NETWORK_UTIL::queryMemoryUnit->loadedBuf);
 	SocketInfo* tempSocketInfo = zone->zoneContUnit->clientContArr[packet->key];
 
-	// !! 여기에요!! 원성연이 귀찮아서 매직넘버로 박아넣은 거 찾으시죠?? 여ㅛ기에요!!
+	//_PosType tempPosX;
+	//_PosType tempPosY;
+	//
+	//do
+	//{
+	//	tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
+	//	tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
+	//} while (zone->GetMapData()[tempPosY][tempPosX] == false);
+	
 	tempSocketInfo->SetNewObjectInfo(
-		GLOBAL_DEFINE::START_POSITION_X, 
-		GLOBAL_DEFINE::START_POSITION_Y,
+		GLOBAL_DEFINE::START_POSITION_X,  //tempPosX, //GLOBAL_DEFINE::START_POSITION_X, 
+		GLOBAL_DEFINE::START_POSITION_Y,  //tempPosY, //GLOBAL_DEFINE::START_POSITION_Y,
 		1, 
 		0, 
 		packet->job, 
@@ -1392,6 +1393,7 @@ void GameServer::RecvLoginAlready()
 
 void GameServer::LogOut(SocketInfo* pOutClient, const bool isForced)
 {
+#ifdef _DEV_MODE_
 	{
 	SOCKADDR_IN clientAddr;
 	int addrLength = sizeof(clientAddr);
@@ -1399,15 +1401,16 @@ void GameServer::LogOut(SocketInfo* pOutClient, const bool isForced)
 	getpeername(pOutClient->sock, (SOCKADDR*)& clientAddr, &addrLength);
 	std::cout << " [GOODBYE] 클라이언트 (" << inet_ntoa(clientAddr.sin_addr) << ") 가 종료했습니다. \n";
 	}
+#endif
 
 	if (isForced)
 	{
-		zone->Exit(pOutClient);
+		zone->Death(pOutClient);
 		pOutClient->TerminateClient();
 	}
 	else 
 	{
-		zone->Exit(pOutClient);
+		zone->Death(pOutClient);
 		pOutClient->TerminateClient();
 
 		auto pTempObjectInfo = pOutClient->objectInfo;

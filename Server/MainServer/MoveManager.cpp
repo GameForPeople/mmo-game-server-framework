@@ -130,7 +130,7 @@ bool MoveManager::MoveCharacter(SocketInfo* pClient)
 		retBool = MoveDown(pClient->objectInfo);
 		break;
 	default:
-		assert(false, L"정의되지 않은 방향을 받았습니다.");
+		assert(false, L"정의되지 않은 방향을 받았습니다." + std::to_string((int)pClient->loadedBuf[2]).c_str());
 		break;
 	}
 	return retBool;

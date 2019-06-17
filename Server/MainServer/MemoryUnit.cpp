@@ -177,6 +177,7 @@ SocketInfo::~SocketInfo()
 void SocketInfo::TerminateClient()
 {
 	loadedSize = 0;
+	objectInfo->hp = 0;
 	/*
 		버퍼들은 초기화하지 않음.
 	*/
@@ -185,13 +186,15 @@ void SocketInfo::TerminateClient()
 		여기서 원래.. 뭔말인지 알지? 몬스터는 상관없는데, 클라 뷰리스트에는 상대방에게 알려줘야해!
 	*/
 
-	viewListLock.lock();
-	viewList.clear();
-	viewListLock.unlock();
-
-	monsterViewListLock.lock();
-	monsterViewList.clear();
-	monsterViewListLock.unlock();
+	// 이미 다른데서 함.
+	//viewListLock.lock();
+	//viewList.clear();
+	//viewListLock.unlock();
+	//
+	//monsterViewListLock.lock();
+	//monsterViewList.clear();
+	//monsterViewListLock.unlock();
+	
 	// 19 06 14 GameServer 개선.
 	//delete objectInfo;	//
 	//objectInfo = nullptr;	//

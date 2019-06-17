@@ -82,7 +82,6 @@ namespace JOB {
 	constexpr UINT WITCH_ATTACK_1_RANGE = 6;	// 공격스킬아님.
 	constexpr UINT WITCH_ATTACK_2_RANGE = 8;
 
-	constexpr UINT MAX_MONSTER = 10000;
 	constexpr UINT MAX_TIMER_UNIT = 500000;
 
 	unsigned short GetMaxHP(_JobType, unsigned char) noexcept;
@@ -101,7 +100,8 @@ namespace ATOMIC_UTIL {
 namespace ERROR_HANDLING {
 	_NORETURN void ERROR_QUIT(const WCHAR *msg);
 	/*_DEPRECATED*/ void ERROR_DISPLAY(const WCHAR *msg);
-	void HandleRecvOrSendError();
+	void HandleRecvError();
+	bool HandleSendError();
 }
 
 namespace LUA_UTIL

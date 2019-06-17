@@ -470,7 +470,7 @@ void GameQueryServer::ProcessSaveLocation()
 
 	PACKET_DATA::MAIN_TO_QUERY::SavePosition* packet = reinterpret_cast<PACKET_DATA::MAIN_TO_QUERY::SavePosition*>(loadedBuf);
 
-	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec DB_2013182027.dbo.User_SaveLocation " + std::wstring(packet->id) + L" " + std::to_wstring(packet->xPos) + L" " + std::to_wstring(packet->yPos)).c_str(), SQL_NTS);
+	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec DB_2013182027.dbo.User_SaveLocation " + std::wstring(packet->id) + L", " + std::to_wstring(packet->xPos) + L", " + std::to_wstring(packet->yPos)).c_str(), SQL_NTS);
 	if (retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 
 	SQLFreeStmt(hstmt, SQL_DROP);

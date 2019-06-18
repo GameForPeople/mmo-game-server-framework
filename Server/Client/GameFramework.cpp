@@ -42,7 +42,7 @@ WGameFramework::~WGameFramework()
 	otherPlayerCont.clear();
 	monsterCont.clear();
 
-	//chatThread.join();
+	chatThread.join();
 }
 
 void WGameFramework::Create(HWND hWnd)
@@ -332,6 +332,8 @@ void WGameFramework::RecvLoginOK(char* pBufferStart)
 	UpdateBackgroundActor();
 
 	isLogin = true;
+
+	chatThread = std::thread{ StarChatFunction, (LPVOID)this};
 }
 
 void WGameFramework::RecvPutPlayer(char* pBufferStart)
@@ -574,6 +576,28 @@ void WGameFramework::RecvStatChange(char* pBufferStart)
 	}
 
 	std::wcout << L"[상태변경] : " << (int)packet->changedStatType << L"이 " << (int)packet->newValue << L"으로 변경되었습니다." << std::endl;
+}
+
+void WGameFramework::StarChatFunction(LPVOID arg)
+{
+	WGameFramework* pServer = static_cast<WGameFramework*>(arg);
+	pServer->ChatFunction();
+}
+
+void WGameFramework::ChatFunction()
+{
+	while (7)
+	{
+		WCHAR myChatBuffer[GLOBAL_DEFINE::CHAT_MAX_LEN - 1]{};
+		std::cout << "채팅 => " << std::endl;
+		wscanf(L"%s", myChatBuffer);
+
+		PACKET_DATA::CLIENT_TO_MAIN::Chat packet(myChatBuffer);
+		networkManager->SendPacket(reinterpret_cast<char*>(&packet));
+
+		for (int i = 0; i < GLOBAL_DEFINE::CHAT_MAX_LEN - 1; ++i)
+			myChatBuffer[i] = '\0';
+	}
 }
 
 void WGameFramework::UpdateOtherObject()

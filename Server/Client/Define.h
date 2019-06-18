@@ -37,24 +37,6 @@ namespace GLOBAL_DEFINE
 	constexpr BYTE CHAT_MAX_LEN = 50;
 }
 
-namespace STAT_CHANGE
-{
-	enum
-	{
-		HP,
-		MP,
-		LEVEL,
-		EXP,
-		RED_P,
-		BLUE_P,
-		MONEY,
-		MOVE_OK,
-		ATTACK_OK,
-		SKILL_1_OK,
-		SKILL_2_OK
-	};
-}
-
 namespace NETWORK_TYPE
 {
 	enum /*class NETWORK_TYPE : BYTE */
@@ -161,6 +143,24 @@ namespace PACKET_TYPE
 	}
 }
 
+namespace STAT_CHANGE
+{
+	enum
+	{
+		HP,
+		MP,
+		LEVEL,
+		EXP,
+		RED_P,
+		BLUE_P,
+		MONEY,
+		MOVE_OK,
+		ATTACK_OK,
+		SKILL_1_OK,
+		SKILL_2_OK
+	};
+}
+
 namespace PACKET_DATA
 {
 	using _PacketSizeType = const char;
@@ -228,7 +228,7 @@ namespace PACKET_DATA
 			_PacketTypeType type;
 			_CharType message[GLOBAL_DEFINE::CHAT_MAX_LEN];
 
-			Chat(const _CharType*);
+			Chat(_CharType*);
 		};
 	}
 

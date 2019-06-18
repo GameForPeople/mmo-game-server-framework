@@ -13,8 +13,8 @@ namespace GLOBAL_DEFINE
 
 	constexpr UINT8 MAX_LOADSTRING{ 100 };
 
-	constexpr USHORT MAX_SIZE_OF_RECV{ 100 };		//Recv 한번에 받을 수 있는 최대 사이즈
-	constexpr USHORT MAX_SIZE_OF_SEND{ 100 };		//sizeof(PACKET_DATA::CLIENT_TO_SERVER::Down);		//Recv 한번에 받을 수 있는 최대 사이즈
+	constexpr USHORT MAX_SIZE_OF_RECV{ 150 };		//Recv 한번에 받을 수 있는 최대 사이즈
+	constexpr USHORT MAX_SIZE_OF_SEND{ 150 };		//sizeof(PACKET_DATA::CLIENT_TO_SERVER::Down);		//Recv 한번에 받을 수 있는 최대 사이즈
 
 	constexpr UINT8 BLOCK_WIDTH_SIZE{ 40 };
 	constexpr UINT8 BLOCK_HEIGHT_SIZE{ 40 };

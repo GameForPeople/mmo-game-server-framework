@@ -20,7 +20,7 @@ using namespace chrono;
 
 extern HWND		hWnd;
 
-const static int MAX_TEST = 3000;
+const static int MAX_TEST = 2000;
 const static int INVALID_ID = -1;
 const static int MAX_PACKET_SIZE = 255;
 const static int MAX_BUFF_SIZE = 255;
@@ -244,7 +244,17 @@ void Adjust_Number_Of_Client()
 	}
 	g_clients[num_connections].connect = true;
 
+
+	//
+	//						시작 키값 설정  num_connections 이 아이디로 감!
+	//
+
+	// 로그인 - 테스트용
 	PACKET_DATA::CLIENT_TO_MAIN::Login packet(std::to_wstring(num_connections).c_str());
+
+	// 회원가입 - 테스트 계정 생성용
+	//PACKET_DATA::CLIENT_TO_MAIN::SignUp packet(std::to_wstring(num_connections).c_str(), (rand() % 3) + 1);
+
 	SendPacket(num_connections, &packet);
 
 	num_connections++;
@@ -309,7 +319,7 @@ void InitializeNetwork()
 
 	g_hiocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, NULL, 0);
 
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < 4; ++i)
 		worker_threads.push_back(new std::thread{ Worker_Thread });
 
 	test_thread = thread{ Test_Thread };

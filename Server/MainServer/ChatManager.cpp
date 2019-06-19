@@ -38,7 +38,7 @@ void ChatManager::ChatProcess(SocketInfo* pClient, ZoneContUnit* pZoneContUnit)
 
 	while (!sendedMessageCont.try_pop(retChatUnit))
 	{
-		ERROR_HANDLING::ERROR_DISPLAY(L"[ERROR]SendPool의 메모리가 부족합니다.");
+		//ERROR_HANDLING::ERROR_DISPLAY(L"[ERROR]sendedMessageCont의 메모리가 부족합니다.");
 		/*
 			원래는 여기서 메모리 추가로 할당해서, 넘겨줘야해 어딜 기다려!
 		*/

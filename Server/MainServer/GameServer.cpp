@@ -112,7 +112,7 @@ void GameServer::ServerIntegrityCheck()
 void GameServer::PrintServerInfoUI()
 {
 	printf("\n■■■■■■■■■■■■■■■■■■■■■■■■■\n");
-	printf("■ 게임서버프로그래밍 숙제 5번   \n");
+	printf("■ 게임서버프로그래밍 텀프로젝트  \n");
 	printf("■                   게임공학과 원성연 2013182027\n");
 	printf("■\n");
 	
@@ -142,9 +142,9 @@ void GameServer::InitNetwork()
 	//GetSystemInfo(&si);
 
 	// 3. 워커 쓰레드 생성 및 IOCP 등록.
-	workerThreadCont.reserve(4);
-	printf("!. 현재 워커쓰레드 개수는 코어의 개수와 상관없이 4개로 제한, 생성합니다. \n");
-	for (int i = 0; i < /* (int)si.dwNumberOfProcessors * 2 */ 4; ++i)
+	workerThreadCont.reserve(NETWORK_UTIL::WORKER_THREAD_NUM);
+	printf("!. 현재 워커쓰레드 개수는 코어의 개수와 상관없이 %d 개로 제한, 생성합니다. \n", NETWORK_UTIL::WORKER_THREAD_NUM);
+	for (int i = 0; i < /* (int)si.dwNumberOfProcessors * 2 */ NETWORK_UTIL::WORKER_THREAD_NUM; ++i)
 	{
 		workerThreadCont.emplace_back(std::thread{ StartWorkerThread, (LPVOID)this });
 	}
@@ -468,6 +468,7 @@ void GameServer::ProcessPacket(SocketInfo* pClient)
 	case MOVE:
 		if (pClient->objectInfo->hp == 0) break;
 		if (pClient->objectInfo->moveFlag == false) break;
+		if (pClient->objectInfo->faintTick) break;
 		zone->RecvCharacterMove(pClient);
 		break;
 	case LOGIN:
@@ -481,6 +482,9 @@ void GameServer::ProcessPacket(SocketInfo* pClient)
 		break;
 	case USE_ITEM:
 		RecvItem(pClient);
+		break;
+	case BUY_ITEM:
+		RecvBuyItem(pClient);
 		break;
 	case CHAT:
 		RecvChat(pClient);
@@ -519,6 +523,8 @@ void GameServer::RecvAttack(SocketInfo* pClient)
 {
 	if (pClient->objectInfo->hp)
 	{
+		if (pClient->objectInfo->faintTick) return;
+
 		PACKET_DATA::CLIENT_TO_MAIN::Attack* packet = reinterpret_cast<PACKET_DATA::CLIENT_TO_MAIN::Attack*>(pClient->loadedBuf);
 
 		if (packet->attackType == 0)	// 평타
@@ -528,6 +534,8 @@ void GameServer::RecvAttack(SocketInfo* pClient)
 
 			if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->attackFlag), true, false))
 			{
+				NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::ATTACK_OK, 0, pClient);
+
 				auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
 				timerUnit->objectKey = pClient->key;
 				timerUnit->timerType = TIMER_TYPE::PLAYER_ATTACK;
@@ -589,38 +597,7 @@ void GameServer::RecvAttack(SocketInfo* pClient)
 													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, pClient->objectInfo->hp, pClient);
 													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MP, pClient->objectInfo->mp, pClient);
 
-													//재화획득 처리
-													switch (pMonster->objectInfo->posY % 6)
-													{
-													case 0:
-													case 1:
-													case 2:
-														// 너넨 국물도 없어!
-														break;
-													case 3:
-													{
-														// 돈줄겡
-														pClient->objectInfo->money.fetch_add(pMonster->monsterModel->moneyPerLevel * pMonster->objectInfo->level);
-														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MONEY, pClient->objectInfo->money, pClient);
-														break;
-													}
-													case 4:
-													{
-														// 포션줄겡
-														pClient->objectInfo->redCount.fetch_add(1);
-														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::RED_P, pClient->objectInfo->redCount, pClient);
-														break;
-													}
-													case 5:
-													{
-														// 포션줄겡
-														pClient->objectInfo->blueCount.fetch_add(1);
-														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::BLUE_P, pClient->objectInfo->blueCount, pClient);
-														break;
-													}
-													}
-
-													auto pTempObjectInfo = pClient->objectInfo;
+														auto pTempObjectInfo = pClient->objectInfo;
 
 													PACKET_DATA::MAIN_TO_QUERY::SaveUserInfo packet(
 														1,	// 백업용
@@ -644,6 +621,38 @@ void GameServer::RecvAttack(SocketInfo* pClient)
 
 												NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::EXP, newExp, pClient);
 												// 카스 지옥 으악
+
+																								//재화획득 처리
+												switch (pMonster->objectInfo->posY % 6)
+												{
+												case 0:
+												case 1:
+												case 2:
+													// 너넨 국물도 없어!
+													break;
+												case 3:
+												{
+													// 돈줄겡
+													pClient->objectInfo->money.fetch_add(pMonster->monsterModel->moneyPerLevel * pMonster->objectInfo->level);
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MONEY, pClient->objectInfo->money, pClient);
+													break;
+												}
+												case 4:
+												{
+													// 포션줄겡
+													pClient->objectInfo->redCount.fetch_add(1);
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::RED_P, pClient->objectInfo->redCount, pClient);
+													break;
+												}
+												case 5:
+												{
+													// 포션줄겡
+													pClient->objectInfo->blueCount.fetch_add(1);
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::BLUE_P, pClient->objectInfo->blueCount, pClient);
+													break;
+												}
+												}
+
 												break;
 											}
 										}
@@ -681,9 +690,28 @@ void GameServer::RecvAttack(SocketInfo* pClient)
 		{
 			if (pClient->objectInfo->skill1Flag == false) return; // 아직 쿨타임
 			if (pClient->objectInfo->hp == 0) return;	// [NOT_CAS] 여기서 안죽었으면, 떄리는거 정도는 허용하겠다.
+			
+			_MpType_T costMp = JOB::GetSkillMp(pClient->objectInfo->job, packet->attackType);
+			
+			while (7)
+			{
+				_MpType_T oldMp = pClient->objectInfo->mp;
+				short newMp = oldMp - costMp;
+
+				if (newMp < 0) return; // 마나없습니다.
+
+				if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->mp), oldMp, static_cast<_MpType_T>(newMp)))
+				{
+					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MP, newMp, pClient);
+					// 마나 빼기 성공.
+					break;
+				}
+			}
 
 			if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->skill1Flag), true, false))
 			{
+				NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::SKILL_1_OK, 0, pClient);
+
 				if (pClient->objectInfo->job == JOB_TYPE::KNIGHT)
 				{
 					pClient->objectInfo->noDamageFlag = true;
@@ -783,37 +811,6 @@ void GameServer::RecvAttack(SocketInfo* pClient)
 													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, pClient->objectInfo->hp, pClient);
 													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MP, pClient->objectInfo->mp, pClient);
 
-													//재화획득 처리
-													switch (pMonster->objectInfo->posY % 6)
-													{
-													case 0:
-													case 1:
-													case 2:
-														// 너넨 국물도 없어!
-														break;
-													case 3:
-													{
-														// 돈줄겡
-														pClient->objectInfo->money.fetch_add(pMonster->monsterModel->moneyPerLevel * pMonster->objectInfo->level);
-														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MONEY, pClient->objectInfo->money, pClient);
-														break;
-													}
-													case 4:
-													{
-														// 포션줄겡
-														pClient->objectInfo->redCount.fetch_add(1);
-														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::RED_P, pClient->objectInfo->redCount, pClient);
-														break;
-													}
-													case 5:
-													{
-														// 포션줄겡
-														pClient->objectInfo->blueCount.fetch_add(1);
-														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::BLUE_P, pClient->objectInfo->blueCount, pClient);
-														break;
-													}
-													}
-
 													auto pTempObjectInfo = pClient->objectInfo;
 
 													PACKET_DATA::MAIN_TO_QUERY::SaveUserInfo packet(
@@ -838,6 +835,37 @@ void GameServer::RecvAttack(SocketInfo* pClient)
 												}
 
 												NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::EXP, newExp, pClient);
+
+												//재화획득 처리
+												switch (pMonster->objectInfo->posY % 6)
+												{
+												case 0:
+												case 1:
+												case 2:
+													// 너넨 국물도 없어!
+													break;
+												case 3:
+												{
+													// 돈줄겡
+													pClient->objectInfo->money.fetch_add(pMonster->monsterModel->moneyPerLevel * pMonster->objectInfo->level);
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MONEY, pClient->objectInfo->money, pClient);
+													break;
+												}
+												case 4:
+												{
+													// 포션줄겡
+													pClient->objectInfo->redCount.fetch_add(1);
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::RED_P, pClient->objectInfo->redCount, pClient);
+													break;
+												}
+												case 5:
+												{
+													// 포션줄겡
+													pClient->objectInfo->blueCount.fetch_add(1);
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::BLUE_P, pClient->objectInfo->blueCount, pClient);
+													break;
+												}
+												}
 
 												// 카스 지옥 으악
 												break;
@@ -899,8 +927,27 @@ void GameServer::RecvAttack(SocketInfo* pClient)
 			if (pClient->objectInfo->skill2Flag == false) return; //아직 쿨타임
 			if (pClient->objectInfo->hp == 0) return;	// [NOT_CAS] 여기서 안죽었으면, 떄리는거 정도는 허용하겠다.
 
+			_MpType_T costMp = JOB::GetSkillMp(pClient->objectInfo->job, packet->attackType);
+
+			while (7)
+			{
+				_MpType_T oldMp = pClient->objectInfo->mp;
+				short newMp = oldMp - costMp;
+
+				if (newMp < 0) return; // 마나없습니다.
+
+				if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->mp), oldMp, static_cast<_MpType_T>(newMp)))
+				{
+					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MP, newMp, pClient);
+					// 마나 빼기 성공.
+					break;
+				}
+			}
+
 			if (ATOMIC_UTIL::T_CAS(&(pClient->objectInfo->skill2Flag), true, false))
 			{
+				NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::SKILL_2_OK, 0, pClient);
+
 				auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
 				timerUnit->objectKey = pClient->key;
 				timerUnit->timerType = TIMER_TYPE::SKILL_2_COOLTIME;
@@ -980,37 +1027,6 @@ void GameServer::RecvAttack(SocketInfo* pClient)
 													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, pClient->objectInfo->hp, pClient);
 													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MP, pClient->objectInfo->mp, pClient);
 
-													//재화획득 처리
-													switch (pMonster->objectInfo->posY % 6)
-													{
-													case 0:
-													case 1:
-													case 2:
-														// 너넨 국물도 없어!
-														break;
-													case 3:
-													{
-														// 돈줄겡
-														pClient->objectInfo->money.fetch_add(pMonster->monsterModel->moneyPerLevel * pMonster->objectInfo->level);
-														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MONEY, pClient->objectInfo->money, pClient);
-														break;
-													}
-													case 4:
-													{
-														// 포션줄겡
-														pClient->objectInfo->redCount.fetch_add(1);
-														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::RED_P, pClient->objectInfo->redCount, pClient);
-														break;
-													}
-													case 5:
-													{
-														// 포션줄겡
-														pClient->objectInfo->blueCount.fetch_add(1);
-														NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::BLUE_P, pClient->objectInfo->blueCount, pClient);
-														break;
-													}
-													}
-
 													auto pTempObjectInfo = pClient->objectInfo;
 
 													PACKET_DATA::MAIN_TO_QUERY::SaveUserInfo packet(
@@ -1031,6 +1047,37 @@ void GameServer::RecvAttack(SocketInfo* pClient)
 
 													NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&packet));
 													isLevelUp = true; // 이 지옥같은 CAS 나가서 레벨업했다고 알려줄꺼야
+												}
+
+												//재화획득 처리
+												switch (pMonster->objectInfo->posY % 6)
+												{
+												case 0:
+												case 1:
+												case 2:
+													// 너넨 국물도 없어!
+													break;
+												case 3:
+												{
+													// 돈줄겡
+													pClient->objectInfo->money.fetch_add(pMonster->monsterModel->moneyPerLevel * pMonster->objectInfo->level);
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MONEY, pClient->objectInfo->money, pClient);
+													break;
+												}
+												case 4:
+												{
+													// 포션줄겡
+													pClient->objectInfo->redCount.fetch_add(1);
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::RED_P, pClient->objectInfo->redCount, pClient);
+													break;
+												}
+												case 5:
+												{
+													// 포션줄겡
+													pClient->objectInfo->blueCount.fetch_add(1);
+													NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::BLUE_P, pClient->objectInfo->blueCount, pClient);
+													break;
+												}
 												}
 
 												NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::EXP, newExp, pClient);
@@ -1204,6 +1251,50 @@ void GameServer::RecvItem(SocketInfo* pClient)
 	}
 }
 
+void GameServer::RecvBuyItem(SocketInfo* pClient)
+{
+	PACKET_DATA::CLIENT_TO_MAIN::BuyItem* packet = reinterpret_cast<PACKET_DATA::CLIENT_TO_MAIN::BuyItem*>(pClient->loadedBuf);
+	
+	if (packet->buyItemType == 0)
+	{
+		while (7)
+		{
+			unsigned int oldMoney = pClient->objectInfo->money;
+			int newMoney = oldMoney - ITEM::RED_COST;
+
+			if (newMoney < 0) return;
+			
+			if (ATOMIC_UTIL::T_CAS((&pClient->objectInfo->money), oldMoney, static_cast<unsigned int>(newMoney)))
+			{
+				pClient->objectInfo->redCount.fetch_add(1);
+				NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::RED_P, pClient->objectInfo->redCount, pClient);
+				NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MONEY, newMoney, pClient);
+
+				break;
+			}
+		}
+	}
+	else if (packet->buyItemType == 1)
+	{
+		while (7)
+		{
+			unsigned int oldMoney = pClient->objectInfo->money;
+			int newMoney = oldMoney - ITEM::BLUE_COST;
+
+			if (newMoney < 0) return;
+
+			if (ATOMIC_UTIL::T_CAS((&pClient->objectInfo->money), oldMoney, static_cast<unsigned int>(newMoney)))
+			{
+				pClient->objectInfo->blueCount.fetch_add(1);
+				NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::BLUE_P, pClient->objectInfo->blueCount, pClient);
+				NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MONEY, newMoney, pClient);
+
+				break;
+			}
+		}
+	}
+}
+
 void GameServer::RecvChat(SocketInfo* pClient)
 {
 	PACKET_DATA::CLIENT_TO_MAIN::Chat* packet = reinterpret_cast<PACKET_DATA::CLIENT_TO_MAIN::Chat*>(pClient->loadedBuf);
@@ -1336,24 +1427,58 @@ void GameServer::RecvLoginNew()
 	PACKET_DATA::QUERY_TO_MAIN::LoginNew* packet = reinterpret_cast<PACKET_DATA::QUERY_TO_MAIN::LoginNew*>(NETWORK_UTIL::queryMemoryUnit->loadedBuf);
 	SocketInfo* tempSocketInfo = zone->zoneContUnit->clientContArr[packet->key];
 
-	//_PosType tempPosX;
-	//_PosType tempPosY;
-	//
-	//do
-	//{
-	//	tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
-	//	tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
-	//} while (zone->GetMapData()[tempPosY][tempPosX] == false);
+#pragma region [Teleport TestClient Account]
+	_PosType tempPosX;
+	_PosType tempPosY;
 	
+	do
+	{
+		tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
+		tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
+	} while (zone->GetMapData()[tempPosY][tempPosX] == false);
+	
+	int randomLevel = rand() % 50 + 1;
+
 	tempSocketInfo->SetNewObjectInfo(
-		GLOBAL_DEFINE::START_POSITION_X,  //tempPosX, //GLOBAL_DEFINE::START_POSITION_X, 
-		GLOBAL_DEFINE::START_POSITION_Y,  //tempPosY, //GLOBAL_DEFINE::START_POSITION_Y,
-		1, 
-		0, 
-		packet->job, 
-		JOB::BASE_HP, 
-		JOB::BASE_MP, 
+		tempPosX,
+		tempPosY,
+		randomLevel,
+		0,
+		packet->job,	// 직업은 테스트 클라에서 랜덤으로 보내서 가입함.
+		JOB::GetMaxHP(packet->job, randomLevel),
+		JOB::GetMaxMP(packet->job, randomLevel),
 		0, 0, 0, 0);
+
+	auto pTempObjectInfo = tempSocketInfo->objectInfo;
+	PACKET_DATA::MAIN_TO_QUERY::SaveUserInfo toQueryPacket(
+		1,	// 백업용
+		static_cast<PlayerObjectInfo*>(pTempObjectInfo)->nickname,
+		pTempObjectInfo->posX,
+		pTempObjectInfo->posY,
+		pTempObjectInfo->level,
+		pTempObjectInfo->exp,
+		pTempObjectInfo->job,
+		pTempObjectInfo->hp,
+		pTempObjectInfo->mp,
+		pTempObjectInfo->money,
+		pTempObjectInfo->redCount,
+		pTempObjectInfo->blueCount,
+		pTempObjectInfo->treeCount
+	);
+
+	NETWORK_UTIL::SendQueryPacket(reinterpret_cast<char*>(&toQueryPacket));
+
+#pragma endregion
+
+	//tempSocketInfo->SetNewObjectInfo(
+	//	GLOBAL_DEFINE::START_POSITION_X,  
+	//	GLOBAL_DEFINE::START_POSITION_Y,  
+	//	1, 
+	//	0, 
+	//	packet->job, 
+	//	JOB::BASE_HP, 
+	//	JOB::BASE_MP, 
+	//	0, 0, 0, 0);
 
 	// 클라이언트에게 서버에 접속(Accept) 함을 알림
 	auto tempObjectInfo = tempSocketInfo->objectInfo;
@@ -1362,7 +1487,7 @@ void GameServer::RecvLoginNew()
 
 	NETWORK_UTIL::SendPacket(tempSocketInfo, reinterpret_cast<char*>(&loginPacket));
 
-	std::cout << " [HELLO] 클라이언트 (" << packet->key /*inet_ntoa(clientAddr.sin_addr)*/ << ") 가 접속했습니다. \n";
+	//std::cout << " [HELLO] 클라이언트 (" << packet->key /*inet_ntoa(clientAddr.sin_addr)*/ << ") 가 접속했습니다. \n";
 
 	// 해당 존에 입장!
 	zone->Enter(tempSocketInfo);

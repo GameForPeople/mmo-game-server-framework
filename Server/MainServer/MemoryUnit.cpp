@@ -19,7 +19,7 @@ MemoryUnit::MemoryUnit(const MEMORY_UNIT_TYPE inMemoryUnitType) :
 	dataBuf(nullptr)
 {
 #ifdef _DEV_MODE_
-//	std::cout << " MemoryUnit의 기본생성자가 호출되었습니다. \n";
+	std::cout << " MemoryUnit의 기본생성자가 호출되었습니다. \n";
 #endif
 	if (MEMORY_UNIT_TYPE::RECV_FROM_CLIENT == inMemoryUnitType)
 	{
@@ -54,7 +54,7 @@ MemoryUnit::MemoryUnit(const MEMORY_UNIT_TYPE inMemoryUnitType) :
 MemoryUnit::~MemoryUnit()
 {
 #ifdef _DEV_MODE_
-	//std::cout << "MemoryUnit의 소멸자가 호출되었습니다. \n";
+	std::cout << "MemoryUnit의 소멸자가 호출되었습니다. \n";
 #endif
 	delete[] dataBuf;
 }
@@ -76,6 +76,9 @@ MemoryUnit::MemoryUnit(MemoryUnit&& other) noexcept :
 	dataBuf(nullptr),
 	memoryUnitType(other.memoryUnitType)
 {
+#ifdef _DEV_MODE_
+	std::cout << " MemoryUnit의 이동생성자가 호출되었습니다. \n";
+#endif
 	*this = std::move(other);
 }
 
@@ -104,31 +107,34 @@ SendMemoryUnit::SendMemoryUnit()
 	: memoryUnit(MEMORY_UNIT_TYPE::SEND_TO_CLIENT)
 	//, pOwner(nullptr)
 {
+	//std::cout << " SendMemoryUnit의 기본생성자가 호출되었습니다. \n";
 }
 
 SendMemoryUnit::~SendMemoryUnit()
 {
+	//std::cout << " SendMemoryUnit의 기본소멸자가 호출되었습니다. \n";
 }
 
 SendMemoryUnit::SendMemoryUnit(const SendMemoryUnit& other) 
 	: memoryUnit(other.memoryUnit)
 	//, pOwner(other.pOwner)
 {
+	//std::cout << " SendMemoryUnit의 복사생성자가 호출되었습니다. \n";
 #ifdef _DEV_MODE_
-	std::cout << " SendMemoryUnit의 복사생성자가 호출되었습니다. \n";
 #endif
 }
 
 SendMemoryUnit::SendMemoryUnit(SendMemoryUnit&& other) noexcept 
-	: memoryUnit(other.memoryUnit)
+	: memoryUnit(std::move(other.memoryUnit))
 {
+	//std::cout << " SendMemoryUnit의 이동생성자가 호출되었습니다. \n";
 	*this = std::move(other);
 }
 
 SendMemoryUnit& SendMemoryUnit::operator=(SendMemoryUnit&& other) noexcept
 {
+	//std::cout << " SendMemoryUnit의 이동 할당 연산자(혹은 이동 생성자)가 호출되었습니다. \n";
 #ifdef _DEV_MODE_
-	std::cout << " SendMemoryUnit의 이동 할당 연산자(혹은 이동 생성자)가 호출되었습니다. \n";
 #endif
 	if (this != &other)
 	{

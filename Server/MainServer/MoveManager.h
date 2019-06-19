@@ -36,7 +36,7 @@ public:
 
 #endif
 
-private:
+public:
 #if _USE_STD_FUNCTION_
 	/*inline*/ void LeftMoveTest(ObjectInfo* );
 

@@ -61,6 +61,7 @@ private: // "Client to Main" Function
 	void RecvSignUp(SocketInfo*);
 	void RecvAttack(SocketInfo*);
 	void RecvItem(SocketInfo*);
+	void RecvBuyItem(SocketInfo*);
 	void RecvChat(SocketInfo*);
 
 private: // "Query" Function

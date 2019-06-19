@@ -56,23 +56,13 @@ namespace PACKET_TYPE
 	{
 		enum
 		{
-			MOVE, 	//LEFT, //UP, //RIGHT, //DOWN,
+			MOVE, 				//LEFT, //UP, //RIGHT, //DOWN,
 			LOGIN,
 			SIGN_UP,
 			ATTACK,
 			USE_ITEM,
+			BUY_ITEM,
 			CHAT,
-			ENUM_SIZE
-		};
-	}
-
-	namespace CLIENT_TO_CHAT
-	{
-		enum
-		{
-			CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
-			CONNECT,	// 채팅 서버에 해당 클라이언트를 등록합니다.
-			CHANGE,		// 해당 클라이언트의 존이 변경되었습니다.
 			ENUM_SIZE
 		};
 	}
@@ -96,7 +86,7 @@ namespace PACKET_TYPE
 	{
 		enum
 		{
-			DEMAND_LOGIN =0,
+			DEMAND_LOGIN = 0,
 			DEMAND_SIGNUP = 1,
 			SAVE_LOCATION = 2,
 			SAVE_USERINFO
@@ -123,7 +113,16 @@ namespace PACKET_TYPE
 			ENUM_SIZE
 		};
 	}
-
+	namespace CLIENT_TO_CHAT
+	{
+		enum
+		{
+			CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
+			CONNECT,	// 채팅 서버에 해당 클라이언트를 등록합니다.
+			CHANGE,		// 해당 클라이언트의 존이 변경되었습니다.
+			ENUM_SIZE
+		};
+	}
 	namespace COMMAND_TO_CHAT
 	{
 		enum
@@ -201,7 +200,7 @@ namespace PACKET_DATA
 		struct Attack {
 			_PacketSizeType size;
 			_PacketTypeType type;
-			unsigned char attackType; //0이면 기본공격, 1이면 스킬1, 2이면 스킬2
+			unsigned char attackType;							//0이면 기본공격, 1이면 스킬1, 2이면 스킬2
 
 			Attack(const unsigned char) noexcept;
 		};
@@ -209,9 +208,17 @@ namespace PACKET_DATA
 		struct Item {
 			_PacketSizeType size;
 			_PacketTypeType type;
-			unsigned char useItemType;	//0이면 레드포션, 1이면 블루포션
+			unsigned char useItemType;					//0이면 레드포션, 1이면 블루포션
 
 			Item(const unsigned char) noexcept;
+		};
+
+		struct BuyItem {
+			_PacketSizeType size;
+			_PacketTypeType type;
+			unsigned char buyItemType;					//0이면 레드포션, 1이면 블루포션
+
+			BuyItem(const unsigned char) noexcept;
 		};
 
 		struct Chat {
@@ -331,9 +338,9 @@ namespace PACKET_DATA
 			_PacketSizeType size;
 			_PacketTypeType type;
 			char changedStatType;	
+			int newValue;
 			// 0 체력, 1 마나, 2 레벨, 3. 경험치, 4. 빨물, 
 			//5.파물, 6.돈, 7. 이동가능여부, 8. 공격가능여부, 9. 스킬1가능여부, 10. 스킬2가능여부
-			int newValue;
 
 			StatChange(char /* STAT_CHANGE */, int ) noexcept;
 		};
@@ -345,8 +352,8 @@ namespace PACKET_DATA
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			_KeyType key;	// 나중에 반납할 때, 이 키를 알려줘야함.
-			_CharType id[10];
+			_KeyType key;						// 나중에 반납할 때, 이 키를 알려줘야함.
+			_CharType id[GLOBAL_DEFINE::ID_MAX_LEN];
 			int		pw;
 
 			DemandLogin(const _KeyType, const char* inId, const int);
@@ -356,7 +363,7 @@ namespace PACKET_DATA
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			_KeyType key;	// 나중에 반납할 때, 이 키를 알려줘야함.
+			_KeyType key;						// 나중에 반납할 때, 이 키를 알려줘야함.
 			_CharType id[10];
 			_JobType job;
 
@@ -367,7 +374,7 @@ namespace PACKET_DATA
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			// 여기는 단방향성이라 Key가 필요없음
+												// 여기는 단방향성이라 Key가 필요없음
 			_CharType id[10];
 			_PosType xPos;
 			_PosType yPos;
@@ -378,7 +385,7 @@ namespace PACKET_DATA
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			// 여기는 단방향성이라 Key가 필요없음
+													// 여기는 단방향성이라 Key가 필요없음
 			int isOut;	// 0 로그아웃용, 1 백업용
 			_CharType id[10];
 			_PosType xPos;

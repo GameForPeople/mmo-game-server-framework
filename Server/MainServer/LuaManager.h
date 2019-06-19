@@ -35,4 +35,6 @@ public: //Script function
 	static int API_go_SpawnPosition(lua_State *L);
 	static int API_do_attack(lua_State *L);
 	static int API_do_chase(lua_State *L);
+	static int API_Is_Near(lua_State *L);
+	static int API_Process(lua_State *L);
 };

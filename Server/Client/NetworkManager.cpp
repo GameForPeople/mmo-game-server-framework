@@ -302,6 +302,12 @@ void NetworkManager::SendItem(const unsigned char inItemType)
 	SendPacket(reinterpret_cast<char*>(&packet));
 }
 
+void NetworkManager::SendBuyItem(const unsigned char inItemType)
+{
+	PACKET_DATA::CLIENT_TO_MAIN::BuyItem packet(inItemType);
+	SendPacket(reinterpret_cast<char*>(&packet));
+}
+
 void NetworkManager::LogInOrSignUpProcess()
 {
 	std::cout << "로그인은 1번, 회원가입은 2번을 입력해주세요 : " << std::endl;

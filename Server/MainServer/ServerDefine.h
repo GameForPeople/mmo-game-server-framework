@@ -17,6 +17,7 @@ struct BaseMonster;
 
 namespace NETWORK_UTIL
 {
+	constexpr int WORKER_THREAD_NUM = 4;
 	//std::unique_ptr<QueryMemoryUnit> queryMemoryUnit;
 
 	void SendPacket(SocketInfo* pClient, char* packetData);
@@ -44,6 +45,9 @@ namespace NETWORK_UTIL
 namespace ITEM {
 	constexpr UINT RED_PER_TICK = 20;
 	constexpr UINT BLUE_PER_TICK = 10;
+
+	constexpr UINT RED_COST = 50;
+	constexpr UINT BLUE_COST = 50;
 }
 
 namespace DAMAGE
@@ -75,20 +79,30 @@ namespace JOB {
 	constexpr UINT KNIGHT_ATTACK_2_RANGE = 3;
 
 	constexpr UINT ARCHER_ATTACK_0_RANGE = 3;
-	constexpr UINT ARCHER_ATTACK_1_RANGE = 3;	// 공격스킬아님.
+	constexpr UINT ARCHER_ATTACK_1_RANGE = 3;	
 	constexpr UINT ARCHER_ATTACK_2_RANGE = 3;
 
 	constexpr UINT WITCH_ATTACK_0_RANGE = 2;
-	constexpr UINT WITCH_ATTACK_1_RANGE = 6;	// 공격스킬아님.
+	constexpr UINT WITCH_ATTACK_1_RANGE = 6;	
 	constexpr UINT WITCH_ATTACK_2_RANGE = 8;
+
+	constexpr UINT KNIGHT_ATTACK_1_MP = 5;
+	constexpr UINT KNIGHT_ATTACK_2_MP = 10;	
+
+	constexpr UINT ARCHER_ATTACK_1_MP = 10;
+	constexpr UINT ARCHER_ATTACK_2_MP = 20;	
+
+	constexpr UINT WITCH_ATTACK_1_MP = 10;
+	constexpr UINT WITCH_ATTACK_2_MP = 30;	
 
 	constexpr UINT MAX_TIMER_UNIT = 500000;
 
-	unsigned short GetMaxHP(_JobType, unsigned char) noexcept;
-	unsigned short GetMaxMP(_JobType, unsigned char) noexcept;
-	_DamageType GetDamage(_JobType, unsigned char) noexcept;
+	unsigned short GetMaxHP(_JobType inJob, unsigned char inLevel) noexcept;
+	unsigned short GetMaxMP(_JobType inJob, unsigned char inLevel) noexcept;
+	_DamageType GetDamage(_JobType inJob, unsigned char inLevel) noexcept;
 	bool IsAttack(_JobType, unsigned char atkType, SocketInfo* pHitter, BaseMonster* pMonster) noexcept;
 	bool/*private*/ IsInAttackRange(int range, SocketInfo* pHitter, BaseMonster* pMonster);
+	_MpType_T GetSkillMp(_JobType job, unsigned char inSkillIndex) noexcept;
 }
 
 namespace ATOMIC_UTIL {

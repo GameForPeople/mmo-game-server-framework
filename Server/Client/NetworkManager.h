@@ -12,6 +12,7 @@ public:
 	void SendMoveData(const BYTE inDirection);
 	void SendAttack(const unsigned char inAttackType);
 	void SendItem(const unsigned char inItemType);
+	void SendBuyItem(const unsigned char inItemType);
 
 	void LogInOrSignUpProcess();
 private:

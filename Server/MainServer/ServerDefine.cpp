@@ -44,7 +44,7 @@ namespace NETWORK_UTIL
 			{
 				LuaManager::GetInstance()->pZone->Death(pClient);
 				closesocket(pClient->sock);
-				SendMemoryPool::GetInstance()->PushMemory(sendMemoryUnit);
+				//SendMemoryPool::GetInstance()->PushMemory(sendMemoryUnit);
 			}
 		}
 			//]();
@@ -165,7 +165,6 @@ namespace NETWORK_UTIL
 
 //	void LogOutProcess(LPVOID pClient)
 //	{
-//
 //		//if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::RECV_FROM_CLIENT)
 //		//{
 //		SocketInfo* pOutClient = reinterpret_cast<SocketInfo*>(pClient);
@@ -389,6 +388,25 @@ namespace JOB
 			}
 		}
 		return false;
+	}
+
+	_MpType_T GetSkillMp(_JobType job, unsigned char inSkillIndex) noexcept
+	{
+		if (job == JOB_TYPE::KNIGHT)
+		{
+			if (inSkillIndex == 1) return KNIGHT_ATTACK_1_MP;
+			else return KNIGHT_ATTACK_2_MP;
+		}
+		else if (job == JOB_TYPE::ARCHER)
+		{
+			if (inSkillIndex == 1) return ARCHER_ATTACK_1_MP;
+			else return ARCHER_ATTACK_2_MP;
+		}
+		else if (job == JOB_TYPE::WITCH)
+		{
+			if (inSkillIndex == 1) return WITCH_ATTACK_1_MP;
+			else return WITCH_ATTACK_2_MP;
+		}
 	}
 }
 

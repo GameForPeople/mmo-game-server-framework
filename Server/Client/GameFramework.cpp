@@ -33,6 +33,10 @@ WGameFramework::WGameFramework(const std::string_view& inIPAddress)
 	, myClientKey()
 	, isLogin(false)
 	, isDeath(false)
+	, moveOK()
+	, attackOK()
+	, skill1OK()
+	, skill2OK()
 {
 	otherPlayerCont.clear();
 }
@@ -116,6 +120,18 @@ void WGameFramework::Create(HWND hWnd)
 	numberUICont[8].Load(L"Resource/Image/Combo_Orange_Yellow_8.png");
 	numberUICont[9].Load(L"Resource/Image/Combo_Orange_Yellow_9.png");
 
+	AttackImageCont[0][0].Load(L"Resource/Image/Knight_0.png");
+	AttackImageCont[0][1].Load(L"Resource/Image/Knight_1.png");
+	AttackImageCont[0][2].Load(L"Resource/Image/Knight_2.png");
+
+	AttackImageCont[1][0].Load(L"Resource/Image/Archer_0.png");
+	AttackImageCont[1][1].Load(L"Resource/Image/Archer_1.png");
+	AttackImageCont[1][2].Load(L"Resource/Image/Archer_2.png");
+
+	AttackImageCont[2][0].Load(L"Resource/Image/Witch_0.png");
+	AttackImageCont[2][1].Load(L"Resource/Image/Witch_1.png");
+	AttackImageCont[2][2].Load(L"Resource/Image/Witch_2.png");
+
 	networkManager = std::make_unique<NetworkManager>(ipAddress, this);
 }
 
@@ -128,6 +144,22 @@ void WGameFramework::OnDraw(HDC hdc)
 		{
 			(*inIter)->Render(hdc);
 		}
+	}
+	
+	if (attack_0_tick)
+	{
+		AttackImageCont[job - 1][0].TransparentBlt(hdc, 0, 0, 800, 800, COLOR::_WHITE);
+	}
+
+	if (attack_1_tick)
+	{
+		AttackImageCont[job - 1][1].TransparentBlt(hdc, 0, 0, 800, 800, COLOR::_WHITE);
+	}
+
+	if (attack_2_tick)
+	{
+		AttackImageCont[job - 1][2].TransparentBlt(hdc, 0, 0, 800, 800, COLOR::_WHITE);
+		//AttackImageCont[job - 1][2].AlphaBlend(hdc, 0, 0, 250);
 	}
 
 	monsterContLock.lock(); //++++++++++++++++++++++++++++++++++++++++++++++++++1
@@ -143,6 +175,7 @@ void WGameFramework::OnDraw(HDC hdc)
 	coverUI->Render(hdc);
 	broadcastAreaUI->Render(hdc);
 
+#pragma region [UI]
 	if (level)
 	{
 		const int sizeBuffer = 35;
@@ -216,6 +249,7 @@ void WGameFramework::OnDraw(HDC hdc)
 		numberUICont[posY % 10].TransparentBlt(hdc, 40, 50, sizeBuffer, sizeBuffer, COLOR::_WHITE);
 	}
 	else numberUICont[0].TransparentBlt(hdc, 40, 50, sizeBuffer, sizeBuffer, COLOR::_WHITE);
+#pragma endregion
 
 	if(!isLogin) notLoginUI->AlphaBlend(hdc, 0, 0, 1000, 835, 0, 0, 1000, 835, 200, 000);
 	if(isDeath) diedUI->AlphaBlend(hdc, 0, 0, 1000, 835, 0, 0, 1000, 835, 200, 000);
@@ -223,6 +257,12 @@ void WGameFramework::OnDraw(HDC hdc)
 
 void WGameFramework::OnUpdate(const float frameTime)
 {
+	if (attack_0_tick)
+		--attack_0_tick;
+	if (attack_1_tick)
+		--attack_1_tick;
+	if (attack_2_tick)
+		--attack_2_tick;
 }
 
 void WGameFramework::Mouse(UINT iMessage, WPARAM wParam, LPARAM lParam)
@@ -275,6 +315,16 @@ void WGameFramework::KeyBoard(UINT iMessage, WPARAM wParam, LPARAM lParam)
 				{
 					networkManager->SendItem(1);	//Blue P
 					break;
+				}
+				case static_cast<WPARAM>(VK_KEY::VK_E) :
+				{
+				   networkManager->SendBuyItem(0);	//Red_p
+				   break;
+				}
+				case static_cast<WPARAM>(VK_KEY::VK_R) :
+				{
+				  networkManager->SendBuyItem(1);	//Blue P
+				  break;
 				}
 				case static_cast<WPARAM>(VK_LEFT) :
 				case static_cast<WPARAM>(VK_UP) : 
@@ -347,6 +397,14 @@ void WGameFramework::RecvPutPlayer(char* pBufferStart)
 		if (myClientKey == realKey)
 		{
 			isDeath = false;
+			posX = packet->x;
+			posY = packet->y;
+
+			playerCharacter->SetOnlyActorPositionNotUpdateRenderData(std::make_pair(packet->x, packet->y));
+			UpdateOtherObject();
+			UpdateBackgroundActor();
+
+			return;
 		}
 	}
 
@@ -427,6 +485,7 @@ void WGameFramework::RecvRemovePlayer(char* pBufferStart)
 			monsterContLock.unlock();
 
 			isDeath = true;
+			return;
 		}
 	}
 
@@ -529,7 +588,23 @@ void WGameFramework::RecvChat(char* pBufferStart)
 	using namespace PACKET_DATA::MAIN_TO_CLIENT;
 	Chat* packet = reinterpret_cast<Chat *>(pBufferStart);
 
-	wprintf(L"%d : %s\n", (unsigned int)packet->key, packet->message);
+	//if (auto[objectType, realKey] = BIT_CONVERTER::WhatIsYourTypeAndRealKey(packet->key)
+	//	; objectType == BIT_CONVERTER::OBJECT_TYPE::MONSTER)
+	//{
+	//	monsterContLock.lock(); //++++++++++++++++++++++++++++++++++++++++++++++++++1
+	//	for (auto&[key, pawn] : monsterCont)
+	//	{
+	//		if (key == realKey)
+	//		{
+	//			pawn->
+	//		}
+	//	}
+	//	monsterContLock.unlock(); //------------------------------------------------0
+	//}
+	//else
+	//{
+		wprintf(L"%d : %s\n", (unsigned int)packet->key, packet->message);
+	//}
 }
 
 void WGameFramework::RecvLoginFail(char* pBufferStart)
@@ -560,22 +635,53 @@ void WGameFramework::RecvStatChange(char* pBufferStart)
 	using namespace PACKET_DATA::MAIN_TO_CLIENT;
 	StatChange* packet = reinterpret_cast<StatChange *>(pBufferStart);
 
+	bool isPrint = true;
+
 	switch (packet->changedStatType)
 	{
-	case STAT_CHANGE::HP: { hp = packet->newValue; break; }
-	case STAT_CHANGE::MP: { mp = packet->newValue; break; }
-	case STAT_CHANGE::LEVEL: { level = packet->newValue; break; }
-	case STAT_CHANGE::EXP: { myExp = packet->newValue; break; }
-	case STAT_CHANGE::RED_P: { redCount = packet->newValue; break; }
-	case STAT_CHANGE::BLUE_P: { blueCount = packet->newValue; break; }
-	case STAT_CHANGE::MONEY: { money = packet->newValue; break; }
-	case STAT_CHANGE::MOVE_OK : { moveOK = packet->newValue; break; }
-	case STAT_CHANGE::ATTACK_OK: { attackOK = packet->newValue; break; }
-	case STAT_CHANGE::SKILL_1_OK: { skill1OK = packet->newValue; break; }
-	case STAT_CHANGE::SKILL_2_OK: { skill2OK = packet->newValue; break; }
+	case STAT_CHANGE::HP: { hp = packet->newValue; std::wcout << L"[상태변경] : HP가 ";  break; }
+	case STAT_CHANGE::MP: { mp = packet->newValue; std::wcout << L"[상태변경] : MP가 "; break; }
+	case STAT_CHANGE::LEVEL: { level = packet->newValue; std::wcout << L"[상태변경] : LEVEL이 "; break; }
+	case STAT_CHANGE::EXP: { myExp = packet->newValue; std::wcout << L"[상태변경] : EXP이 ";  break; }
+	case STAT_CHANGE::RED_P: { redCount = packet->newValue; std::wcout << L"[상태변경] : 레드포션 개수가 "; break; }
+	case STAT_CHANGE::BLUE_P: { blueCount = packet->newValue; std::wcout << L"[상태변경] : 블루포션 개수가 "; break; }
+	case STAT_CHANGE::MONEY: { money = packet->newValue; std::wcout << L"[상태변경] : Money가 "; break; }
+
+	case STAT_CHANGE::MOVE_OK:
+	{
+		moveOK = packet->newValue;
+		if (moveOK) std::wcout << L"[상태변경] : 움직일 수 있습니다. ";
+		else  std::wcout << L"[상태변경] : 움직임이 제한됩니다. ";
+
+		isPrint = false;
+		break;
+	}
+	case STAT_CHANGE::ATTACK_OK:
+	{
+		attackOK = packet->newValue;
+		if (attackOK) std::wcout << L"[상태변경] : 공격이 가능해집니다. \n";
+		else { std::wcout << L"[상태변경] : 현재 쿨타임입니다. \n"; attack_0_tick = 20;}
+		isPrint = false;
+		break;
+	}
+	case STAT_CHANGE::SKILL_1_OK: {
+		skill1OK = packet->newValue;
+		if (skill1OK) std::wcout << L"[상태변경] : 스킬1 사용이 가능해집니다. \n";
+		else { std::wcout << L"[상태변경] : 스킬1 쿨타임니다. \n"; attack_1_tick = 20; }
+		isPrint = false;
+		break;
+	}
+	case STAT_CHANGE::SKILL_2_OK: {
+		skill2OK = packet->newValue;
+
+		if (skill2OK) std::wcout << L"[상태변경] : 스킬2 사용이 가능해집니다. \n";
+		else { std::wcout << L"[상태변경] : 스킬2 쿨타임니다. \n"; attack_2_tick = 20; }
+		isPrint = false;
+		break;
+	}
 	}
 
-	std::wcout << L"[상태변경] : " << (int)packet->changedStatType << L"이 " << (int)packet->newValue << L"으로 변경되었습니다." << std::endl;
+	if(isPrint) std::wcout << (int)packet->newValue << L"으로 변경되었습니다." << std::endl;
 }
 
 void WGameFramework::StarChatFunction(LPVOID arg)

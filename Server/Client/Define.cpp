@@ -36,6 +36,12 @@ namespace PACKET_DATA
 		{
 		}
 
+		BuyItem::BuyItem(const unsigned char buyItemType) noexcept :
+			size(sizeof(BuyItem)), type(PACKET_TYPE::CLIENT_TO_MAIN::BUY_ITEM),
+			buyItemType(buyItemType)
+		{
+		}
+
 		Chat::Chat(_CharType* pInMessage) :
 			size(sizeof(Chat)), type(PACKET_TYPE::CLIENT_TO_MAIN::CHAT),
 			message()

@@ -46,7 +46,7 @@ GameQueryServer::GameQueryServer(bool inNotUse)
 		throw ERROR;
 	}
 	
-	std::wcout << L"?. Main Server의 Init이 완료되면, Any 문자를 입력해주세요.\n";
+	std::wcout << L"?. Main Server에서 'QueryServer를 실행시켜주세요!'라는 문구가 나오면, 아무 문자나 입력해주세요.\n";
 	int tempInput{};
 	std::cin >> tempInput;
 

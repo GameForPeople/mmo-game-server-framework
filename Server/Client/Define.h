@@ -70,6 +70,7 @@ namespace PACKET_TYPE
 			SIGN_UP,
 			ATTACK,
 			USE_ITEM,
+			BUY_ITEM,
 			CHAT,
 			ENUM_SIZE
 		};
@@ -221,6 +222,14 @@ namespace PACKET_DATA
 			unsigned char useItemType;	//0이면 레드포션, 1이면 블루포션
 
 			Item(const unsigned char) noexcept;
+		};
+
+		struct BuyItem {
+			_PacketSizeType size;
+			_PacketTypeType type;
+			unsigned char buyItemType;	//0이면 레드포션, 1이면 블루포션
+
+			BuyItem(const unsigned char) noexcept;
 		};
 
 		struct Chat {

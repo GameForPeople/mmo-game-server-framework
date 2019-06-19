@@ -22,7 +22,7 @@ LuaManager::LuaManager(Zone* pZone)
 
 /*_PosType*/ int LuaManager::API_get_x(lua_State *L)
 {
-	int user_id = (int)lua_tointeger(L, -1);
+	_KeyType user_id = (_KeyType)lua_tonumber(L, -1);
 	lua_pop(L, 2);
 
 	int tempX;
@@ -41,7 +41,7 @@ LuaManager::LuaManager(Zone* pZone)
 	return 1;
 }int LuaManager::API_get_y(lua_State *L)
 {
-	int user_id = (int)lua_tointeger(L, -1);
+	_KeyType user_id = (_KeyType)lua_tonumber(L, -1);
 	lua_pop(L, 2);
 
 	int tempY;
@@ -60,10 +60,45 @@ LuaManager::LuaManager(Zone* pZone)
 	return 1;
 }
 
+int LuaManager::API_Is_Near(lua_State *L)
+{
+	_KeyType playerKey = (_KeyType)lua_tonumber(L, -2);
+	_KeyType monsterKey = BIT_CONVERTER::WhatIsYourTypeAndRealKey((_KeyType)lua_tonumber(L, -1)).second;
+	lua_pop(L, 3);
+
+	SocketInfo* pClient = LuaManager::GetInstance()->pZone->zoneContUnit->clientContArr[playerKey];
+	BaseMonster* pMonster = LuaManager::GetInstance()->pZone->zoneContUnit->monsterCont[monsterKey];
+
+	auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+	timerUnit->objectKey = monsterKey;
+
+	if (pClient->objectInfo->posX > pMonster->objectInfo->posX)
+	{
+		timerUnit->timerType = TIMER_TYPE::NPC_CHASE_RIGHT;
+		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+	}
+	else if (pClient->objectInfo->posX < pMonster->objectInfo->posX)
+	{
+		timerUnit->timerType = TIMER_TYPE::NPC_CHASE_LEFT;
+		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+	}
+	else if (pClient->objectInfo->posY > pMonster->objectInfo->posY)
+	{
+		timerUnit->timerType = TIMER_TYPE::NPC_CHASE_DOWN;
+		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+	}
+	else if (pClient->objectInfo->posY < pMonster->objectInfo->posY)
+	{
+		timerUnit->timerType = TIMER_TYPE::NPC_CHASE_UP;
+		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+	}
+	return 0;
+}
+
 int LuaManager::API_get_IsLive(lua_State *L)
 {
-	int user_id = (int)lua_tointeger(L, -2);
-	_KeyType monsterKey = BIT_CONVERTER::WhatIsYourTypeAndRealKey((int)lua_tonumber(L, -1)).second;
+	_KeyType user_id = (_KeyType)lua_tonumber(L, -2);
+	_KeyType monsterKey = BIT_CONVERTER::WhatIsYourTypeAndRealKey((_KeyType)lua_tonumber(L, -1)).second;
 	lua_pop(L, 3);
 
 	int retResult;
@@ -88,8 +123,8 @@ int LuaManager::API_get_IsLive(lua_State *L)
 
 int LuaManager::API_do_attack(lua_State *L)
 {
-	_KeyType playerKey = (int)lua_tonumber(L, -2);
-	auto monsterKey = BIT_CONVERTER::WhatIsYourTypeAndRealKey((int)lua_tonumber(L, -1)).second;
+	_KeyType playerKey = (_KeyType)lua_tonumber(L, -2);
+	auto monsterKey = BIT_CONVERTER::WhatIsYourTypeAndRealKey((_KeyType)lua_tonumber(L, -1)).second;
 	lua_pop(L, 3);
 	
 	auto pZoneContUnit = LuaManager::GetInstance()->pZone->zoneContUnit;
@@ -185,31 +220,81 @@ int LuaManager::API_do_attack(lua_State *L)
 			}
 		}
 	}
+
+	auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+	timerUnit->objectKey = monsterKey;
+	timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
+	TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+
 	return 0;
 }
 
 int LuaManager::API_do_chase(lua_State *L)
 {
-	_KeyType playerKey = (int)lua_tonumber(L, -2);
-	_KeyType monsterKey = BIT_CONVERTER::WhatIsYourTypeAndRealKey((int)lua_tonumber(L, -1)).second;
+	_KeyType playerKey = (_KeyType)lua_tonumber(L, -2);
+	_KeyType monsterKey = BIT_CONVERTER::WhatIsYourTypeAndRealKey((_KeyType)lua_tonumber(L, -1)).second;
 	lua_pop(L, 3);
 
 	// 나중에 해당 부분 변경 필요!!
-	LuaManager::GetInstance()->pZone->moveManager
-		->MoveRandom(LuaManager::GetInstance()->pZone->zoneContUnit->monsterCont[monsterKey]->objectInfo);
+	//LuaManager::GetInstance()->pZone->moveManager
+	//	->MoveRandom(LuaManager::GetInstance()->pZone->zoneContUnit->monsterCont[monsterKey]->objectInfo);
+	SocketInfo* pClient = LuaManager::GetInstance()->pZone->zoneContUnit->clientContArr[playerKey];
+	BaseMonster* pMonster = LuaManager::GetInstance()->pZone->zoneContUnit->monsterCont[monsterKey];
+	
+	auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+	timerUnit->objectKey = monsterKey;
 
+	if (pClient->objectInfo->posX > pMonster->objectInfo->posX)
+	{
+		timerUnit->timerType = TIMER_TYPE::NPC_CHASE_RIGHT;
+		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+	}
+	else if (pClient->objectInfo->posX < pMonster->objectInfo->posX)
+	{
+		timerUnit->timerType = TIMER_TYPE::NPC_CHASE_LEFT;
+		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+	}
+	else if (pClient->objectInfo->posY > pMonster->objectInfo->posY)
+	{
+		timerUnit->timerType = TIMER_TYPE::NPC_CHASE_DOWN;
+		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+	}
+	else if (pClient->objectInfo->posY < pMonster->objectInfo->posY)
+	{
+		timerUnit->timerType = TIMER_TYPE::NPC_CHASE_UP;
+		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+	}
 	return 0;
 }
 
 int LuaManager::API_go_SpawnPosition(lua_State *L)
 {
-		_KeyType playerKey = (int)lua_tonumber(L, -2);
-	_KeyType monsterKey = BIT_CONVERTER::WhatIsYourTypeAndRealKey((int)lua_tonumber(L, -1)).second;
+	_KeyType playerKey = (_KeyType)lua_tonumber(L, -2);
+	_KeyType monsterKey = BIT_CONVERTER::WhatIsYourTypeAndRealKey((_KeyType)lua_tonumber(L, -1)).second;
 	lua_pop(L, 3);
 
-	// 나중에 해당 부분 변경 필요!!
-	LuaManager::GetInstance()->pZone->moveManager
-		->MoveRandom(LuaManager::GetInstance()->pZone->zoneContUnit->monsterCont[monsterKey]->objectInfo);
+	//// 나중에 해당 부분 변경 필요!!
+	//LuaManager::GetInstance()->pZone->moveManager
+	//	->MoveRandom(LuaManager::GetInstance()->pZone->zoneContUnit->monsterCont[monsterKey]->objectInfo);
+
+	auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+	timerUnit->objectKey = monsterKey;
+	timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
+	TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+
+	return 0;
+}
+
+int LuaManager::API_Process(lua_State *L)
+{
+	_KeyType playerKey = (_KeyType)lua_tonumber(L, -3);
+	_KeyType monsterKey = BIT_CONVERTER::WhatIsYourTypeAndRealKey((_KeyType)lua_tonumber(L, -2)).second;
+	int monsterType = BIT_CONVERTER::WhatIsYourTypeAndRealKey((int)lua_tonumber(L, -1)).second;
+	lua_pop(L, 4);
+
+	//LuaManager::GetInstance()->pZone->zoneContUnit->clientContArr[playerKey]->objectInfo->posX
+	//	-
+	//LuaManager::GetInstance()->pZone->zoneContUnit->monsterCont[monsterKey]->objectInfo->posY
 
 	return 0;
 }

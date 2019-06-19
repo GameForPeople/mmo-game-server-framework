@@ -21,6 +21,7 @@ BaseMonster::BaseMonster(_KeyType inKey, _PosType inX, _PosType inY, const Monst
 	, freezeTick(0)
 	, electricTick(0)
 	//, burnTick(0)
+	, wakeUpClientKey(-1)
 	, luaState(nullptr)
 {
 	objectInfo = new ObjectInfo(inX, inY);
@@ -29,7 +30,8 @@ BaseMonster::BaseMonster(_KeyType inKey, _PosType inX, _PosType inY, const Monst
 	objectInfo->damage = monsterModel->damagePerLevel * objectInfo->level;
 
 	luaState = luaL_newstate();
-	luaL_openlibs(luaState);	int error = luaL_loadfile(luaState, "LUA_Monster.lua") || lua_pcall(luaState, 0, 0, 0);
+	luaL_openlibs(luaState);	int error = luaL_loadfile(luaState, "LUA_Monster.lua") || lua_pcall(luaState, 0, 0, 0);
+	if (error) LUA_UTIL::PrintError(luaState);
 
 	if (monsterModel->monsterType == MONSTER_TYPE::SLIME)
 	{
@@ -38,6 +40,7 @@ BaseMonster::BaseMonster(_KeyType inKey, _PosType inX, _PosType inY, const Monst
 		lua_getglobal(luaState, "set_type");		lua_pushnumber(luaState, 1);
 		lua_pcall(luaState, 1, 1, 0);
 		lua_pop(luaState, 1);// eliminate set_uid from stack after call
+
 	}
 	else if (monsterModel->monsterType == MONSTER_TYPE::GOLEM)
 	{
@@ -61,7 +64,7 @@ BaseMonster::BaseMonster(_KeyType inKey, _PosType inX, _PosType inY, const Monst
 	lua_pop(luaState, 1);// eliminate set_uid from stack after call
 
 	lua_register(luaState, "API_get_x", LuaManager::GetInstance()->API_get_x);
-	lua_register(luaState, "API_get_y", LuaManager::GetInstance()->API_get_y);	lua_register(luaState, "API_get_IsLive", LuaManager::GetInstance()->API_get_IsLive);	lua_register(luaState, "API_go_SpawnPosition", LuaManager::GetInstance()->API_go_SpawnPosition);	lua_register(luaState, "API_do_attack", LuaManager::GetInstance()->API_do_attack);	lua_register(luaState, "API_do_chase", LuaManager::GetInstance()->API_do_chase);}
+	lua_register(luaState, "API_get_y", LuaManager::GetInstance()->API_get_y);	lua_register(luaState, "API_get_IsLive", LuaManager::GetInstance()->API_get_IsLive);	lua_register(luaState, "API_go_SpawnPosition", LuaManager::GetInstance()->API_go_SpawnPosition);	lua_register(luaState, "API_do_attack", LuaManager::GetInstance()->API_do_attack);	lua_register(luaState, "API_do_chase", LuaManager::GetInstance()->API_do_chase);	lua_register(luaState, "API_Process", LuaManager::GetInstance()->API_Process);}
 
 BaseMonster::~BaseMonster()
 {

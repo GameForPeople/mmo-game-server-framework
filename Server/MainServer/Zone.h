@@ -40,12 +40,16 @@ public: // ConnectManager
 	//std::pair<bool, SocketInfo*> OnlyGetUniqueKeyAndMallocSocketInfo();
 	void Enter(SocketInfo*);
 	void Exit(SocketInfo*);
+
+	void Death(SocketInfo*);
+	void DeathForNpc(BaseMonster*);
+
+private:
 	void InitViewAndSector(SocketInfo* );
 
 private:
 	void InitManagers();
-	void InitClientCont();
-	void InitFunctions();
+	void InitZoneCont();
 	void InitSector();
 
 private:
@@ -55,8 +59,8 @@ private:
 	void RenewPossibleSectors(ObjectInfo* pObjectInfo);
 	void RenewViewListInSectors(SocketInfo* pClient);
 
-	bool RenewViewListInSectorsForNpc(BaseMonster* pClient);
-
+	bool RenewViewListInSectorsForNpc(const std::unordered_set<_KeyType>&, BaseMonster* pClient);
+	void MakeOldViewListForNpc(std::unordered_set<_KeyType>&, BaseMonster*);
 public:
 	void RecvCharacterMove(SocketInfo* pClient);
 	//void RecvLogin(SocketInfo* pClient);
@@ -64,13 +68,14 @@ public:
 
 private:
 	//std::unique_ptr<ConnectManager> connectManager;
-	std::unique_ptr<MoveManager> moveManager;
 	std::unique_ptr<MonsterModelManager> monsterModelManager;
 
 	std::vector<std::vector<Sector>> sectorCont;
 
-	std::function<void(Zone&, SocketInfo*)>* recvFunctionArr;
+	//std::function<void(Zone&, SocketInfo*)>* recvFunctionArr;
 public:
+	std::unique_ptr<MoveManager> moveManager;	// 이것도 루아떄문에;;;
+	const std::vector<std::vector<bool>>& GetMapData();
 	// 성능, public하게 접근할 수 있도록 변경.
 	ZoneContUnit* zoneContUnit;
 };

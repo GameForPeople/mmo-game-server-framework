@@ -39,7 +39,9 @@ private:
 	
 private:
 	//std::shared_mutex connectLock;
+
 	concurrency::concurrent_queue<USHORT> uniqueKeyPool;
+
 public:
 	std::pair<bool, SocketInfo*> OnlyGetUniqueKeyAndMallocSocketInfo();
 };

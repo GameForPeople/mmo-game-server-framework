@@ -31,18 +31,18 @@ Zone::Zone() :
 	moveManager(nullptr),
 	monsterModelManager(nullptr),
 	sectorCont(),
-	recvFunctionArr(nullptr),
+	//recvFunctionArr(nullptr),
 	zoneContUnit(nullptr)
 {
+	// 이 순서가 변경될 경우, 서버가 동작하지 않습니다.
 	InitManagers();
 	InitSector();
-	InitClientCont();
-	InitFunctions();
+	InitZoneCont();
 }
 
 Zone::~Zone()
 {
-	delete[] recvFunctionArr;
+	//delete[] recvFunctionArr;
 	delete[] zoneContUnit;
 }
 
@@ -55,42 +55,6 @@ void Zone::InitManagers()
 	moveManager = std::make_unique<MoveManager>();
 	//connectManager = std::make_unique<ConnectManager>();
 	monsterModelManager = std::make_unique<MonsterModelManager>();
-}
-
-/*
-	Zone::InitClientCont()
-		- GamsServer의 생성자에서 호출되며, 클라이언트 컨테이너들을 초기화합니다.
-*/
-void Zone::InitClientCont()
-{
-	zoneContUnit = new ZoneContUnit;
-	_KeyType tempIndex = BIT_CONVERTER::NOT_PLAYER_INT;
-
-	std::cout << "#. 몬스터 "<< zoneContUnit->monsterCont.size() << "ea를 할당중입니다...";
-
-	// 추후 쓰레드 분할
-		for (auto& monster : zoneContUnit->monsterCont)
-		{
-			const _PosType tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
-			const _PosType tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
-
-			monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetRenderModel(MONSTER_TYPE::SLIME));
-
-			RenewSelfSectorForNpc(monster); // 비용이 너무 큼.
-			//sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster->objectInfo);
-		}
-
-	std::cout << "    할당이 종료되었습니다." << std::endl;
-}
-
-/*
-	Zone::InitFunctions()
-		- GamsServer의 생성자에서 호출되며, 게임과 관련된 데이터들의 초기화를 담당합니다.
-*/
-void Zone::InitFunctions()
-{
-	recvFunctionArr = new std::function<void(Zone&, SocketInfo*)>[PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE];
-	recvFunctionArr[PACKET_TYPE::CLIENT_TO_MAIN::MOVE] = &Zone::RecvCharacterMove;
 }
 
 /*
@@ -120,6 +84,91 @@ void Zone::InitSector()
 	}
 }
 
+/*
+	Zone::InitZoneCont()
+		- GamsServer의 생성자에서 호출되며, 클라이언트 컨테이너들을 초기화합니다.
+
+	!0. InitSector가 호출된후 호출되어야 합니다.
+*/
+void Zone::InitZoneCont()
+{
+	zoneContUnit = new ZoneContUnit;
+
+	_KeyType tempIndex = BIT_CONVERTER::NOT_PLAYER_INT;
+
+	std::cout << "#. 몬스터 "<< zoneContUnit->monsterCont.size() << " 를 할당중입니다...";
+
+	auto tempMapDate = moveManager->GetMapData();
+
+	// 추후 쓰레드 분할
+	for (auto& monster : zoneContUnit->monsterCont)
+	{
+		_PosType tempPosX;
+		_PosType tempPosY;
+		
+		do 
+		{
+			tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
+			tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
+		} 
+		while (tempMapDate[tempPosY][tempPosX] == false);
+
+		switch (rand() % 20)
+		{
+		case 0:
+			monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetMonsterModel(MONSTER_TYPE::DRAGON));
+			break;
+		case 1:
+		case 2:
+			monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetMonsterModel(MONSTER_TYPE::GOLEM));
+			break;
+		default:
+			monster = new BaseMonster(tempIndex++, tempPosX, tempPosY, monsterModelManager->GetMonsterModel(MONSTER_TYPE::SLIME));
+			break;
+		}
+
+		sectorCont[tempPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][tempPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(monster);
+		RenewPossibleSectors(monster->objectInfo);
+	}
+
+	std::cout << "    할당이 종료되었습니다." << std::endl;
+}
+
+void Zone::Death(SocketInfo* pClient)
+{
+	sectorCont[pClient->objectInfo->sectorIndexY][pClient->objectInfo->sectorIndexX].Exit(pClient);
+
+	pClient->viewListLock.lock();
+	auto localViewList = pClient->viewList;
+	pClient->viewList.clear();
+	pClient->viewListLock.unlock();
+
+	// 지금 당장! 지워주기만 가만히 있는 클라들에게서도 지워주기만 해!! 지네 뷰리스트는 지네가 지울꺼야
+	for (auto iterKey : localViewList)
+	{
+		NETWORK_UTIL::SEND::SendRemovePlayer(pClient->key, zoneContUnit->clientContArr[iterKey]);
+	}
+
+	pClient->monsterViewListLock.lock();
+	pClient->monsterViewList.clear();
+	pClient->monsterViewListLock.unlock();
+}
+
+// 존재를 지워드립니다.
+void Zone::DeathForNpc(BaseMonster* pMonster)
+{
+	sectorCont[pMonster->objectInfo->sectorIndexY][pMonster->objectInfo->sectorIndexX].ExitForNpc(pMonster);
+
+	std::unordered_set<_KeyType> localViewList;
+	MakeOldViewListForNpc(localViewList, pMonster);
+
+	// 지금 당장! 지워주기만 가만히 있는 클라들에게서도 지워주기만 해!! 지네 뷰리스트는 지네가 지울꺼야
+	for (auto iterKey : localViewList)
+	{
+		NETWORK_UTIL::SEND::SendRemovePlayer(pMonster->key, zoneContUnit->clientContArr[iterKey]);
+	}
+}
+
 void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 {
 	concurrency::concurrent_queue<TimerUnit*>* tempCont = TimerManager::GetInstance()->GetTimerContWithIndex(timerManagerContIndex);
@@ -136,105 +185,59 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 				{
 					ConnectManager::GetInstance()->PushOldKey(pUnit->objectKey);
 					TimerManager::GetInstance()->PushTimerUnit(pUnit);
-				}
-			}
-			break;
-		case BIT_CONVERTER::OBJECT_TYPE::MONSTER:
-			switch (pUnit->timerType)
-			{
-				case (TIMER_TYPE::NPC_MOVE):
-				{
-					BaseMonster* tempBaseMonster = zoneContUnit->monsterCont[index];
-
-					moveManager->MoveRandom(tempBaseMonster->objectInfo);	// 랜덤으로 움직이고
-					RenewSelfSectorForNpc(tempBaseMonster);		// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
-					RenewPossibleSectors(tempBaseMonster->objectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
-
-					// 주변에 클라이언트가 없습니다. 이동을 종료합니다.
-					if (RenewViewListInSectorsForNpc(zoneContUnit->monsterCont[index]))
-					{
-						TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SLIME_MOVE);
-					}
-					else
-					{
-						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
-						TimerManager::GetInstance()->PushTimerUnit(pUnit);
-					}
-					break;
-				}
-				case (TIMER_TYPE::NPC_ATTACK):
-				{
-					break;
-				}
-				case (TIMER_TYPE::SKILL_1_COOLTIME):
-				{
-					break;
-				}
-				case (TIMER_TYPE::SKILL_2_COOLTIME):
-				{
-					break;
-				}
-				case (TIMER_TYPE::SELF_HEAL):
-				{
-					break;
-				}
-				case (TIMER_TYPE::REVIVAL):
-				{
 					break;
 				}
 				case (TIMER_TYPE::CC_NODAMAGE):
 				{
-					if (zoneContUnit->monsterCont[index]->noDamageTick != 0)
-					{
-						--(zoneContUnit->monsterCont[index]->noDamageTick);
-					}
-					
+					//이거는 항상 보장됨. if - CAS 문 안걸어도됨.
+					zoneContUnit->clientContArr[index]->objectInfo->noDamageFlag = false;
 					TimerManager::GetInstance()->PushTimerUnit(pUnit);
 					break;
 				}
-				case (TIMER_TYPE::CC_FAINT):
+				case (TIMER_TYPE::PLAYER_MOVE):
 				{
-					if (zoneContUnit->monsterCont[index]->faintTick != 0)
-					{
-						--(zoneContUnit->monsterCont[index]->faintTick);
-					}
-					
+					zoneContUnit->clientContArr[index]->objectInfo->moveFlag = true;
 					TimerManager::GetInstance()->PushTimerUnit(pUnit);
 					break;
 				}
-				case (TIMER_TYPE::CC_FREEZE):
+				case (TIMER_TYPE::PLAYER_ATTACK):
 				{
-					if (zoneContUnit->monsterCont[index]->freezeTick != 0)
-					{
-						--(zoneContUnit->monsterCont[index]->freezeTick);
-					}
-					
+					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::ATTACK_OK, 1, zoneContUnit->clientContArr[index]);
+					zoneContUnit->clientContArr[index]->objectInfo->attackFlag = true;
 					TimerManager::GetInstance()->PushTimerUnit(pUnit);
 					break;
 				}
-				case (TIMER_TYPE::CC_ELECTRIC):
+				case (TIMER_TYPE::SELF_HEAL):
 				{
-					if (zoneContUnit->monsterCont[index]->electricTick != 0)
+					auto playerObjectInfo = zoneContUnit->clientContArr[index]->objectInfo;
+					if (zoneContUnit->clientContArr[index]->objectInfo->hp > 0)
 					{
-						--(zoneContUnit->monsterCont[index]->electricTick);
-					}
-					TimerManager::GetInstance()->PushTimerUnit(pUnit);
-					break;
-				}
-				case (TIMER_TYPE::CC_BURN):
-				{
-					if (zoneContUnit->monsterCont[index]->burnTick != 0)
-					{
-						--(zoneContUnit->monsterCont[index]->burnTick);
-						zoneContUnit->monsterCont[index]->hp -= STATE::DAMAGE::BURN_DAMAGE;
+						const int maxHp = JOB::GetMaxHP(playerObjectInfo->job, playerObjectInfo->level);
 
-						if (zoneContUnit->monsterCont[index]->burnTick != 0)
+						while (7) 
 						{
-							TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
-						}
-						else
-						{
-							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							unsigned short oldHp = zoneContUnit->clientContArr[index]->objectInfo->hp;
+							unsigned short newHp = zoneContUnit->clientContArr[index]->objectInfo->hp + (maxHp / 10);
+
+							if (oldHp == 0)
+							{
+								//TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SELF_HEAL);
+								TimerManager::GetInstance()->PushTimerUnit(pUnit);
+								break;
+							}
+							else if (oldHp == maxHp) 
+							{
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SELF_HEAL);
+								break;
+							}
+							else if (newHp > maxHp) newHp = maxHp;
+
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldHp, newHp))
+							{
+								NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, newHp, zoneContUnit->clientContArr[index]);
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SELF_HEAL);
+								break;
+							}
 						}
 					}
 					else
@@ -245,10 +248,679 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 				}
 				case (TIMER_TYPE::ITEM_HP):
 				{
+					zoneContUnit->clientContArr[index]->objectInfo->redTickCount.fetch_sub(1);
+
+					auto playerObjectInfo = zoneContUnit->clientContArr[index]->objectInfo;
+					if (zoneContUnit->clientContArr[index]->objectInfo->hp > 0)
+					{
+						const int maxHp = JOB::GetMaxHP(playerObjectInfo->job, playerObjectInfo->level);
+
+						while (7)
+						{
+							unsigned short oldHp = zoneContUnit->clientContArr[index]->objectInfo->hp;
+							unsigned short newHp = zoneContUnit->clientContArr[index]->objectInfo->hp + ITEM::RED_PER_TICK;
+
+							if (oldHp == 0)
+							{
+								TimerManager::GetInstance()->PushTimerUnit(pUnit);
+								zoneContUnit->clientContArr[index]->objectInfo->redTickCount = 0;
+								break;
+							}
+							else if (oldHp == maxHp)	// 풀피입니다.
+							{
+								TimerManager::GetInstance()->PushTimerUnit(pUnit);
+								zoneContUnit->clientContArr[index]->objectInfo->redTickCount = 0;
+								break;
+							}
+							else if (newHp > maxHp) newHp = maxHp;
+
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldHp, newHp))
+							{
+								NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, newHp, zoneContUnit->clientContArr[index]);
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::ITEM_HP);
+								break;
+							}
+						}
+					}
+					else
+					{
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						zoneContUnit->clientContArr[index]->objectInfo->redTickCount = 0;
+					}
 					break;
 				}
 				case (TIMER_TYPE::ITEM_MP):
 				{
+					zoneContUnit->clientContArr[index]->objectInfo->redTickCount.fetch_sub(1);
+
+					auto playerObjectInfo = zoneContUnit->clientContArr[index]->objectInfo;
+
+					const int maxMp = JOB::GetMaxMP(playerObjectInfo->job, playerObjectInfo->level);
+
+					while (7)
+					{
+						unsigned short oldMp = zoneContUnit->clientContArr[index]->objectInfo->mp;
+						unsigned short newMp = zoneContUnit->clientContArr[index]->objectInfo->mp + ITEM::BLUE_PER_TICK;
+
+						if (oldMp == maxMp)
+						{
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							zoneContUnit->clientContArr[index]->objectInfo->blueTickCount = 0;
+							break;
+						}
+						else if (newMp > maxMp) newMp = maxMp;
+
+						if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->mp), oldMp, newMp))
+						{
+							NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MP, newMp, zoneContUnit->clientContArr[index]);
+							TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::ITEM_MP);
+							break;
+						}
+					}
+
+					break;
+				}
+				case (TIMER_TYPE::CC_BURN_3):
+				{
+					while (7)
+					{
+						unsigned short oldHp = zoneContUnit->clientContArr[index]->objectInfo->hp;
+						unsigned short newHp = oldHp - (oldHp / 100);
+
+						if (oldHp > 0)
+						{
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldHp, newHp))
+							{
+								NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, newHp, zoneContUnit->clientContArr[index]);
+								pUnit->timerType = TIMER_TYPE::CC_BURN_2;
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
+								break;
+							}
+						}
+						else
+						{
+							zoneContUnit->clientContArr[index]->objectInfo->burnTick.fetch_sub(1);
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							break;
+						}
+					}
+					break;
+				}
+				case (TIMER_TYPE::CC_BURN_2):
+				{
+					while (7)
+					{
+						unsigned short oldHp = zoneContUnit->clientContArr[index]->objectInfo->hp;
+						unsigned short newHp = oldHp - (oldHp / 100);
+
+						if (oldHp > 0)
+						{
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldHp, newHp))
+							{
+								NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, newHp, zoneContUnit->clientContArr[index]);
+								pUnit->timerType = TIMER_TYPE::CC_BURN_1;
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
+								break;
+							}
+						}
+						else
+						{
+							zoneContUnit->clientContArr[index]->objectInfo->burnTick.fetch_sub(1);
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							break;
+						}
+					}
+					break;
+				}
+				case (TIMER_TYPE::CC_BURN_1):
+				{
+					while (7)
+					{
+						unsigned short oldHp = zoneContUnit->clientContArr[index]->objectInfo->hp;
+						unsigned short newHp = oldHp - (oldHp / 100);
+
+						if (oldHp > 0)
+						{
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->clientContArr[index]->objectInfo->hp), oldHp, newHp))
+							{
+								NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, newHp, zoneContUnit->clientContArr[index]);
+								zoneContUnit->clientContArr[index]->objectInfo->burnTick.fetch_sub(1);
+								TimerManager::GetInstance()->PushTimerUnit(pUnit);
+								break;
+							}
+						}
+						else
+						{
+							zoneContUnit->clientContArr[index]->objectInfo->burnTick.fetch_sub(1);
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							break;
+						}
+					}
+					break;
+				}
+				case (TIMER_TYPE::SKILL_1_COOLTIME):
+				{
+					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::SKILL_1_OK, 1, zoneContUnit->clientContArr[index]);
+					zoneContUnit->clientContArr[index]->objectInfo->skill1Flag = true;
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::SKILL_2_COOLTIME):
+				{
+					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::SKILL_2_OK, 1, zoneContUnit->clientContArr[index]);
+					zoneContUnit->clientContArr[index]->objectInfo->skill2Flag = true;
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::REVIVAL):
+				{
+					_PosType tempPosX;
+					_PosType tempPosY;
+
+					do
+					{
+						tempPosX = rand() % GLOBAL_DEFINE::MAX_WIDTH;
+						tempPosY = rand() % GLOBAL_DEFINE::MAX_HEIGHT;
+					} while (moveManager->GetMapData()[tempPosY][tempPosX] == false);
+					
+					auto pObjectInfo = zoneContUnit->clientContArr[index]->objectInfo;
+					pObjectInfo->hp = JOB::GetMaxHP(pObjectInfo->job, pObjectInfo->level);
+					pObjectInfo->mp = JOB::GetMaxMP(pObjectInfo->job, pObjectInfo->level);
+					pObjectInfo->posX = tempPosX;//GLOBAL_DEFINE::START_POSITION_X;
+					pObjectInfo->posY = tempPosY;//GLOBAL_DEFINE::START_POSITION_Y;
+					pObjectInfo->attackFlag = true;
+					pObjectInfo->burnTick = 0;
+					pObjectInfo->faintTick = 0;
+					pObjectInfo->moveFlag = true;
+					pObjectInfo->selfHealFlag = false;
+					pObjectInfo->skill1Flag = true;
+					pObjectInfo->skill2Flag = true;
+					
+					pUnit->timerType = TIMER_TYPE::SELF_HEAL;
+					TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SELF_HEAL);
+
+					NETWORK_UTIL::SEND::SendPutPlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(zoneContUnit->clientContArr[index], zoneContUnit->clientContArr[index]);
+					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, pObjectInfo->hp, zoneContUnit->clientContArr[index]);
+					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::MP, pObjectInfo->mp, zoneContUnit->clientContArr[index]);
+					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::SKILL_1_OK, 1, zoneContUnit->clientContArr[index]);
+					NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::SKILL_2_OK, 1, zoneContUnit->clientContArr[index]);
+
+					Enter(zoneContUnit->clientContArr[index]);
+					break;
+				}
+				case (TIMER_TYPE::CC_FAINT):
+				{
+					zoneContUnit->clientContArr[index]->objectInfo->faintTick.fetch_sub(1);
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+			}
+			break;
+		case BIT_CONVERTER::OBJECT_TYPE::MONSTER:
+			switch (pUnit->timerType)
+			{
+				case (TIMER_TYPE::NPC_MOVE):
+				{
+					BaseMonster* tempBaseMonster = zoneContUnit->monsterCont[index];
+
+					if (tempBaseMonster->objectInfo->job == JOB_TYPE::GOLEM) {
+						pUnit->timerType = TIMER_TYPE::NPC_ATTACK;
+						TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::GOLEM_ATTACK);
+						break;
+					}
+
+					if (tempBaseMonster->objectInfo->hp == 0)
+					{
+						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						break;
+					}
+					else if (tempBaseMonster->objectInfo->faintTick)
+					{
+						TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SLIME_MOVE);
+						break;
+					}
+					else if (tempBaseMonster->freezeTick)
+					{
+						TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SLIME_MOVE);
+
+						auto newUnit = TimerManager::GetInstance()->PopTimerUnit();
+						newUnit->objectKey = pUnit->objectKey;
+						newUnit->timerType = TIMER_TYPE::NPC_ATTACK;
+						TimerManager::GetInstance()->AddTimerEvent(newUnit, TIME::SLIME_ATTACK);
+						// 기절은 공격 가능.
+
+						break;
+					}
+					else
+					{
+						//현재 PossibleSector의 경우에는, 이전 움직임의 PossibleSector이므로 유효함
+						std::unordered_set<_KeyType> oldViewList;
+						MakeOldViewListForNpc(oldViewList, zoneContUnit->monsterCont[index]);
+
+						moveManager->MoveRandom(tempBaseMonster->objectInfo);	// 랜덤으로 움직이고
+						RenewSelfSectorForNpc(tempBaseMonster);					// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
+						RenewPossibleSectors(tempBaseMonster->objectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
+
+						// 주변에 클라이언트가 없습니다. 이동을 종료합니다.
+						if (RenewViewListInSectorsForNpc(oldViewList, zoneContUnit->monsterCont[index]))
+						{
+							//TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							//lua_getglobal(tempBaseMonster->luaState, "API_Process");
+							//lua_pushnumber(tempBaseMonster->luaState, tempBaseMonster->wakeUpClientKey);
+							//lua_pushnumber(tempBaseMonster->luaState, tempBaseMonster->key);
+							//lua_pushnumber(tempBaseMonster->luaState, tempBaseMonster->objectInfo->job - 3);
+							//
+							//lua_pcall(tempBaseMonster->luaState, 3, 1, 0);
+							//(int)lua_tonumber(tempBaseMonster->luaState, -1);
+							//lua_pop(tempBaseMonster->luaState, 1);
+
+							TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SLIME_MOVE);
+
+							auto newUnit = TimerManager::GetInstance()->PopTimerUnit();
+							newUnit->objectKey = pUnit->objectKey;
+							newUnit->timerType = TIMER_TYPE::NPC_ATTACK;
+							TimerManager::GetInstance()->AddTimerEvent(newUnit, TIME::SLIME_ATTACK);
+						}
+						else
+						{
+							ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						}
+					}
+					break;
+				}
+				case (TIMER_TYPE::NPC_CHASE_LEFT):
+				{
+					BaseMonster* tempBaseMonster = zoneContUnit->monsterCont[index];
+
+					if (tempBaseMonster->objectInfo->hp == 0)
+					{
+						tempBaseMonster->wakeUpClientKey = -1;
+						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						break;
+					}
+					break;
+
+					std::unordered_set<_KeyType> oldViewList;
+					MakeOldViewListForNpc(oldViewList, zoneContUnit->monsterCont[index]);
+
+					moveManager->MoveLeft(tempBaseMonster->objectInfo);	// 랜덤으로 움직이고
+					RenewSelfSectorForNpc(tempBaseMonster);					// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
+					RenewPossibleSectors(tempBaseMonster->objectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
+
+					// 주변에 클라이언트가 없습니다. 이동을 종료합니다.
+					if (RenewViewListInSectorsForNpc(oldViewList, zoneContUnit->monsterCont[index]))
+					{
+						lua_getglobal(tempBaseMonster->luaState, "Event_ChaseOrAttack");
+						lua_pushnumber(tempBaseMonster->luaState, tempBaseMonster->wakeUpClientKey);
+
+						lua_pcall(tempBaseMonster->luaState, 1, 1, 0);
+						lua_pop(tempBaseMonster->luaState, 1);
+
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						//TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SLIME_MOVE);
+					}
+					else
+					{
+						tempBaseMonster->wakeUpClientKey = -1;
+						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					}
+					break;
+				}
+				case (TIMER_TYPE::NPC_CHASE_RIGHT):
+				{
+					BaseMonster* tempBaseMonster = zoneContUnit->monsterCont[index];
+
+					if (tempBaseMonster->objectInfo->hp == 0)
+					{
+						tempBaseMonster->wakeUpClientKey = -1;
+						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						break;
+					}
+					break;
+
+					std::unordered_set<_KeyType> oldViewList;
+					MakeOldViewListForNpc(oldViewList, zoneContUnit->monsterCont[index]);
+
+					moveManager->MoveRight(tempBaseMonster->objectInfo);	// 랜덤으로 움직이고
+					RenewSelfSectorForNpc(tempBaseMonster);					// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
+					RenewPossibleSectors(tempBaseMonster->objectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
+
+					// 주변에 클라이언트가 없습니다. 이동을 종료합니다.
+					if (RenewViewListInSectorsForNpc(oldViewList, zoneContUnit->monsterCont[index]))
+					{
+						lua_getglobal(tempBaseMonster->luaState, "Event_ChaseOrAttack");
+						lua_pushnumber(tempBaseMonster->luaState, tempBaseMonster->wakeUpClientKey);
+
+						lua_pcall(tempBaseMonster->luaState, 1, 1, 0);
+						lua_pop(tempBaseMonster->luaState, 1);
+
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						//TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SLIME_MOVE);
+					}
+					else
+					{
+						tempBaseMonster->wakeUpClientKey = -1;
+						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					}
+					break;
+				}
+				case (TIMER_TYPE::NPC_CHASE_UP):
+				{
+					BaseMonster* tempBaseMonster = zoneContUnit->monsterCont[index];
+
+					if (tempBaseMonster->objectInfo->hp == 0)
+					{
+						tempBaseMonster->wakeUpClientKey = -1;
+						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						break;
+					}
+					break;
+
+					std::unordered_set<_KeyType> oldViewList;
+					MakeOldViewListForNpc(oldViewList, zoneContUnit->monsterCont[index]);
+
+					moveManager->MoveUp(tempBaseMonster->objectInfo);	// 랜덤으로 움직이고
+					RenewSelfSectorForNpc(tempBaseMonster);					// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
+					RenewPossibleSectors(tempBaseMonster->objectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
+
+					// 주변에 클라이언트가 없습니다. 이동을 종료합니다.
+					if (RenewViewListInSectorsForNpc(oldViewList, zoneContUnit->monsterCont[index]))
+					{
+						lua_getglobal(tempBaseMonster->luaState, "Event_ChaseOrAttack");
+						lua_pushnumber(tempBaseMonster->luaState, tempBaseMonster->wakeUpClientKey);
+
+						lua_pcall(tempBaseMonster->luaState, 1, 1, 0);
+						lua_pop(tempBaseMonster->luaState, 1);
+
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						//TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SLIME_MOVE);
+					}
+					else
+					{
+						tempBaseMonster->wakeUpClientKey = -1;
+						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					}
+					break;
+				}
+				case (TIMER_TYPE::NPC_CHASE_DOWN):
+				{
+					BaseMonster* tempBaseMonster = zoneContUnit->monsterCont[index];
+
+					if (tempBaseMonster->objectInfo->hp == 0)
+					{
+						tempBaseMonster->wakeUpClientKey = -1;
+						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						break;
+					}
+					break;
+
+					std::unordered_set<_KeyType> oldViewList;
+					MakeOldViewListForNpc(oldViewList, zoneContUnit->monsterCont[index]);
+
+					moveManager->MoveDown(tempBaseMonster->objectInfo);	// 랜덤으로 움직이고
+					RenewSelfSectorForNpc(tempBaseMonster);					// 혹시 움직여서 섹터가 바뀐듯하면 바뀐 섹터로 적용해주고
+					RenewPossibleSectors(tempBaseMonster->objectInfo);		// 현재 섹터의 위치에서, 탐색해야하는 섹터들을 정해주고
+
+					// 주변에 클라이언트가 없습니다. 이동을 종료합니다.
+					if (RenewViewListInSectorsForNpc(oldViewList, zoneContUnit->monsterCont[index]))
+					{
+						lua_getglobal(tempBaseMonster->luaState, "Event_ChaseOrAttack");
+						lua_pushnumber(tempBaseMonster->luaState, tempBaseMonster->wakeUpClientKey);
+
+						lua_pcall(tempBaseMonster->luaState, 1, 1, 0);
+						lua_pop(tempBaseMonster->luaState, 1);
+
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						//TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SLIME_MOVE);
+					}
+					else
+					{
+						tempBaseMonster->wakeUpClientKey = -1;
+						ATOMIC_UTIL::T_CAS(&(tempBaseMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					}
+					break;
+				}
+				case (TIMER_TYPE::NPC_ATTACK):
+				{
+					BaseMonster* pMonster = zoneContUnit->monsterCont[index];
+
+					if (pMonster->objectInfo->hp == 0)
+					{
+						ATOMIC_UTIL::T_CAS(&(pMonster->isSleep), true, false); // 결과는 딱히 안중요해!
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						break;
+					}
+					else if (pMonster->objectInfo->faintTick)
+					{
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+						break;
+					}
+
+					std::unordered_set<_KeyType> oldViewList;
+					MakeOldViewListForNpc(oldViewList, zoneContUnit->monsterCont[index]);
+					auto pZoneContUnit = zoneContUnit;
+					
+					for (auto playerKey : oldViewList)
+					{
+						if ((pMonster->objectInfo->job - 3) <
+							abs(pZoneContUnit->clientContArr[playerKey]->objectInfo->posX - pMonster->objectInfo->posX)
+							+
+							abs(pZoneContUnit->clientContArr[playerKey]->objectInfo->posY - pMonster->objectInfo->posY))
+						{
+							continue;
+						}
+
+						// 전사 스킬 - 무적상태일 경우, 데미지 처리안함.
+						if (pZoneContUnit->clientContArr[playerKey]->objectInfo->noDamageFlag) continue;
+
+						const int monsterDamage = (pMonster->objectInfo->job + pMonster->objectInfo->level);
+
+						while (7)
+						{
+							unsigned short oldHp = pZoneContUnit->clientContArr[playerKey]->objectInfo->hp;
+
+							if (oldHp > 0)
+							{
+								short newHp = oldHp - monsterDamage;
+								if (newHp < 0) newHp = 0;
+
+								//if (pZoneContUnit->clientContArr[playerKey]->objectInfo->noDamageFlag) return 0;
+								if (ATOMIC_UTIL::T_CAS(&(pZoneContUnit->clientContArr[playerKey]->objectInfo->hp)
+									, oldHp, static_cast<unsigned short>(newHp)))
+								{
+									NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::HP, newHp, pZoneContUnit->clientContArr[playerKey]);
+
+									if (newHp == 0)
+									{
+										while (7)
+										{
+											// 경험치 반토막
+											unsigned int oldExp = pZoneContUnit->clientContArr[playerKey]->objectInfo->exp;
+											unsigned int newExp = oldExp / 2;
+
+											if (ATOMIC_UTIL::T_CAS(&(pZoneContUnit->clientContArr[playerKey]->objectInfo->exp)
+												, oldExp, newExp))
+											{
+												NETWORK_UTIL::SEND::SendStatChange(STAT_CHANGE::EXP, newExp, pZoneContUnit->clientContArr[playerKey]);
+												break;
+											}
+										}
+										Death(pZoneContUnit->clientContArr[playerKey]);
+
+										// 마 너 죽었어 임마!
+										auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+										timerUnit->timerType = TIMER_TYPE::REVIVAL;
+										timerUnit->objectKey = playerKey;
+										TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::CHARACTER_REVIVAL);
+
+										NETWORK_UTIL::SEND::SendRemovePlayer(playerKey, pZoneContUnit->clientContArr[playerKey]);
+										NETWORK_UTIL::SEND::SendChatMessage(L"가 당신을 사망시켰습니다.", pUnit->objectKey, pZoneContUnit->clientContArr[playerKey]);
+									}
+									else
+									{
+										NETWORK_UTIL::SEND::SendChatMessage((L"가 당신에게 " + std::to_wstring(monsterDamage) + L"의 데미지를 입혔습니다.").c_str(), pUnit->objectKey, pZoneContUnit->clientContArr[playerKey]);
+
+										// 상태이상 설정
+										if (pZoneContUnit->monsterCont[index]->monsterModel->monsterType == MONSTER_TYPE::GOLEM)
+										{
+											pZoneContUnit->clientContArr[playerKey]->objectInfo->faintTick.fetch_add(1);
+											auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+											timerUnit->timerType = TIMER_TYPE::CC_FAINT;
+											timerUnit->objectKey = playerKey;
+											TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::CC_GOLEM_FAINT);
+											NETWORK_UTIL::SEND::SendChatMessage(L"가 당신을 기절시켰습니다.", pUnit->objectKey, pZoneContUnit->clientContArr[playerKey]);
+										}
+										else if (pZoneContUnit->monsterCont[index]->monsterModel->monsterType == MONSTER_TYPE::DRAGON)
+										{
+											pZoneContUnit->clientContArr[playerKey]->objectInfo->burnTick.fetch_add(1);
+											auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+											timerUnit->timerType = TIMER_TYPE::CC_BURN_3;
+											timerUnit->objectKey = playerKey;
+											TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::CC_BURN);
+											NETWORK_UTIL::SEND::SendChatMessage(L"가 당신을 화상시켰습니다.", pUnit->objectKey, pZoneContUnit->clientContArr[playerKey]);
+										}
+
+										// 자힐 설정
+										//if (pZoneContUnit->clientContArr[playerKey]->objectInfo->selfHealFlag = true)
+										//{
+										//	// 아무것도 안하는거 맞아요!
+										//}
+										//else
+										//{
+										//	if (ATOMIC_UTIL::T_CAS(&(pZoneContUnit->clientContArr[playerKey]->objectInfo->selfHealFlag)
+										//		, false, true))
+										//	{
+										//		auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+										//		timerUnit->timerType = TIMER_TYPE::SELF_HEAL;
+										//		timerUnit->objectKey = playerKey;
+										//		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SELF_HEAL);
+										//	}
+										//}
+									}
+
+									break;
+								}
+							}
+						}
+					}
+					if(pMonster->objectInfo->job == JOB_TYPE::GOLEM)
+						TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::GOLEM_ATTACK);
+					else
+						TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::REVIVAL):
+				{
+					// 이상태면 바로 안보이고 한 틱 이동 후 보일 수 있음.
+					BaseMonster* pMonster = zoneContUnit->monsterCont[index];
+
+					pMonster->objectInfo->posY = pMonster->spawnPosY;
+					pMonster->objectInfo->posX = pMonster->spawnPosX;
+					pMonster->isSleep = false;
+					pMonster->objectInfo->hp = pMonster->monsterModel->hpPerLevel * pMonster->objectInfo->level;
+
+					sectorCont[pMonster->spawnPosY / GLOBAL_DEFINE::SECTOR_DISTANCE][pMonster->spawnPosX / GLOBAL_DEFINE::SECTOR_DISTANCE].JoinForNpc(pMonster);
+					RenewPossibleSectors(pMonster->objectInfo);
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_FAINT):
+				{
+					zoneContUnit->monsterCont[index]->objectInfo->faintTick.fetch_sub(1);
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_FREEZE):
+				{
+					zoneContUnit->monsterCont[index]->freezeTick.fetch_sub(1);
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_ELECTRIC):
+				{
+					zoneContUnit->monsterCont[index]->electricTick.fetch_sub(1);
+					TimerManager::GetInstance()->PushTimerUnit(pUnit);
+					break;
+				}
+				case (TIMER_TYPE::CC_BURN_3):
+				{
+					while (7) 
+					{
+						unsigned short oldHp = zoneContUnit->monsterCont[index]->objectInfo->hp;
+						unsigned short newHp = oldHp - (oldHp / 100);
+
+						if (oldHp > 0)
+						{
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->monsterCont[index]->objectInfo->hp), oldHp, newHp))
+							{
+								pUnit->timerType = TIMER_TYPE::CC_BURN_2;
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
+								break;
+							}
+						}
+						else
+						{
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							break;
+						}
+					}
+					break;
+				}
+				case (TIMER_TYPE::CC_BURN_2):
+				{
+					while (7)
+					{
+						unsigned short oldHp = zoneContUnit->monsterCont[index]->objectInfo->hp;
+						unsigned short newHp = oldHp - (oldHp / 100);
+
+						if (oldHp > 0)
+						{
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->monsterCont[index]->objectInfo->hp), oldHp, newHp))
+							{
+								pUnit->timerType = TIMER_TYPE::CC_BURN_1;
+								TimerManager::GetInstance()->AddTimerEvent(pUnit, TIME::SECOND);
+								break;
+							}
+						}
+						else
+						{
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							break;
+						}
+					}
+					break;
+				}
+				case (TIMER_TYPE::CC_BURN_1):
+				{
+					while (7)
+					{
+						unsigned short oldHp = zoneContUnit->monsterCont[index]->objectInfo->hp;
+						unsigned short newHp = oldHp - (oldHp / 100);
+
+						if (oldHp > 0)
+						{
+							if (ATOMIC_UTIL::T_CAS(&(zoneContUnit->monsterCont[index]->objectInfo->hp), oldHp, newHp))
+							{
+								TimerManager::GetInstance()->PushTimerUnit(pUnit);
+								break;
+							}
+						}
+						else
+						{
+							TimerManager::GetInstance()->PushTimerUnit(pUnit);
+							break;
+						}
+					}
 					break;
 				}
 				default:
@@ -306,7 +978,7 @@ void Zone::ProcessTimerUnit(const int timerManagerContIndex)
 void Zone::Enter(SocketInfo* pEnteredClient)
 {
 	// 섹터 컨테이너에서 내 정보를 먼저 넣어주고.
-	sectorCont[pEnteredClient->objectInfo->posY / GLOBAL_DEFINE::MAX_HEIGHT ][pEnteredClient->objectInfo->posX / GLOBAL_DEFINE::MAX_WIDTH].Join(pEnteredClient);
+	sectorCont[pEnteredClient->objectInfo->posY / GLOBAL_DEFINE::SECTOR_DISTANCE][pEnteredClient->objectInfo->posX / GLOBAL_DEFINE::SECTOR_DISTANCE].Join(pEnteredClient);
 
 	// PossibleSector와 View 처리
 	InitViewAndSector(pEnteredClient);
@@ -552,11 +1224,132 @@ void Zone::RenewPossibleSectors(ObjectInfo* pClient)
 */
 void Zone::RenewViewListInSectors(SocketInfo* pClient)
 {
-	sectorCont[pClient->objectInfo->sectorIndexY][pClient->objectInfo->sectorIndexX].JudgeClientWithViewList(pClient, zoneContUnit);
+	pClient->viewListLock.lock_shared();
+	auto oldViewList = pClient->viewList;
+	pClient->viewListLock.unlock_shared();
+
+	std::unordered_set<_ClientKeyType> newViewList;
+
+	pClient->monsterViewListLock.lock_shared();
+	auto oldMonsterViewList = pClient->monsterViewList;
+	pClient->monsterViewListLock.unlock_shared();
+
+	std::unordered_set<_ClientKeyType> newMonsterViewList;
+	
+	// Make NewViewList
+	sectorCont[pClient->objectInfo->sectorIndexY][pClient->objectInfo->sectorIndexX].MakeNewViewList(newViewList, newMonsterViewList, pClient, zoneContUnit);
 
 	for (int i = 0; i < pClient->objectInfo->possibleSectorCount; ++i)
 	{
-		sectorCont[pClient->objectInfo->sectorArr[i].second][pClient->objectInfo->sectorArr[i].first].JudgeClientWithViewList(pClient, zoneContUnit);
+		sectorCont[pClient->objectInfo->sectorArr[i].second][pClient->objectInfo->sectorArr[i].first].MakeNewViewList(newViewList, newMonsterViewList, pClient, zoneContUnit);
+	}
+
+	// Client
+	for (auto otherClientKey : newViewList)
+	{
+		if (SocketInfo* pOtherClient = zoneContUnit->clientContArr[otherClientKey];
+			oldViewList.count(otherClientKey) != 0)
+		{
+			pOtherClient->viewListLock.lock();
+			if (0 != pOtherClient->viewList.count(pClient->key))
+			{
+				pOtherClient->viewListLock.unlock();
+				NETWORK_UTIL::SEND::SendMovePlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::Position>(pClient, pOtherClient);
+			}
+			else
+			{
+				pOtherClient->viewList.insert(pClient->key);
+				pOtherClient->viewListLock.unlock();
+				NETWORK_UTIL::SEND::SendPutPlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pClient, pOtherClient);
+			}
+		}
+		else
+			// 새로 시야에 들어옴.
+		{
+			pClient->viewListLock.lock();
+			pClient->viewList.insert(otherClientKey);
+			pClient->viewListLock.unlock();
+
+			NETWORK_UTIL::SEND::SendPutPlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pClient, pOtherClient);
+
+			pOtherClient->viewListLock.lock();
+			if (0 != pOtherClient->viewList.count(pClient->key)) {
+				pOtherClient->viewListLock.unlock();
+				NETWORK_UTIL::SEND::SendMovePlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::Position>(pOtherClient, pClient);
+			}
+			else {
+				pOtherClient->viewList.insert(pClient->key);
+				pOtherClient->viewListLock.unlock();
+				NETWORK_UTIL::SEND::SendPutPlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pOtherClient, pClient);
+			}
+		}
+	}
+
+	for (auto otherClientKey : oldViewList)
+	{
+		if (newViewList.count(otherClientKey) != 0) continue;
+
+		pClient->viewListLock.lock();
+		pClient->viewList.erase(otherClientKey);
+		pClient->viewListLock.unlock();
+
+		NETWORK_UTIL::SEND::SendRemovePlayer(otherClientKey, pClient);
+
+		SocketInfo* pOtherClient = zoneContUnit->clientContArr[otherClientKey];
+
+		pOtherClient->viewListLock.lock();
+		if (0 != pOtherClient->viewList.count(pClient->key))
+		{
+			pOtherClient->viewList.erase(pClient->key);
+			pOtherClient->viewListLock.unlock();
+			NETWORK_UTIL::SEND::SendRemovePlayer(pClient->key, pOtherClient);
+		}
+		else pOtherClient->viewListLock.unlock();
+	}
+
+	// Monster
+
+	for (auto otherMonsterKey : newMonsterViewList)
+	{
+		if (oldMonsterViewList.count(otherMonsterKey) != 0)
+		{
+			// 기존에 있던 친구들.
+			// 몬스터 친구들 안녀엉! 나 움직인다아~~~!!
+		}
+		else
+		{
+			// 새로 시야에 들어옴.
+			auto pMonster = zoneContUnit->monsterCont[otherMonsterKey - BIT_CONVERTER::NOT_PLAYER_INT];
+			pClient->monsterViewListLock.lock();
+			pClient->monsterViewList.insert(otherMonsterKey);
+			pClient->monsterViewListLock.unlock();
+
+			NETWORK_UTIL::SEND::SendPutPlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pMonster, pClient);
+
+			if (ATOMIC_UTIL::T_CAS(&(pMonster->isSleep), false, true))
+			{
+				pMonster->wakeUpClientKey = pClient->key;
+				// 이동 타이머를 등록해줌.
+				auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+				timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
+				timerUnit->objectKey = pMonster->key;
+				TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
+			}
+			//else  // 이미 true일 경우 할 것 없어!
+		}
+	}
+
+	for (auto otherMonsterKey : oldMonsterViewList)
+	{
+		auto pMonster = zoneContUnit->monsterCont[otherMonsterKey - BIT_CONVERTER::NOT_PLAYER_INT];
+
+		if (0 != newMonsterViewList.count(otherMonsterKey)) continue;
+
+		pClient->monsterViewListLock.lock();
+		pClient->monsterViewList.erase(otherMonsterKey);
+		pClient->monsterViewListLock.unlock();
+
+		NETWORK_UTIL::SEND::SendRemovePlayer(otherMonsterKey, pClient);
 	}
 }
 
@@ -566,20 +1359,82 @@ void Zone::RenewViewListInSectors(SocketInfo* pClient)
 
 	!0. 반드시 이 함수가 호출되기 전에, RenewPossibleSectors가 선행되어야 옳은 ViewList를 획득할 수 있습니다.
 */
-bool Zone::RenewViewListInSectorsForNpc(BaseMonster* pMonster)
+bool Zone::RenewViewListInSectorsForNpc(const std::unordered_set<_KeyType>& oldViewList, BaseMonster* pMonster)
 {
 	bool retValue = false;
 	auto pObjectInfo = pMonster->objectInfo;
+	std::unordered_set<_KeyType> newViewList;
 
-	if (sectorCont[pObjectInfo->sectorIndexY][pObjectInfo->sectorIndexX].JudgeClientWithViewListForNpc(pMonster, zoneContUnit))
-		retValue = true;
+	// make newViewList
+
+	sectorCont[pObjectInfo->sectorIndexY][pObjectInfo->sectorIndexX].MakeNewViewListForNpc(newViewList, pMonster, zoneContUnit);
 
 	for (int i = 0; i < pObjectInfo->possibleSectorCount; ++i)
 	{
-		if (sectorCont[pObjectInfo->sectorArr[i].second][pObjectInfo->sectorArr[i].first].JudgeClientWithViewListForNpc(pMonster, zoneContUnit))
-			retValue = true;
+		sectorCont[pObjectInfo->sectorArr[i].second][pObjectInfo->sectorArr[i].first].MakeNewViewListForNpc(newViewList, pMonster, zoneContUnit);
 	}
-	return retValue;
+
+	// 
+
+	_KeyType monsterKey = pMonster->key;
+	for (auto clientKey : oldViewList)
+	{
+		if (auto pOtherClient = zoneContUnit->clientContArr[clientKey]; 
+			0 != newViewList.count(clientKey)) {
+			pOtherClient->monsterViewListLock.lock();
+			
+			if (pOtherClient->monsterViewList.count(monsterKey)) {
+				pOtherClient->monsterViewListLock.unlock();
+				NETWORK_UTIL::SEND::SendMovePlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::Position>(pMonster, pOtherClient);
+			}
+			else {
+				pOtherClient->monsterViewList.insert(monsterKey);
+				pOtherClient->monsterViewListLock.unlock();
+				NETWORK_UTIL::SEND::SendPutPlayer< BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pMonster, pOtherClient);
+			}
+		}
+		else {
+			pOtherClient->monsterViewListLock.lock();
+
+			if (0 < pOtherClient->monsterViewList.count(monsterKey)) {
+				pOtherClient->monsterViewList.erase(monsterKey);
+				pOtherClient->monsterViewListLock.unlock();
+				NETWORK_UTIL::SEND::SendRemovePlayer(monsterKey, pOtherClient);
+			}
+			else pOtherClient->monsterViewListLock.unlock();
+		}
+	}
+	for (auto clientKey : newViewList)
+	{
+		if (oldViewList.count(clientKey) == 0)
+		{
+			auto pOtherClient = zoneContUnit->clientContArr[clientKey];
+
+			pOtherClient->monsterViewListLock.lock();
+
+			if (0 == pOtherClient->monsterViewList.count(monsterKey)) {
+				pOtherClient->monsterViewList.insert(monsterKey);
+				pOtherClient->monsterViewListLock.unlock();
+				NETWORK_UTIL::SEND::SendPutPlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pMonster, zoneContUnit->clientContArr[clientKey]);
+			}
+			else {
+				pOtherClient->monsterViewListLock.unlock();
+				NETWORK_UTIL::SEND::SendMovePlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::Position>(pMonster, zoneContUnit->clientContArr[clientKey]);
+			}
+		}
+	}
+	// 야 너 주변에 이제 아무도 없다! 쉬어 고생했어 ㅠ
+	return static_cast<bool>(newViewList.size());
+}
+
+void Zone::MakeOldViewListForNpc(std::unordered_set<_KeyType>& retVewList, BaseMonster* pMonster)
+{
+	sectorCont[pMonster->objectInfo->sectorIndexY][pMonster->objectInfo->sectorIndexX].MakeOldViewListForNpc(retVewList, pMonster, zoneContUnit);
+
+	for (int i = 0; i < pMonster->objectInfo->possibleSectorCount; ++i)
+	{
+		sectorCont[pMonster->objectInfo->sectorArr[i].second][pMonster->objectInfo->sectorArr[i].first].MakeOldViewListForNpc(retVewList, pMonster, zoneContUnit);
+	}
 }
 
 
@@ -596,7 +1451,7 @@ void Zone::RenewSelfSector(SocketInfo* pClient)
 	_SectorIndexType tempX = static_cast<_SectorIndexType>(tempObjectInfo->posX / GLOBAL_DEFINE::SECTOR_DISTANCE);
 	_SectorIndexType tempY = static_cast<_SectorIndexType>(tempObjectInfo->posY / GLOBAL_DEFINE::SECTOR_DISTANCE);
 
-	if (tempX != tempObjectInfo->sectorIndexX || tempObjectInfo->sectorIndexY)
+	if (tempX != tempObjectInfo->sectorIndexX || tempY != tempObjectInfo->sectorIndexY)
 	{
 		sectorCont[tempObjectInfo->sectorIndexY][tempObjectInfo->sectorIndexX].Exit(pClient);
 		//sectorCont[pClient->sectorIndexY][pClient->sectorIndexX].Join(pClient);
@@ -631,11 +1486,16 @@ void Zone::RenewSelfSectorForNpc(BaseMonster* pMonster)
 void Zone::RecvCharacterMove(SocketInfo* pClient)
 {
 #ifdef _DEV_MODE_
-	std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[2]) << "\n";
+	//std::cout << "[AfterRecv] 받은 버퍼는" << int(pClient->loadedBuf[1]) << "희망하는 방향은 : " << int(pClient->loadedBuf[2]) << "\n";
 #endif
-
 	if (moveManager->MoveCharacter(pClient))
 	{
+		auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
+		timerUnit->objectKey = pClient->key;
+		timerUnit->timerType = TIMER_TYPE::PLAYER_MOVE;
+		TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::PLAYER_MOVE);
+		pClient->objectInfo->moveFlag = false;
+
 		// 스스로에게 전송.
 		NETWORK_UTIL::SEND::SendMovePlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::Position>(pClient, pClient);
 		//PACKET_DATA::MAIN_TO_CLIENT::Position packet(
@@ -657,4 +1517,10 @@ void Zone::RecvChat(SocketInfo* pClient)
 	std::cout << "[AfterRecv] 채팅 버퍼를 받았습니다. \n";
 #endif
 	//chatManager->ChatProcess(pClient, zoneContUnit);
+}
+
+
+const std::vector<std::vector<bool>>& Zone::GetMapData()
+{
+	return moveManager->GetMapData();
 }

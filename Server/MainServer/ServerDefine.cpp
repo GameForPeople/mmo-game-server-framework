@@ -6,9 +6,13 @@
 #include "Zone.h"
 #include "ObjectInfo.h"
 #include "ServerDefine.h"
+#include "BaseMonster.h"
+#include "LuaManager.h"
 
 namespace NETWORK_UTIL
 {
+	extern SOCKET querySocket;
+	extern QueryMemoryUnit* queryMemoryUnit;
 	/*
 		SendPacket()
 			- WSASend!는 여기에서만 존재할 수 있습니다.
@@ -26,7 +30,7 @@ namespace NETWORK_UTIL
 		sendMemoryUnit->memoryUnit.wsaBuf.len = static_cast<ULONG>(packetData[0]);
 
 #ifdef _DEV_MODE_
-		std::cout << "길이 : " << sendMemoryUnit->memoryUnit.wsaBuf.len << "타입 : " << (int)packetData[1] << "내용 : " << (int)packetData[2];
+		//std::cout << "길이 : " << sendMemoryUnit->memoryUnit.wsaBuf.len << "타입 : " << (int)packetData[1] << "내용 : " << (int)packetData[2];
 #endif
 
 		ZeroMemory(&(sendMemoryUnit->memoryUnit.overlapped), sizeof(sendMemoryUnit->memoryUnit.overlapped));
@@ -34,11 +38,14 @@ namespace NETWORK_UTIL
         //ERROR_HANDLING::errorRecvOrSendArr[
 		//	static_cast<bool>(
 				//1 + 
-		if (SOCKET_ERROR ==
-			WSASend(pClient->sock, &(sendMemoryUnit->memoryUnit.wsaBuf), 1, NULL, 0, &(sendMemoryUnit->memoryUnit.overlapped), NULL)
-			)
+		if (SOCKET_ERROR == WSASend(pClient->sock, &(sendMemoryUnit->memoryUnit.wsaBuf), 1, NULL, 0, &(sendMemoryUnit->memoryUnit.overlapped), NULL) )
 		{
-			ERROR_HANDLING::ERROR_DISPLAY(L"SendPacket()");
+			if (ERROR_HANDLING::HandleSendError())
+			{
+				LuaManager::GetInstance()->pZone->Death(pClient);
+				closesocket(pClient->sock);
+				//SendMemoryPool::GetInstance()->PushMemory(sendMemoryUnit);
+			}
 		}
 			//]();
 	}
@@ -56,6 +63,11 @@ namespace NETWORK_UTIL
 			WSASend(querySocket, &(sendMemoryUnit->memoryUnit.wsaBuf), 1, NULL, 0, &(sendMemoryUnit->memoryUnit.overlapped), NULL)
 			)
 		{
+			if (auto retValue = WSAGetLastError(); 
+				retValue == ERROR_IO_PENDING)
+			{
+				return;
+			}
 			ERROR_HANDLING::ERROR_DISPLAY(L"SendQuery()");
 		}
 	}
@@ -99,7 +111,7 @@ namespace NETWORK_UTIL
 				//1 + 
 		if (SOCKET_ERROR == WSARecv(pClient->sock, &(pClient->memoryUnit.wsaBuf), 1, NULL, &flag /* NULL*/, &(pClient->memoryUnit.overlapped), NULL))
 		{
-			ERROR_HANDLING::HandleRecvOrSendError();
+			ERROR_HANDLING::HandleRecvError();
 			//ERROR_HANDLING::ERROR_DISPLAY("못받았어요....");
 		}
 		//		)
@@ -112,7 +124,7 @@ namespace NETWORK_UTIL
 		ZeroMemory(&(queryMemoryUnit->memoryUnit.overlapped), sizeof(queryMemoryUnit->memoryUnit.overlapped));
 		if (SOCKET_ERROR == WSARecv(querySocket, &(queryMemoryUnit->memoryUnit.wsaBuf), 1, NULL, &flag /* NULL*/, &(queryMemoryUnit->memoryUnit.overlapped), NULL))
 		{
-			ERROR_HANDLING::HandleRecvOrSendError();
+			ERROR_HANDLING::HandleRecvError();
 			//ERROR_HANDLING::ERROR_DISPLAY("못받았어요....");
 		}
 	}
@@ -123,6 +135,18 @@ namespace NETWORK_UTIL
 		{
 			PACKET_DATA::MAIN_TO_CLIENT::RemovePlayer packet(pRemoveClientID);
 
+			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
+		}
+
+		void SendChatMessage(const WCHAR* message, const _KeyType senderKey, SocketInfo* pRecvClient)
+		{
+			PACKET_DATA::MAIN_TO_CLIENT::Chat packet(senderKey, message);
+			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
+		}
+
+		void SendStatChange(const char inStatChangeType, const int inNewValue, SocketInfo* pRecvClient)
+		{
+			PACKET_DATA::MAIN_TO_CLIENT::StatChange packet(inStatChangeType, inNewValue);
 			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));
 		}
 	}
@@ -141,7 +165,6 @@ namespace NETWORK_UTIL
 
 //	void LogOutProcess(LPVOID pClient)
 //	{
-//
 //		//if (reinterpret_cast<MemoryUnit*>(pClient)->memoryUnitType == MEMORY_UNIT_TYPE::RECV_FROM_CLIENT)
 //		//{
 //		SocketInfo* pOutClient = reinterpret_cast<SocketInfo*>(pClient);
@@ -208,18 +231,12 @@ namespace ERROR_HANDLING
 	{
 		LPVOID lpMsgBuf;
 		FormatMessage(
-			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-			NULL,
-			WSAGetLastError(),
+			FORMAT_MESSAGE_ALLOCATE_BUFFER |
+			FORMAT_MESSAGE_FROM_SYSTEM,
+			NULL, WSAGetLastError(),
 			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			(LPTSTR)&lpMsgBuf,
-			0,
-			NULL
-		);
-
-		//C603 형식 문자열이 일치하지 않습니다. 와이드 문자열이 _Param_(3)으로 전달되었습니다.
-		//printf(" [%s]  %s", msg, (LPTSTR)&lpMsgBuf);
-		std::wcout << L" Error no." << msg << L" - " << lpMsgBuf;
+			(LPTSTR)&lpMsgBuf, 0, NULL);
+		wprintf(L"[%s] %s", msg, (WCHAR*)lpMsgBuf);
 		LocalFree(lpMsgBuf);
 	};
 
@@ -227,12 +244,178 @@ namespace ERROR_HANDLING
 		HandleRecvOrSendError
 			- Send Or Recv 실패 시 출력되는 함수로, 에러를 출력합니다.
 	*/
-	void HandleRecvOrSendError()
+	void HandleRecvError()
 	{
-		if (WSAGetLastError() != ERROR_IO_PENDING)
+		auto retValue = WSAGetLastError();
+
+		if (retValue == ERROR_IO_PENDING)
 		{
-			ERROR_DISPLAY((L"RecvOrSend()"));
+			return;
 		}
+		if (retValue == WSAECONNRESET)
+		{
+			return;
+		}
+		if (retValue == WSAENOTSOCK)
+		{
+			return;
+		}
+
+		ERROR_DISPLAY(((L"HandleRecvError() : " + std::to_wstring(retValue)).c_str()));
+	}
+
+	bool HandleSendError()
+	{
+		auto retValue = WSAGetLastError();
+
+		if (retValue == ERROR_IO_PENDING)
+		{
+			return false;
+		}
+		if (retValue == WSAECONNRESET)
+		{
+			return true;
+		}
+		if (retValue == WSAENOTSOCK)
+		{
+			return true;
+		}
+		
+		ERROR_DISPLAY(((L"HandleSendError() : " + std::to_wstring(retValue)).c_str()));
+	}
+}
+
+namespace JOB
+{
+	unsigned short GetMaxHP(_JobType inJob, unsigned char inLevel) noexcept
+	{
+		unsigned short  maxHp = BASE_HP; // 기본 체력
+
+		if (inJob == JOB_TYPE::KNIGHT)
+		{
+			maxHp = maxHp + (inLevel * KNIGHT_HP_PER_LEVEL);
+		}
+		else if (inJob == JOB_TYPE::ARCHER)
+		{
+			maxHp = maxHp + (inLevel * ARCHER_HP_PER_LEVEL);
+		}
+		else if (inJob == JOB_TYPE::WITCH)
+		{
+			maxHp = maxHp + (inLevel * WITCH_HP_PER_LEVEL);
+		}
+
+		return maxHp;
+	}
+
+	unsigned short GetMaxMP(_JobType inJob, unsigned char inLevel) noexcept
+	{
+		unsigned short  maxMp = BASE_MP; // 기본 마나
+
+		if (inJob == JOB_TYPE::KNIGHT)
+		{
+			maxMp = maxMp + (inLevel * KNIGHT_MP_PER_LEVEL);
+		}
+		else if (inJob == JOB_TYPE::ARCHER)
+		{
+			maxMp = maxMp + (inLevel * ARCHER_MP_PER_LEVEL);
+		}
+		else if (inJob == JOB_TYPE::WITCH)
+		{
+			maxMp = maxMp + (inLevel * WITCH_MP_PER_LEVEL);
+		}
+
+		return maxMp;
+	}
+
+	unsigned short GetDamage(_JobType inJob, /*_LevelType*/ unsigned char inLevel) noexcept
+	{
+		unsigned short retDamage = BASE_DAMAGE; // 기본 마나
+
+		if (inJob == JOB_TYPE::KNIGHT)
+		{
+			retDamage = retDamage + (inLevel * KNIGHT_DAMAGE_PER_LEVEL);
+		}
+		else if (inJob == JOB_TYPE::ARCHER)
+		{
+			retDamage = retDamage + (inLevel * ARCHER_DAMAGE_PER_LEVEL);
+		}
+		else if (inJob == JOB_TYPE::WITCH)
+		{
+			retDamage = retDamage + (inLevel * WITCH_DAMAGE_PER_LEVEL);
+		}
+		return retDamage;
+	}
+
+	bool IsInAttackRange(int range, SocketInfo* pHitter, BaseMonster* pMonster)
+	{
+		return (range >= abs(pHitter->objectInfo->posX - pMonster->objectInfo->posX) + abs(pHitter->objectInfo->posY - pMonster->objectInfo->posY));
+	}
+
+	bool IsAttack(_JobType inJob, unsigned char inAttackkType, SocketInfo* pClient, BaseMonster* pMonster) noexcept
+	{
+		if (inJob == JOB_TYPE::KNIGHT)
+		{
+			if (inAttackkType == 0)
+			{
+				return IsInAttackRange(KNIGHT_ATTACK_0_RANGE, pClient, pMonster);
+			}
+			else if (inAttackkType == 2)
+			{
+				return IsInAttackRange(KNIGHT_ATTACK_2_RANGE, pClient, pMonster);
+			}
+		}
+		else if (inJob == JOB_TYPE::ARCHER)
+		{
+			// 모두 동일함
+			if (inAttackkType == 0 || inAttackkType == 1 || inAttackkType == 2)
+			{
+				return IsInAttackRange(ARCHER_ATTACK_0_RANGE, pClient, pMonster);
+			}
+		}
+		else if (inJob == JOB_TYPE::WITCH)
+		{
+			if (inAttackkType == 0)
+			{
+				return IsInAttackRange(WITCH_ATTACK_0_RANGE, pClient, pMonster);
+			}
+			else if (inAttackkType == 1)
+			{
+				return IsInAttackRange(WITCH_ATTACK_1_RANGE, pClient, pMonster);
+			}
+			else if (inAttackkType == 2)
+			{
+				return IsInAttackRange(WITCH_ATTACK_2_RANGE, pClient, pMonster);
+			}
+		}
+		return false;
+	}
+
+	_MpType_T GetSkillMp(_JobType job, unsigned char inSkillIndex) noexcept
+	{
+		if (job == JOB_TYPE::KNIGHT)
+		{
+			if (inSkillIndex == 1) return KNIGHT_ATTACK_1_MP;
+			else return KNIGHT_ATTACK_2_MP;
+		}
+		else if (job == JOB_TYPE::ARCHER)
+		{
+			if (inSkillIndex == 1) return ARCHER_ATTACK_1_MP;
+			else return ARCHER_ATTACK_2_MP;
+		}
+		else if (job == JOB_TYPE::WITCH)
+		{
+			if (inSkillIndex == 1) return WITCH_ATTACK_1_MP;
+			else return WITCH_ATTACK_2_MP;
+		}
+	}
+}
+
+namespace LUA_UTIL
+{
+	void PrintError(lua_State* L)
+	{
+		std::cout << lua_tostring(L, -1);
+		lua_pop(L, -1);
 	}
 }
 
@@ -247,4 +430,3 @@ namespace TIME_UTIL {
 		return buf;
 	}
 }
-

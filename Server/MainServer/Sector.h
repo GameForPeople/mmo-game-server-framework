@@ -26,8 +26,10 @@ public:
 	void JoinForNpc(BaseMonster*);
 	void ExitForNpc(BaseMonster*);
 
-	void JudgeClientWithViewList(SocketInfo*, ZoneContUnit*);
-	bool JudgeClientWithViewListForNpc(BaseMonster*, ZoneContUnit*);
+	void MakeNewViewList(std::unordered_set<_KeyType>&, std::unordered_set<_KeyType>&, SocketInfo*, ZoneContUnit*);
+	void MakeNewViewListForNpc(std::unordered_set<_KeyType>&, BaseMonster*, ZoneContUnit*);
+
+	void MakeOldViewListForNpc(std::unordered_set<_KeyType>&, BaseMonster*, ZoneContUnit*);
 
 private:
 	//bool IsSeeEachOther(const _PosType, const _PosType, const _PosType, const _PosType) const noexcept;

@@ -22,8 +22,8 @@ public:
 
 private:	// for Init
 	void ServerIntegrityCheck();
-	void PrintServerInfoUI();
-	void InitNetwork();
+	void PrintServerInfoUI(const std::string&);
+	void InitNetwork(const std::string&);
 
 private:	// for Worker Thread
 	static void StartWorkerThread(LPVOID arg);
@@ -45,7 +45,10 @@ private:	// DB Functions
 	void FreeAndDisconnectDB();
 
 	void ProcessDemandLogin();
+	void ProcessDemandSignUp();
 	void ProcessSaveLocation();
+	void ProcessSaveUserInfo();
+	void ProcessDoAllUserLogOut();
 
 private:	// For Server
 	WSADATA								wsa;
@@ -64,5 +67,5 @@ private:	// For Server
 private:	// For DB
 	SQLHENV henv;
 	SQLHDBC hdbc;
-	SQLHSTMT hstmt = 0;
+	const SQLLEN intLen;
 };

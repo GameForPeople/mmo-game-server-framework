@@ -114,8 +114,8 @@ public:
 	~SocketInfo();
 
 public:
-	const _KeyType key;
 	MemoryUnit memoryUnit;
+	const _KeyType key;
 
 	_BufferType loadedBuf[GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET];
 	int loadedSize;
@@ -123,14 +123,22 @@ public:
 	SOCKET sock;
 
 	/*Concurrency::concurrent_*/std::unordered_set<_ClientKeyType> viewList;
+	std::shared_mutex viewListLock;
 	/*Concurrency::concurrent_*/std::unordered_set<_MonsterKeyType> monsterViewList;
+	std::shared_mutex monsterViewListLock;
 
 	PlayerObjectInfo * objectInfo;
 
 public:
 	void RegisterNewClient(SOCKET);
-	void SetNewObjectInfo(PlayerObjectInfo*);
-	
+	void RegisterNewNickName(_NicknameType*);
+
+	// 이 멍청한 함수는 무엇인가.
+	void SetNewObjectInfo(_PosType x, _PosType y, _LevelType_T inlevel, _ExpType_T inExp, _JobType inJob,
+		_HpType_T inHp, _MpType_T inMp, _MoneyType_T inMoney, _CountType_T inRedCount, _CountType_T inBlueCount, _TreeCountType inTreeCount);
+
+	_DEPRECATED void CopyOtherObjectInfo(PlayerObjectInfo*);
+
 	void TerminateClient();
 };
 

@@ -19,11 +19,13 @@ namespace GLOBAL_DEFINE
 	constexpr USHORT MANAGER_SERVER_PORT = 9002;
 	constexpr USHORT QUERY_SERVER_PORT = 9003;
 
-	constexpr USHORT MAX_HEIGHT = 800;
-	constexpr USHORT MAX_WIDTH = 800;
+	constexpr USHORT MAX_HEIGHT = 300;
+	constexpr USHORT MAX_WIDTH = 300;
 
 	constexpr BYTE ID_MAX_LEN = 10;
 	constexpr BYTE ID_MAX_SIZE = ID_MAX_LEN * 2;
+
+	constexpr BYTE CHAT_MAX_LEN = 50;
 }
 
 namespace NETWORK_TYPE
@@ -54,19 +56,13 @@ namespace PACKET_TYPE
 	{
 		enum
 		{
-			MOVE, 	//LEFT, //UP, //RIGHT, //DOWN,
+			MOVE, 				//LEFT, //UP, //RIGHT, //DOWN,
 			LOGIN,
-			ENUM_SIZE
-		};
-	}
-
-	namespace CLIENT_TO_CHAT
-	{
-		enum
-		{
-			CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
-			CONNECT,	// 채팅 서버에 해당 클라이언트를 등록합니다.
-			CHANGE,		// 해당 클라이언트의 존이 변경되었습니다.
+			SIGN_UP,
+			ATTACK,
+			USE_ITEM,
+			BUY_ITEM,
+			CHAT,
 			ENUM_SIZE
 		};
 	}
@@ -80,6 +76,8 @@ namespace PACKET_TYPE
 			LOGIN_FAIL,
 			PUT_PLAYER,
 			REMOVE_PLAYER,
+			CHAT,
+			STAT_CHANGE,
 			ENUM_SIZE
 		};
 	}
@@ -88,8 +86,10 @@ namespace PACKET_TYPE
 	{
 		enum
 		{
-			DEMAND_LOGIN,
-			SAVE_LOCATION
+			DEMAND_LOGIN = 0,
+			DEMAND_SIGNUP = 1,
+			SAVE_LOCATION = 2,
+			SAVE_USERINFO
 		};
 	}
 
@@ -98,7 +98,9 @@ namespace PACKET_TYPE
 		enum
 		{
 			LOGIN_TRUE,
-			LOGIN_FALSE
+			LOGIN_FALSE,
+			LOGIN_ALREADY,
+			LOGIN_NEW
 		};
 	}
 
@@ -111,7 +113,16 @@ namespace PACKET_TYPE
 			ENUM_SIZE
 		};
 	}
-
+	namespace CLIENT_TO_CHAT
+	{
+		enum
+		{
+			CHAT,	// CS::CHAT와 SC::CHAT는 동일해야합니다.
+			CONNECT,	// 채팅 서버에 해당 클라이언트를 등록합니다.
+			CHANGE,		// 해당 클라이언트의 존이 변경되었습니다.
+			ENUM_SIZE
+		};
+	}
 	namespace COMMAND_TO_CHAT
 	{
 		enum
@@ -122,13 +133,40 @@ namespace PACKET_TYPE
 	}
 }
 
+namespace STAT_CHANGE
+{
+	enum
+	{
+		HP,
+		MP,
+		LEVEL,
+		EXP,
+		RED_P,
+		BLUE_P,
+		MONEY,
+		MOVE_OK,
+		ATTACK_OK,
+		SKILL_1_OK,
+		SKILL_2_OK
+	};
+}
+
 namespace PACKET_DATA
 {
 	using _PacketSizeType = const char;
 	using _PacketTypeType = const char;	//? 이름이 뭐 이따구가
 	using _KeyType = unsigned int;	//? 이름이 뭐 이따구가
+	using _LevelType = unsigned int;
 	using _PosType = unsigned short;
 	using _CharType = WCHAR;
+	using _ExpType = unsigned int;
+	using _JobType = unsigned int;	//일단;
+	using _HpType = unsigned int;
+	using _MpType = unsigned int;
+	using _MoneyType = unsigned int;
+	using _RedCountType = unsigned int;
+	using _BlueCountType = unsigned int;
+	using _TreeCountType = unsigned int;
 
 #pragma pack(push, 1)
 
@@ -148,6 +186,47 @@ namespace PACKET_DATA
 			_CharType id[GLOBAL_DEFINE::ID_MAX_LEN];
 
 			Login(const _CharType* const pInNickname) noexcept;
+		};
+
+		struct SignUp {
+			_PacketSizeType size;
+			_PacketTypeType type;
+			_CharType id[GLOBAL_DEFINE::ID_MAX_LEN];
+			_JobType job;
+
+			SignUp(const _CharType* const pInNickname, const _JobType) noexcept;
+		};
+
+		struct Attack {
+			_PacketSizeType size;
+			_PacketTypeType type;
+			unsigned char attackType;							//0이면 기본공격, 1이면 스킬1, 2이면 스킬2
+
+			Attack(const unsigned char) noexcept;
+		};
+
+		struct Item {
+			_PacketSizeType size;
+			_PacketTypeType type;
+			unsigned char useItemType;					//0이면 레드포션, 1이면 블루포션
+
+			Item(const unsigned char) noexcept;
+		};
+
+		struct BuyItem {
+			_PacketSizeType size;
+			_PacketTypeType type;
+			unsigned char buyItemType;					//0이면 레드포션, 1이면 블루포션
+
+			BuyItem(const unsigned char) noexcept;
+		};
+
+		struct Chat {
+			_PacketSizeType size;
+			_PacketTypeType type;
+			_CharType message[GLOBAL_DEFINE::CHAT_MAX_LEN];
+
+			Chat(_CharType*);
 		};
 	}
 
@@ -184,18 +263,30 @@ namespace PACKET_DATA
 			_PacketSizeType size;
 			_PacketTypeType type;
 			_KeyType key;
-			_CharType nickname[GLOBAL_DEFINE::ID_MAX_LEN];
+			//_CharType nickname[GLOBAL_DEFINE::ID_MAX_LEN];
 			_PosType x;
 			_PosType y;
+			_LevelType level;
+			_ExpType exp;
+			_JobType job;
+			_HpType hp;
+			_MpType mp;
+			_MoneyType money;
+			_RedCountType redCount;
+			_BlueCountType blueCount;
+			_TreeCountType treeCount;
 
-			LoginOk(const _KeyType, const _CharType* inNewNickname, const _PosType x, const _PosType y) noexcept;
+			LoginOk(const _KeyType, /*const _CharType* inNewNickname*/ const _PosType x, const _PosType y,
+				_LevelType inlevel, _ExpType inExp, _JobType inJob,	_HpType inHp, _MpType inMp, 
+				_MoneyType inMoney, _RedCountType inRedCount, _BlueCountType inBlueCount, _TreeCountType inTreeCount
+			) noexcept;
 		};
 
 		struct LoginFail
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			const char failReason;
+			const char failReason;	// 0이면 없는 계정, 1이면 이미 로그인한 계정, 2이면 만들려고 했는데 이미 있는 계정
 
 			LoginFail(const char inFailReason) noexcept;
 		};
@@ -207,8 +298,9 @@ namespace PACKET_DATA
 			_KeyType key;
 			_PosType x;
 			_PosType y;
+			_JobType job;
 
-			PutPlayer(const _KeyType inMovedClientKey, const _PosType inX, const _PosType inY) noexcept;
+			PutPlayer(const _KeyType inMovedClientKey, const _PosType inX, const _PosType inY, const _JobType inJob) noexcept;
 		};
 
 		struct RemovePlayer
@@ -230,6 +322,28 @@ namespace PACKET_DATA
 
 			Position(const _KeyType inMovedClientKey, const _PosType inX, const _PosType inY) noexcept;
 		};
+
+		struct Chat
+		{
+			_PacketSizeType size;
+			_PacketTypeType type;
+			_KeyType key;
+			_CharType message[GLOBAL_DEFINE::CHAT_MAX_LEN];
+
+			Chat(const _KeyType inSenderKey, const _CharType* const pInMessage) noexcept;
+		};
+
+		struct StatChange
+		{
+			_PacketSizeType size;
+			_PacketTypeType type;
+			char changedStatType;	
+			int newValue;
+			// 0 체력, 1 마나, 2 레벨, 3. 경험치, 4. 빨물, 
+			//5.파물, 6.돈, 7. 이동가능여부, 8. 공격가능여부, 9. 스킬1가능여부, 10. 스킬2가능여부
+
+			StatChange(char /* STAT_CHANGE */, int ) noexcept;
+		};
 	}
 
 	namespace MAIN_TO_QUERY
@@ -238,22 +352,57 @@ namespace PACKET_DATA
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			_KeyType key;	// 나중에 반납할 때, 이 키를 알려줘야함.
-			_CharType id[10];
+			_KeyType key;						// 나중에 반납할 때, 이 키를 알려줘야함.
+			_CharType id[GLOBAL_DEFINE::ID_MAX_LEN];
 			int		pw;
 
 			DemandLogin(const _KeyType, const char* inId, const int);
+		};
+
+		struct DemandSignUp
+		{
+			_PacketSizeType size;
+			_PacketTypeType type;
+			_KeyType key;						// 나중에 반납할 때, 이 키를 알려줘야함.
+			_CharType id[10];
+			_JobType job;
+
+			DemandSignUp(const _KeyType, const char* inId, const _JobType);
 		};
 
 		struct SavePosition
 		{
 			_PacketSizeType size;
 			_PacketTypeType type;
-			// 여기는 단방향성이라 Key가 필요없음
+												// 여기는 단방향성이라 Key가 필요없음
 			_CharType id[10];
 			_PosType xPos;
 			_PosType yPos;
 			SavePosition(const _CharType * const, const _PosType, const _PosType);
+		};
+
+		struct SaveUserInfo
+		{
+			_PacketSizeType size;
+			_PacketTypeType type;
+													// 여기는 단방향성이라 Key가 필요없음
+			int isOut;	// 0 로그아웃용, 1 백업용
+			_CharType id[10];
+			_PosType xPos;
+			_PosType yPos;
+			_LevelType level;
+			_ExpType exp;
+			_JobType job;
+			_HpType hp;
+			_MpType mp;
+			_MoneyType money;
+			_RedCountType redCount;
+			_BlueCountType blueCount;
+			_TreeCountType treeCount;
+
+			SaveUserInfo(const int inIsOut, const _CharType* const inId, const _PosType inXPos, const _PosType inYPos,
+				const _LevelType inLevel, const _ExpType exp, const _JobType job, const _HpType hp, const _MpType mp,
+				const _MoneyType money, const _RedCountType redCount, const _BlueCountType blueCount, const _TreeCountType treeCount);
 		};
 	}
 
@@ -274,11 +423,20 @@ namespace PACKET_DATA
 			_PacketSizeType size;
 			_PacketTypeType type;
 			_KeyType key;
-			_CharType nickname[10];
+			//_CharType nickname[10];
 			_PosType xPos;
 			_PosType yPos;
+			_LevelType level;
+			_ExpType exp;
+			_JobType job;
+			_HpType hp;
+			_MpType mp;
+			_MoneyType money;
+			_RedCountType redCount;
+			_BlueCountType blueCount;
+			_TreeCountType treeCount;
 
-			LoginTrue(const _KeyType, const _CharType *, const _PosType, const _PosType) noexcept;
+			LoginTrue(const _KeyType/*, const _KeyType,  const _CharType *, const _PosType, const _PosType*/) noexcept;
 		};
 
 		struct LoginFail
@@ -289,6 +447,26 @@ namespace PACKET_DATA
 			unsigned char failReason;
 
 			LoginFail(const _KeyType, const unsigned char) noexcept;
+		};
+
+		struct LoginAlready
+		{
+			_PacketSizeType size;
+			_PacketTypeType type;
+			_KeyType key;
+			_KeyType oldKey;
+
+			LoginAlready(const _KeyType, const _KeyType) noexcept;
+		};
+
+		struct LoginNew
+		{
+			_PacketSizeType size;
+			_PacketTypeType type;
+			_KeyType key;
+			_JobType job;
+
+			LoginNew(const _KeyType, const _JobType) noexcept;
 		};
 	}
 
@@ -304,6 +482,19 @@ namespace DIRECTION
 		RIGHT /*= 2*/,
 		DOWN /*= 3*/,
 		ENUM_SIZE
+	};
+}
+
+namespace JOB_TYPE
+{
+	enum /* : int */
+	{
+		KNIGHT = 1,
+		ARCHER = 2,
+		WITCH = 3,
+		SLIME = 4,
+		GOLEM = 5,
+		DRAGON = 6
 	};
 }
 

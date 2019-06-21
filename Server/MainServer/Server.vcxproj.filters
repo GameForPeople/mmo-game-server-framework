@@ -66,6 +66,9 @@
     <Filter Include="GameServer\TimerManager">
       <UniqueIdentifier>{df8006a5-cdab-40be-afcd-161c100d62bd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="LUA_Script">
+      <UniqueIdentifier>{b3455b97-d8a0-45a7-8bda-f053ad29c296}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -128,6 +131,9 @@
     </ClCompile>
     <ClCompile Include="MonsterLoader.cpp">
       <Filter>Object\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="LuaManager.cpp">
+      <Filter>LUA_Script</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -195,11 +201,23 @@
     <ClInclude Include="ServerDefine.hpp">
       <Filter>Define\Server</Filter>
     </ClInclude>
+    <ClInclude Include="LuaManager.h">
+      <Filter>LUA_Script</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="InHeaderDefine.hh">
       <Filter>Define\Server</Filter>
     </None>
     <None Include="cpp.hint" />
+    <None Include="Logic.Hello" />
+    <None Include="LUA_Monster.lua">
+      <Filter>LUA_Script</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="lua53.lib">
+      <Filter>리소스 파일</Filter>
+    </Library>
   </ItemGroup>
 </Project>

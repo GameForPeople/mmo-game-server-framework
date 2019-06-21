@@ -15,14 +15,16 @@ struct MonsterModel {
 
 	const _HpType hpPerLevel;
 	const _DamageType damagePerLevel;
+	const unsigned short expPerLevel;
+	const _MoneyType_T moneyPerLevel;
 
 	const unsigned char attackRange;
 
 	const _LevelType startLevel;
 	const _LevelType levelMaxDifference;
 
-	MonsterModel(MONSTER_TYPE, _HpType , _DamageType
-		, unsigned char , _LevelType, _LevelType);
+	MonsterModel(MONSTER_TYPE, unsigned short , _DamageType,
+		unsigned short, _MoneyType_T, unsigned char , _LevelType_T, _LevelType_T);
 };
 
 class MonsterModelManager {
@@ -33,5 +35,5 @@ public:
 	~MonsterModelManager();
 
 public:
-	MonsterModel* GetRenderModel(MONSTER_TYPE);
+	MonsterModel* GetMonsterModel(MONSTER_TYPE);
 };

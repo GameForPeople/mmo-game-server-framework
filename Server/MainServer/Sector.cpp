@@ -20,6 +20,7 @@ Sector::Sector(const BYTE inX, const BYTE inY)
 	, centerY(inY * GLOBAL_DEFINE::SECTOR_DISTANCE + GLOBAL_DEFINE::SECTOR_HALF_DISTANCE)
 	, sectorContUnit(new SectorContUnit)
 {
+	//std::cout << "indexX : " << (int)indexX << ", centerX : " << (int)centerX << ", indexY : " << (int)indexY << ", centerY : " << (int)centerY << std::endl;
 }
 
 Sector::~Sector()
@@ -33,9 +34,9 @@ Sector::~Sector()
 */
 void Sector::Join(SocketInfo* pClient)
 {
-	sectorContUnit->wrlock.lock(); //+++++++++++++++++++++++++++++++++++++1
+	sectorContUnit->clientLock.lock(); //+++++++++++++++++++++++++++++++++++++1
 	sectorContUnit->clientCont.emplace(pClient->key);
-	sectorContUnit->wrlock.unlock(); //-----------------------------------0
+	sectorContUnit->clientLock.unlock(); //-----------------------------------0
 
 	pClient->objectInfo->sectorIndexX = indexX;
 	pClient->objectInfo->sectorIndexY = indexY;
@@ -48,7 +49,7 @@ void Sector::Join(SocketInfo* pClient)
 void Sector::Exit(SocketInfo* pInClient)
 {
 	// 지역 정보에서 나를 지워주고.
-	sectorContUnit->wrlock.lock(); //+++++++++++++++++++++++++++++++++++++1
+	sectorContUnit->clientLock.lock(); //+++++++++++++++++++++++++++++++++++++1
 	
 	// 이게 무슨 미친놈의 코드야;
 	//for (auto iter = sectorContUnit->clientCont.begin()
@@ -64,14 +65,14 @@ void Sector::Exit(SocketInfo* pInClient)
 
 	sectorContUnit->clientCont.erase(pInClient->key);
 
-	sectorContUnit->wrlock.unlock(); //-----------------------------------0
+	sectorContUnit->clientLock.unlock(); //-----------------------------------0
 }
 
 void Sector::JoinForNpc(BaseMonster* pClientObject)
 {
-	sectorContUnit->monsterlock.lock(); //+++++++++++++++++++++++++++++++++++++1
+	sectorContUnit->monsterLock.lock(); //+++++++++++++++++++++++++++++++++++++1
 	sectorContUnit->monsterCont.emplace(pClientObject->key);
-	sectorContUnit->monsterlock.unlock(); //-----------------------------------0
+	sectorContUnit->monsterLock.unlock(); //-----------------------------------0
 
 	pClientObject->objectInfo->sectorIndexX = indexX;
 	pClientObject->objectInfo->sectorIndexY = indexY;
@@ -79,7 +80,7 @@ void Sector::JoinForNpc(BaseMonster* pClientObject)
 
 void Sector::ExitForNpc(BaseMonster* pMonster)
 {
-	sectorContUnit->monsterlock.lock(); //+++++++++++++++++++++++++++++++++++++1
+	sectorContUnit->monsterLock.lock(); //+++++++++++++++++++++++++++++++++++++1
 	
 	// 니도 이게 무슨 코드야;
 	//for (auto iter = sectorContUnit->monsterCont.begin()
@@ -94,7 +95,7 @@ void Sector::ExitForNpc(BaseMonster* pMonster)
 	//}
 	sectorContUnit->monsterCont.erase(pMonster->key);
 
-	sectorContUnit->monsterlock.unlock(); //-----------------------------------0
+	sectorContUnit->monsterLock.unlock(); //-----------------------------------0
 }
 
 /*
@@ -105,14 +106,11 @@ void Sector::ExitForNpc(BaseMonster* pMonster)
 	 !1. 서로의 viewList에 넣을 때, 동기화 백프로 꺠질걸?? ConCurrency가 아닌 Lock을 써야 될꺼 같어.
 	 !2. 내부에서 네트워크 함수가 호출됩니다.
 */
-void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneContUnit)
+void Sector::MakeNewViewList(std::unordered_set<_KeyType>& newViewList, std::unordered_set<_KeyType>& newMonsterViewList, SocketInfo* pClient, ZoneContUnit* pZoneContUnit)
 {
-	if (sectorContUnit->clientCont.size() > 1)
+	if (sectorContUnit->clientCont.size() > 0)
 	{
-		auto oldViewList = pClient->viewList;
-		std::unordered_set<_ClientKeyType> newViewList;
-
-		sectorContUnit->wrlock.lock_shared();	//++++++++++++++++++++++++++++1	Sector : Read Lock!
+		sectorContUnit->clientLock.lock_shared();	//++++++++++++++++++++++++++++1	Sector : Read Lock!
 		for (auto/*&*/ otherKey : sectorContUnit->clientCont)
 		{
 			if (otherKey == pClient->key) continue;
@@ -168,43 +166,15 @@ void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneCon
 			*/
 
 		}
-		sectorContUnit->wrlock.unlock_shared();	//----------------------------0	Sector : Read Lock!
-
-		for (auto otherClientKey : newViewList)
-		{
-			if (oldViewList.count(otherClientKey) != 0)
-				// 새로 시야에 들어옴.
-			{
-				SocketInfo* pOtherClient = pZoneContUnit->clientContArr[otherClientKey];
-
-				// 추가 처리가 요청됩니다. 동기화가 안될 가능성이 큽니다.
-				pClient->viewList.insert(otherClientKey);
-				NETWORK_UTIL::SEND::SendPutPlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pOtherClient, pClient);
-				//
-
-				if (pOtherClient->viewList.count(pClient->key) != 0)
-				{
-					NETWORK_UTIL::SEND::SendMovePlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::Position>(pClient, pOtherClient);
-				}
-				else
-				{
-					pOtherClient->viewList.insert(pClient->key);
-					NETWORK_UTIL::SEND::SendPutPlayer<SocketInfo, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pClient, pOtherClient);
-				}
-			}
-		}
+		sectorContUnit->clientLock.unlock_shared();	//----------------------------0	Sector : Read Lock!
 	}
 
 	if (sectorContUnit->monsterCont.size() > 0)
 	{
-		auto oldMonsterViewList = pClient->monsterViewList;
-		std::unordered_set<_ClientKeyType> newMonsterViewList;
-
-		sectorContUnit->monsterlock.lock_shared(); //++++++++++++++++++++++++++++1	Sector : Read Lock!
+		sectorContUnit->monsterLock.lock_shared(); //++++++++++++++++++++++++++++1	Sector : Read Lock!
 		for (auto/*&*/ otherKey : sectorContUnit->monsterCont)
 		{
 			auto pMonster = pZoneContUnit->monsterCont[otherKey - BIT_CONVERTER::NOT_PLAYER_INT];
-
 			if (IsSeeEachOther(pClient->objectInfo, pMonster->objectInfo))
 			{
 				// 서로 보입니다.
@@ -248,52 +218,28 @@ void Sector::JudgeClientWithViewList(SocketInfo* pClient, ZoneContUnit* pZoneCon
 			}
 			*/
 		}
-		sectorContUnit->monsterlock.unlock_shared(); //----------------------------0	Sector : Read Lock!
-	
-		for (auto otherMonsterKey : newMonsterViewList)
-		{
-			if (oldMonsterViewList.count(otherMonsterKey) != 0)
-				// 새로 시야에 들어옴.
-			{
-				auto pMonster = pZoneContUnit->monsterCont[otherMonsterKey - BIT_CONVERTER::NOT_PLAYER_INT];
-
-				pClient->monsterViewList.insert(otherMonsterKey);
-				NETWORK_UTIL::SEND::SendPutPlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pMonster, pClient);
-				
-				// WAKE UP 처리가 필요합니다. // 동기화가 필요합니다.
-				if (ATOMIC_UTIL::T_CAS(&(pMonster->isSleep), false, true))
-				{
-					// 이동 타이머를 등록해줌.
-					auto timerUnit = TimerManager::GetInstance()->PopTimerUnit();
-					timerUnit->timerType = TIMER_TYPE::NPC_MOVE;
-					timerUnit->objectKey = pMonster->key;
-					TimerManager::GetInstance()->AddTimerEvent(timerUnit, TIME::SLIME_MOVE);
-				}
-				// 이미 true일 경우 할 것 없어!
-			}
-		}
+		sectorContUnit->monsterLock.unlock_shared(); //----------------------------0	Sector : Read Lock!
 	}
 }
 
-bool Sector::JudgeClientWithViewListForNpc(BaseMonster* pMonster, ZoneContUnit* pZoneContUnit)
+/*bool*/ void Sector::MakeNewViewListForNpc(std::unordered_set<_KeyType>& newViewList, BaseMonster* pMonster, ZoneContUnit* pZoneContUnit)
 {
+	sectorContUnit->clientLock.lock_shared();	//++++++++++++++++++++++++++++1	Sector : Read Lock!
 	// 대충 0명이느냐 아니느냐 검사
+	
 	if (sectorContUnit->clientCont.size() == 0) {
-		/*std::cout << "텅비어있습니다!" << std::endl; */ return false; //이게 많아야할텐데? }
+		/*std::cout << "텅비어있습니다!" << std::endl; */ 
+		sectorContUnit->clientLock.unlock_shared();	//----------------------------0	Sector : Read Lock!
+		return; //이게 많아야할텐데? }
 	}
 
-	bool retValue = false;
-	std::vector<_KeyType> localViewList;
-
-	sectorContUnit->wrlock.lock_shared();	//++++++++++++++++++++++++++++1	Sector : Read Lock!
 	for (auto/*&*/ otherKey : sectorContUnit->clientCont)
 	{
 		//auto[isOn, pOtherClient] = pZoneContUnit->FindClient(otherKey /*- BIT_CONVERTER::NOT_PLAYER_INT*/);
 		//if (!isOn) continue; // ? 왜 없댱
-
 		if (IsSeeEachOther(pMonster->objectInfo, pZoneContUnit->clientContArr[otherKey]->objectInfo))
 		{
-			localViewList.emplace_back(otherKey);
+			newViewList.emplace(otherKey);
 			// 서로 보입니다.
 			//if (pOtherClient->monsterViewList.find(pClient->key /* - BIT_CONVERTER::NOT_PLAYER_INT*/) == pOtherClient->monsterViewList.end())
 			//{
@@ -333,24 +279,21 @@ bool Sector::JudgeClientWithViewListForNpc(BaseMonster* pMonster, ZoneContUnit* 
 		//	//}
 		//}
 	}
-	sectorContUnit->wrlock.unlock_shared();	//----------------------------0	Sector : Read Lock!
-
-	for (auto clientKey : localViewList)
-	{
-		if (pZoneContUnit->clientContArr[clientKey]->monsterViewList.count(pMonster->key))
-		{
-			NETWORK_UTIL::SEND::SendMovePlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::Position>( pMonster, pZoneContUnit->clientContArr[clientKey]);
-		}
-		else
-		{
-			pZoneContUnit->clientContArr[clientKey]->monsterViewList.insert(pMonster->key);
-			NETWORK_UTIL::SEND::SendPutPlayer<BaseMonster, PACKET_DATA::MAIN_TO_CLIENT::PutPlayer>(pMonster, pZoneContUnit->clientContArr[clientKey]);
-		}
-	}
-
-	return retValue;
+	sectorContUnit->clientLock.unlock_shared();	//----------------------------0	Sector : Read Lock!
 }
 
+void Sector::MakeOldViewListForNpc(std::unordered_set<_KeyType>& retOldViewList, BaseMonster* pMonster, ZoneContUnit* pZoneContUnit)
+{
+	sectorContUnit->clientLock.lock_shared();
+	for (auto/*&*/ otherKey : sectorContUnit->clientCont)
+	{
+		if (IsSeeEachOther(pMonster->objectInfo, pZoneContUnit->clientContArr[otherKey]->objectInfo))
+		{
+			retOldViewList.emplace(otherKey);
+		}
+	}
+	sectorContUnit->clientLock.unlock_shared();
+}
 /*
 	IsSeeEachOther
 		- 마! 서로 볼수 있나 없나! 위치값 둘다 내나 봐라 마!

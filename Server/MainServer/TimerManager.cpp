@@ -24,7 +24,7 @@ TimerUnit::~TimerUnit()
 
 TimerManager::TimerManager(HANDLE hIOCP) :
 	hIOCP(hIOCP),
-	nowTime(0), MAX_COOL_TIME(600 + 100),
+	nowTime(0), MAX_COOL_TIME(static_cast<int>(TIME::MAX_TIME) + 100),
 	timerCont(),
 	timerMemoryPool(),
 	postQueuedFunctionCallCount(0)
@@ -32,13 +32,11 @@ TimerManager::TimerManager(HANDLE hIOCP) :
 	timerCont.reserve(MAX_COOL_TIME);
 	for (int i = 0; i < MAX_COOL_TIME; ++i) { timerCont.emplace_back(); }
 
-	for (int i = 0; i < 500000; ++i) { timerMemoryPool.push(new TimerUnit()); }
+	for (int i = 0; i < GLOBAL_DEFINE::MAX_TIMER_UNIT; ++i) { timerMemoryPool.push(new TimerUnit()); }
 
 	SetPostQueuedFunctionCallCountAndTimerMemoryHeadCont(MAX_COOL_TIME);
 
-#ifdef _DEV_MODE_
-	std::wcout << L"!. TimerManager의 초기 할당 사이즈는 " << timerMemoryPool.unsafe_size() << " 입니다." << std::endl;
-#endif
+	std::wcout << L"!. TimerManager의 초기 할당 사이즈는 " << timerMemoryPool.unsafe_size() << L" 입니다." << std::endl;
 }
 
 TimerManager::~TimerManager()

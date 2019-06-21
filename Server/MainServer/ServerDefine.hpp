@@ -12,7 +12,8 @@ namespace NETWORK_UTIL
 				//pPutClient->userData->GetPosition().x,
 				//pPutClient->userData->GetPosition().y
 				pPutObject->objectInfo->posX,
-				pPutObject->objectInfo->posY
+				pPutObject->objectInfo->posY,
+				pPutObject->objectInfo->job
 			);
 
 			NETWORK_UTIL::SendPacket(pRecvClient, reinterpret_cast<char*>(&packet));

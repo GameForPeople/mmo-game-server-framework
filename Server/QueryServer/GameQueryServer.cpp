@@ -6,7 +6,7 @@
 #include "SendMemoryPool.h"
 #include "GameQueryServer.h"
 
-GameQueryServer::GameQueryServer(bool inNotUse)
+GameQueryServer::GameQueryServer(bool inNotUse) 
 	: wsa()
 	, hIOCP()
 	, socket()
@@ -14,19 +14,51 @@ GameQueryServer::GameQueryServer(bool inNotUse)
 	, workerThreadCont()
 	, pRecvMemoryUnit(new MemoryUnit(MEMORY_UNIT_TYPE::RECV))
 	, loadedBuf()
-	, loadedSize(GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET)
+	, loadedSize(/*GLOBAL_DEFINE::MAX_SIZE_OF_RECV_PACKET*/)
+	, intLen(SQL_INTEGER)
 {
 	ServerIntegrityCheck();
 
 	SendMemoryPool::MakeInstance();
+	std::cout << "\n"
+		<< "	MainServer IP 주소를 선택하세요. \n"
+		<< "		1. Local Host (127.0.0.1) \n"
+		<< "		2. 직접 입력 \n"
+		<< "								==> ";
 
-	PrintServerInfoUI();
-	InitNetwork();
+	int inputtedIPType{};
+	std::cin >> inputtedIPType;
+
+	std::string inputtedIP{};
+	if (inputtedIPType == 1)
+	{
+		inputtedIP = "127.0.0.1";
+	}
+	else if (inputtedIPType == 2)
+	{
+		std::cout << "MainServer의 Public IP를 입력해주세요. : ";
+		std::cin >> inputtedIP;
+		system("cls");
+	}
+	else
+	{
+		std::cout << "아직 지원하지 않는 기능입니다. 서버를 종료합니다. ";
+		throw ERROR;
+	}
+	
+	std::wcout << L"?. Main Server에서 'QueryServer를 실행시켜주세요!'라는 문구가 나오면, 아무 문자나 입력해주세요.\n";
+	int tempInput{};
+	std::cin >> tempInput;
+
+	PrintServerInfoUI(inputtedIP);
+	InitNetwork(inputtedIP);
 
 	if (InitAndConnectToDB() == false)
 	{
-		ERROR_HANDLING::ERROR_QUIT(L"DB 초기화 혹은, 접속에 실패하였습니다.");
+			ERROR_HANDLING::ERROR_QUIT(L"DB 초기화 혹은, 접속에 실패하였습니다.");
 	}
+
+	ProcessDoAllUserLogOut();
 };
 
 GameQueryServer::~GameQueryServer()
@@ -51,15 +83,13 @@ void GameQueryServer::ServerIntegrityCheck()
 	GameServer::PrintServerInfoUI()
 		- GamsServer의 생성자에서 호출되며, 서버의 UI들을 출력합니다.
 */
-void GameQueryServer::PrintServerInfoUI()
+void GameQueryServer::PrintServerInfoUI(const std::string& inString)
 {
 	printf("\n■■■■■■■■■■■■■■■■■■■■■■■■■\n");
 	printf("■ 게임서버프로그래밍 - 쿼리 서버 \n");
 	printf("■                   게임공학과 원성연 2013182027\n");
 	printf("■\n");
-
-	// 추후 퍼블릭 IP로 변경.
-	printf("■ IP : LocalHost(127.0.0.1)\n");
+	printf("■ IP : %s \n", inString.c_str());
 	printf("■ Listen Port : %d \n", GLOBAL_DEFINE::QUERY_SERVER_PORT );
 	printf("■■■■■■■■■■■■■■■■■■■■■■■■■\n");
 }
@@ -68,7 +98,7 @@ void GameQueryServer::PrintServerInfoUI()
 	GameServer::InitNetwork()
 		- GamsServer의 생성자에서 호출되며, 네트워크 통신과 관련된 초기화를 담당합니다.
 */
-void GameQueryServer::InitNetwork()
+void GameQueryServer::InitNetwork(const std::string& inString)
 {
 	using namespace ERROR_HANDLING;
 
@@ -97,7 +127,7 @@ void GameQueryServer::InitNetwork()
 	// 5. 쿼리 서버 소켓 설정
 	ZeroMemory(&queryServerAddr, sizeof(queryServerAddr));
 	queryServerAddr.sin_family = AF_INET;
-	queryServerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");	// 추후 MainServer Public IP로 변경해야함!
+	queryServerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");	
 	queryServerAddr.sin_port = htons(GLOBAL_DEFINE::QUERY_SERVER_PORT);
 	if (::bind(socket, (SOCKADDR *)&queryServerAddr, sizeof(queryServerAddr)) == SOCKET_ERROR) ERROR_QUIT(TEXT("bind()"));
 
@@ -107,12 +137,14 @@ void GameQueryServer::InitNetwork()
 	// 7. 메인 서버 정보 객체 설정
 	ZeroMemory(&mainServerAddr, sizeof(mainServerAddr));
 	mainServerAddr.sin_family = AF_INET;
-	mainServerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");	// 추후 MainServer Public IP로 변경해야함!
+	mainServerAddr.sin_addr.s_addr = inet_addr(inString.c_str());	// 추후 MainServer Public IP로 변경해야함!
 	mainServerAddr.sin_port = htons(GLOBAL_DEFINE::MAIN_SERVER_PORT);
 
 	// 8. 커넥트!!
 	if (int retVal = connect(socket, (SOCKADDR*)& mainServerAddr, sizeof(mainServerAddr))
-		; retVal == SOCKET_ERROR) ERROR_QUIT(L"Connect 에러! 아마! 메인서버를 확인해주세요!");
+		; retVal == SOCKET_ERROR) ERROR_QUIT(L"Connect 에러 뭐여!! 메인서버를 확인해주세요!");
+
+	RecvPacket();
 
 	printf("메인 서버에 정상적으로 연결되었습니다!\n\n");
 }
@@ -168,9 +200,11 @@ void GameQueryServer::WorkerThreadFunction()
 		//ERROR_CLIENT_DISCONNECT:
 		if (retVal == 0 || cbTransferred == 0)
 		{
+			std::cout << "메인 서버가 종료되었습니다. 이제 이 서버는 무슨 짓을 할지 모릅니다.";
 			assert(false, L"MainServer가 비정상적입니다. 확인이 필요합니다.");
+			ERROR_HANDLING::ERROR_QUIT(L"MainServer가 비정상적입니다. 확인이 필요합니다.");
 			//NETWORK_UTIL::LogOutProcess(pMemoryUnit);
-			continue;
+			//continue;
 		}
 #pragma endregion
 
@@ -257,8 +291,14 @@ void GameQueryServer::ProcessPacket()
 	case MAIN_TO_QUERY::DEMAND_LOGIN:
 		ProcessDemandLogin();
 		break;
+	case MAIN_TO_QUERY::DEMAND_SIGNUP:
+		ProcessDemandSignUp();
+		break;
 	case MAIN_TO_QUERY::SAVE_LOCATION:
 		ProcessSaveLocation();
+		break;
+	case MAIN_TO_QUERY::SAVE_USERINFO:
+		ProcessSaveUserInfo();
 		break;
 	default:
 		assert(false, "정의되지 않은 프로토콜을 받았습니다.");
@@ -327,87 +367,139 @@ void GameQueryServer::RecvPacket()
 
 void GameQueryServer::ProcessDemandLogin()
 {
-	SQLWCHAR tempIdBuffer[10]{};
-	SQLLEN tempIDType = SQL_NTS;
+	SQLHSTMT hstmt{ 0 };
+	if (SQLRETURN retcode{ SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt) }
+		; retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+
+	PACKET_DATA::MAIN_TO_QUERY::DemandLogin* packet = reinterpret_cast<PACKET_DATA::MAIN_TO_QUERY::DemandLogin*>(loadedBuf);
 	
-	int tempKey = (loadedBuf[2] << 24) & 0xFF000000 | (loadedBuf[3] << 16) & 0xFF0000 | (loadedBuf[4] << 8) & 0xFF00 | (loadedBuf[5]) & 0xFF;
+	if (SQLRETURN retcode{ SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec DB_2013182027.dbo.User_DemandLogin " + std::wstring(packet->id) + L", " + std::to_wstring(packet->key)).c_str(), SQL_NTS) }
+		; retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 
-	memcpy(tempIdBuffer, loadedBuf + 6, 20);
+	SQLINTEGER retIsExits{ -1 };
+	SQLLEN intExits{ SQL_INTEGER };
+
+	SQLFetch(hstmt);
 	
-	SQLRETURN retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+	SQLRETURN retcode = SQLGetData(hstmt, 1, SQL_INTEGER, &retIsExits, intLen, &intExits);
+	if (retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 
-	retcode = SQLBindParameter(hstmt,
-		1,	// Parameter Index
-		SQL_PARAM_INPUT, // Parameter Type
-		SQL_C_WCHAR, // c dataType
-		SQL_WCHAR, // db dataType
-		10, // size?
-		0, // ?
-		tempIdBuffer,
-		sizeof(tempIdBuffer),
-		&tempIDType	// SQL_NTS
-	);
-	
-	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)L"Exec User_DemandLogin", SQL_NTS);
-	PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
-
-	SQLINTEGER retPosX{}, retPosY{};
-	SQLLEN intLen = SQL_INTEGER;
-
-	retcode = SQLBindCol(hstmt, 1, SQL_INTEGER, &retPosX, intLen, &intLen);
-	retcode = SQLBindCol(hstmt, 2, SQL_INTEGER, &retPosY, intLen, &intLen);
-
-	std::cout << "받은 위치는  x : " << retPosX << ", y : " << retPosY << std::endl;
-
-	SQLFreeStmt(hstmt, SQL_DROP);
-
-	if (retPosX == -1)
+	if (retIsExits == -2)	// 없는 계정일 경우.
 	{
-		PACKET_DATA::QUERY_TO_MAIN::LoginFail loginFail(tempKey, 1);
+		SQLFreeStmt(hstmt, SQL_DROP);
+
+		PACKET_DATA::QUERY_TO_MAIN::LoginFail loginFail(packet->key, 0);
 		SendPacket(reinterpret_cast<char*>(&loginFail));
 	}
-	else
+	else if(retIsExits == -1)
 	{
-		PACKET_DATA::QUERY_TO_MAIN::LoginTrue loginTrue(tempKey, tempIdBuffer, retPosX, retPosY);
+		PACKET_DATA::QUERY_TO_MAIN::LoginTrue loginTrue(packet->key);
+		SQLLEN tempIntLength = SQL_INTEGER;
+
+		retcode = SQLGetData(hstmt, 2, SQL_INTEGER, &(loginTrue.xPos), intLen, &tempIntLength);
+		retcode = SQLGetData(hstmt, 3, SQL_INTEGER, &(loginTrue.yPos), intLen, &tempIntLength);
+		retcode = SQLGetData(hstmt, 4, SQL_INTEGER, &(loginTrue.level), intLen, &tempIntLength);
+		retcode = SQLGetData(hstmt, 5, SQL_INTEGER, &(loginTrue.exp), intLen, &tempIntLength);
+		retcode = SQLGetData(hstmt, 6, SQL_INTEGER, &(loginTrue.job), intLen, &tempIntLength);
+		retcode = SQLGetData(hstmt, 7, SQL_INTEGER, &(loginTrue.hp), intLen, &tempIntLength);
+		retcode = SQLGetData(hstmt, 8, SQL_INTEGER, &(loginTrue.mp), intLen, &tempIntLength);
+		retcode = SQLGetData(hstmt, 9, SQL_INTEGER, &(loginTrue.money), intLen, &tempIntLength);
+		retcode = SQLGetData(hstmt, 10, SQL_INTEGER, &(loginTrue.redCount), intLen, &tempIntLength);
+		retcode = SQLGetData(hstmt, 11, SQL_INTEGER, &(loginTrue.blueCount), intLen, &tempIntLength);
+		retcode = SQLGetData(hstmt, 12, SQL_INTEGER, &(loginTrue.treeCount), intLen, &tempIntLength);
+     	if (retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+
+		SQLFreeStmt(hstmt, SQL_DROP);
+
 		SendPacket(reinterpret_cast<char*>(&loginTrue));
 	}
+	else	// 이미 로그인한 계정일 경우.
+	{
+		SQLFreeStmt(hstmt, SQL_DROP);
+		PACKET_DATA::QUERY_TO_MAIN::LoginFail loginFail(packet->key, 1);
+		SendPacket(reinterpret_cast<char*>(&loginFail));
+	}
+}
+
+void GameQueryServer::ProcessDemandSignUp()
+{
+	SQLHSTMT hstmt{ 0 };
+	if (SQLRETURN retcode{ SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt) }
+	; retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+
+	PACKET_DATA::MAIN_TO_QUERY::DemandSignUp* packet = reinterpret_cast<PACKET_DATA::MAIN_TO_QUERY::DemandSignUp*>(loadedBuf);
+	
+	if (SQLRETURN retcode{ SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec DB_2013182027.dbo.User_DemandSingUp " + std::wstring(packet->id) + L", " + std::to_wstring(packet->key) + L", " + std::to_wstring(packet->job)).c_str(), SQL_NTS) }
+	; retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+
+	SQLINTEGER retIsExits{ -1 };
+	SQLLEN intExits{ SQL_INTEGER };
+
+	SQLFetch(hstmt);
+	SQLRETURN retcode = SQLGetData(hstmt, 1, SQL_INTEGER, &retIsExits, intLen, &intExits);
+	if (retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+	SQLFreeStmt(hstmt, SQL_DROP);
+
+	if (retIsExits == -1)	// 해당하는 계정이 이미 있는 경우
+	{
+		PACKET_DATA::QUERY_TO_MAIN::LoginFail loginFail(packet->key, 2);
+		SendPacket(reinterpret_cast<char*>(&loginFail));
+	}
+	else if (retIsExits == 0) // 계정생성 성공!
+	{
+		PACKET_DATA::QUERY_TO_MAIN::LoginNew loginNew(packet->key, packet->job);
+		SendPacket(reinterpret_cast<char*>(&loginNew));
+	}
+}
+
+void GameQueryServer::ProcessDoAllUserLogOut()
+{
+	SQLHSTMT hstmt = 0;
+	SQLRETURN retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec DB_2013182027.dbo.User_DoAllUserLogOut"), SQL_NTS);
+	if (retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+
+	SQLFreeStmt(hstmt, SQL_DROP);
 }
 
 void GameQueryServer::ProcessSaveLocation()
 {
-	SQLLEN tempIDType = SQL_NTS;
-	SQLLEN tempIntType = SQL_INTEGER;
-
-	PACKET_DATA::MAIN_TO_QUERY::SavePosition* packet = reinterpret_cast<PACKET_DATA::MAIN_TO_QUERY::SavePosition*>(loadedBuf);
-	
-	SQLWCHAR tempIdBuffer[10]{};
-
-	memcpy(tempIdBuffer, packet->id, 20);
-
-	SQLINTEGER tempPosX = packet->xPos;
-	SQLINTEGER tempPosY = packet->yPos;
-
-	memcpy(tempIdBuffer, loadedBuf + 4, 20);
-
+	SQLHSTMT hstmt = 0;
 	SQLRETURN retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
-	retcode = SQLBindParameter(hstmt,
-		1,	// Parameter Index
-		SQL_PARAM_INPUT, // Parameter Type
-		SQL_C_WCHAR, // c dataType
-		SQL_WCHAR, // db dataType
-		10, // size?
-		0, // ?
-		tempIdBuffer,
-		sizeof(tempIdBuffer),
-		&tempIDType	// SQL_NTS
-	);
+	PACKET_DATA::MAIN_TO_QUERY::SavePosition* packet = reinterpret_cast<PACKET_DATA::MAIN_TO_QUERY::SavePosition*>(loadedBuf);
 
-	retcode = SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &tempPosX, sizeof(tempPosX), &tempIntType);
-	retcode = SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &tempPosY, sizeof(tempPosY), &tempIntType);
+	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)(L"Exec DB_2013182027.dbo.User_SaveLocation " + std::wstring(packet->id) + L", " + std::to_wstring(packet->xPos) + L", " + std::to_wstring(packet->yPos)).c_str(), SQL_NTS);
+	if (retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 
-	retcode = SQLExecDirect(hstmt, (SQLWCHAR*)L"Exec User_SaveLocation", SQL_NTS);
-	PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+	SQLFreeStmt(hstmt, SQL_DROP);
+}
+
+void GameQueryServer::ProcessSaveUserInfo()
+{
+	SQLHSTMT hstmt = 0;
+	SQLRETURN retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+	PACKET_DATA::MAIN_TO_QUERY::SaveUserInfo* packet = reinterpret_cast<PACKET_DATA::MAIN_TO_QUERY::SaveUserInfo*>(loadedBuf);
+
+	retcode = SQLExecDirect(hstmt, 
+		(SQLWCHAR*)(L"Exec DB_2013182027.dbo.User_SaveUserInfo " 
+			+ std::to_wstring(packet->isOut) + L", " 
+			+ std::wstring(packet->id) + L", " 
+			+ std::to_wstring(packet->xPos) + L", " 
+			+ std::to_wstring(packet->yPos) + L", "
+			+ std::to_wstring(packet->level) + L", "
+			+ std::to_wstring(packet->exp) + L", "
+			+ std::to_wstring(packet->job) + L", "	
+			+ std::to_wstring(packet->hp) + L", "
+			+ std::to_wstring(packet->mp) + L", "
+			+ std::to_wstring(packet->money) + L", "
+			+ std::to_wstring(packet->redCount) + L", "
+			+ std::to_wstring(packet->blueCount) + L", "
+			+ std::to_wstring(packet->treeCount)
+			).c_str(), SQL_NTS);
+	if (retcode != SQL_SUCCESS) PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 
 	SQLFreeStmt(hstmt, SQL_DROP);
 }
@@ -425,15 +517,16 @@ bool GameQueryServer::InitAndConnectToDB()
 		if (retcode = SQLSetEnvAttr(henv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER*)SQL_OV_ODBC3, 0)
 			; retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) 
 		{
-			// Set login timeout to 5 seconds  
 			if (retcode = SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc)
 				; retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO)
 			{
+			// Set login timeout to 5 seconds  
 				SQLSetConnectAttr(hdbc, SQL_LOGIN_TIMEOUT, (SQLPOINTER)5, 0);
 
 				// Connect to data source  
 				// Allocate statement handle  
-				if (retcode = SQLConnect(hdbc, (SQLWCHAR*)L"ODBC_2013182027", SQL_NTS, (SQLWCHAR*)L"ACCOUNT_TEST", SQL_NTS, (SQLWCHAR*)L"test1234", SQL_NTS)
+
+				if (retcode = SQLConnect(hdbc, (SQLWCHAR*)L"ODBC_2013182027", SQL_NTS, (SQLWCHAR*)/*L"ACCOUNT_TEST"*/NULL, SQL_NTS, (SQLWCHAR*)/*L"test1234"*/NULL, SQL_NTS)
 					; retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO)
 				{
 					std::cout << "SQL CONNECT!!\n";
@@ -442,15 +535,14 @@ bool GameQueryServer::InitAndConnectToDB()
 			}
 		}
 	}
-
-	PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
+	//PrintDBErrorMessage(hstmt, SQL_HANDLE_STMT, retcode);
 	return false;
 }
 
 void GameQueryServer::FreeAndDisconnectDB()
 {
-	SQLCancel(hstmt);
-	SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+	//SQLCancel(hstmt);
+	//SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
 
 	SQLDisconnect(hdbc);
 	SQLFreeHandle(SQL_HANDLE_DBC, hdbc);

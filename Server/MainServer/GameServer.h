@@ -58,6 +58,11 @@ private: // "Client to Main" Function
 	void ProcessPacket(SocketInfo* pClient);
 
 	void RecvLogin(SocketInfo*);
+	void RecvSignUp(SocketInfo*);
+	void RecvAttack(SocketInfo*);
+	void RecvItem(SocketInfo*);
+	void RecvBuyItem(SocketInfo*);
+	void RecvChat(SocketInfo*);
 
 private: // "Query" Function
 	void MakeQueryPacketFromRecvData(int restSize);
@@ -65,9 +70,11 @@ private: // "Query" Function
 
 	void RecvLoginTrue();
 	void RecvLoginFalse();
+	void RecvLoginAlready();
+	void RecvLoginNew();
 
 private:
-	void LogOut(SocketInfo*);
+	void LogOut(SocketInfo*, bool isForced);
 
 private:
 	WSADATA								wsa;
@@ -77,7 +84,8 @@ private:
 	SOCKADDR_IN							serverAddr;
 
 	std::vector<std::thread>			workerThreadCont;
-	std::unique_ptr<Zone>				zone;
+	//std::unique_ptr<Zone>				zone;	// ㅡㅡ 그놈의 루아떄문에 ㅡㅡ
+	Zone*								zone;
 };
 
 #pragma region [Legacy Code]

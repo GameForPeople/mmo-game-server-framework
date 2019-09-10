@@ -463,6 +463,8 @@ void GameServer::ProcessPacket(SocketInfo* pClient)
 {
 	using namespace PACKET_TYPE::CLIENT_TO_MAIN;
 	//recvFunctionArr[(pClient->loadedBuf[1]) % (PACKET_TYPE::CLIENT_TO_MAIN::ENUM_SIZE)](*this, pClient);
+	//std::cout << "pClient - "<< (int)(pClient->key) << " : " << (int)(pClient->loadedBuf[1]) << std::endl;
+
 	switch (pClient->loadedBuf[1])
 	{
 	case MOVE:

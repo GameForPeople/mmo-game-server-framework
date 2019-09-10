@@ -20,7 +20,7 @@ using namespace chrono;
 
 extern HWND		hWnd;
 
-const static int MAX_TEST = 2000;
+const static int MAX_TEST = 200;
 const static int INVALID_ID = -1;
 const static int MAX_PACKET_SIZE = 255;
 const static int MAX_BUFF_SIZE = 255;
@@ -114,6 +114,10 @@ void ProcessPacket(int ci, unsigned char packet[])
 	{
 		PACKET_DATA::MAIN_TO_CLIENT::LoginOk *myPacket = reinterpret_cast<PACKET_DATA::MAIN_TO_CLIENT::LoginOk *>(packet);
 		// ¾Æ¸¶ ÀÌ·²°Å¾ß ci == myPacket->key
+
+		static int aaaa{ 0 };
+		std::cout << "¹¹¾ß! : " << aaaa++;
+		
 		if (INVALID_ID == g_clients[myPacket->key].id) g_clients[myPacket->key].id = myPacket->key;
 		g_clients[myPacket->key].x = myPacket->x;
 		g_clients[myPacket->key].y = myPacket->y;
